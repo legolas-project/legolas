@@ -88,6 +88,8 @@ class Legolas:
     def _validate_config(self):
         if not 'physics_type' in self.config.keys():
             raise ValueError('"physics_type" ("hd" / "mhd") not specified.')
+        elif self.config['physics_type'] != 'hd' and self.config['physics_type'] != 'mhd':
+            raise ValueError('Unknown physics type.')
 
     def user_module(self, filename='smod_user_defined'):
         name = filename + '.f08'
