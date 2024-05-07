@@ -82,7 +82,7 @@ def write_physics_functions(file, equilibrium):
 class Legolas:
     def __init__(self, equilibrium, config):
         self.equilibrium = equilibrium
-        self.configuration = config
+        self.config = config
         self._validate_config()
     
     def _validate_config(self):
@@ -98,7 +98,7 @@ class Legolas:
         write_pad(file, '!> Submodule for user-defined equilibria.', 0)
         write_pad(file, 'submodule (mod_equilibrium) smod_user_defined', 0)
         write_pad(file, 'use mod_logging, only: logger', 1)
-        eqparam = get_equilibrium_parameters(self.configuration)
+        eqparam = get_equilibrium_parameters(self.config)
         write_pad(file, 'use mod_equilibrium_params, only: ' + eqparam, 1)
         write_pad(file, 'implicit none', 1)
         file.write('\n')
@@ -113,7 +113,7 @@ class Legolas:
         write_pad(file, 'call background%set_velocity_2_funcs(v02_func=v02, dv02_func=dv02, ddv02_func=ddv02)', 2)
         write_pad(file, 'call background%set_velocity_3_funcs(v03_func=v03, dv03_func=dv03, ddv03_func=ddv03)', 2)
         write_pad(file, 'call background%set_temperature_funcs(T0_func=T0, dT0_func=dT0, ddT0_func=ddT0)', 2)
-        if self.configuration['physics_type'] == 'mhd':
+        if self.config['physics_type'] == 'mhd':
             write_pad(file, 'call background%set_magnetic_2_funcs(B02_func=B02, dB02_func=dB02, ddB02_func=ddB02)', 2)
             write_pad(file, 'call background%set_magnetic_3_funcs(B03_func=B03, dB03_func=dB03, ddB03_func=ddB03)', 2)
         file.write('\n')
@@ -127,5 +127,5 @@ class Legolas:
         return
 
     def parfile(self, filename='legolas', make_dir=False):
-        generate_parfiles(self.configuration, basename=filename, subdir=make_dir)
+        generate_parfiles(self.config, basename=filename, subdir=make_dir)
         return
