@@ -4,8 +4,8 @@ from sympy.printing.fortran import fcode
 
 from pylbo.gimli.utils import create_file, write_pad, get_equilibrium_parameters, is_sympy_number, is_symbol_dependent
 
-def write_physics_calls(file, equil):
-    physics = equil.get_physics()
+def write_physics_calls(file, equilibrium):
+    physics = equilibrium.get_physics()
     for key in list(physics.keys()):
         if physics[key][0] != None:
             func = physics[key][1]
@@ -83,6 +83,11 @@ class Legolas:
     def __init__(self, equilibrium, config):
         self.equilibrium = equilibrium
         self.configuration = config
+        self._validate_config()
+    
+    def _validate_config(self):
+        if not 'physics_type' in self.config.keys():
+            raise ValueError('"physics_type" ("hd" / "mhd") not specified.')
 
     def user_module(self, filename='smod_user_defined'):
         name = filename + '.f08'
