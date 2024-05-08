@@ -126,6 +126,6 @@ class Legolas:
         file.close()
         return
 
-    def parfile(self, filename='legolas', make_dir=False):
+    def parfile(self, filename='legolas_config', make_dir=False):
         generate_parfiles(self.config, basename=filename, subdir=make_dir)
         return
