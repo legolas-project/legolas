@@ -3,8 +3,19 @@ import sympy as sp
 from sympy.printing.fortran import fcode
 
 from pylbo.gimli.utils import create_file, write_pad, get_equilibrium_parameters, is_sympy_number, is_symbol_dependent
+from pylbo.gimli._version import __version__
 
 def write_physics_calls(file, equilibrium):
+    """
+    Writes the use of user-defined physics functions to the Legolas user module.
+
+    Parameters
+    ----------
+    file : file
+        The file object to write to.
+    equilibrium : Equilibrium
+        The equilibrium object containing the user-defined equilibrium and physics functions.
+    """
     physics = equilibrium.get_physics()
     for key in list(physics.keys()):
         if physics[key][0] != None:
@@ -18,6 +29,24 @@ def write_physics_calls(file, equilibrium):
     return
 
 def fortran_function(file, expr, varname, translation, constant=False, level=0):
+    """
+    Writes a sympy expression to the user module as a Fortran function.
+
+    Parameters
+    ----------
+    file : file
+        The file object to write to.
+    expr : sympy expression
+        The expression to write.
+    varname : str
+        The name of the function.
+    translation : dict
+        A dictionary containing any substitution rules for sympy to Fortran expressions.
+    constant : bool
+        Set to `True` if the function is a constant.
+    level : int
+        The indentation level.
+    """
     if constant:
         write_pad(file, f'real(dp) function {varname}()', level)
     else:
@@ -37,6 +66,16 @@ def fortran_function(file, expr, varname, translation, constant=False, level=0):
     return
 
 def write_equilibrium_functions(file, equilibrium):
+    """
+    Iterates over all Legolas equilibrium quantities and writes them to the user module.
+
+    Parameters
+    ----------
+    file : file
+        The file object to write to.
+    equilibrium : Equilibrium
+        The equilibrium object containing the user-defined equilibrium functions.
+    """
     x = equilibrium.variables.x
     varlist = {'rho0' : equilibrium.rho0,
                'v02' : equilibrium.v02,
@@ -63,6 +102,16 @@ def write_equilibrium_functions(file, equilibrium):
     return
 
 def write_physics_functions(file, equilibrium):
+    """
+    Iterates over all Legolas physics expressions and writes them to the user module.
+
+    Parameters
+    ----------
+    file : file
+        The file object to write to.
+    equilibrium : Equilibrium
+        The equilibrium object containing the user-defined physics functions.
+    """
     varlist = equilibrium.get_physics()
     replacements = equilibrium.get_dependencies()
     for key in list(varlist.keys()):
@@ -80,22 +129,76 @@ def write_physics_functions(file, equilibrium):
     return
 
 class Legolas:
+    """
+    Class for generating user-defined Legolas modules and parfiles.
+
+    Parameters
+    ----------
+    equilibrium : Equilibrium
+        The equilibrium object containing the user-defined equilibrium and physics functions.
+    config : dict
+        A dictionary containing the configuration for the Legolas run (both equilibrium parameter values and technical settings).
+    """
     def __init__(self, equilibrium, config):
         self.equilibrium = equilibrium
         self.config = config
         self._validate_config()
     
     def _validate_config(self):
+        """
+        Validates the validity of the configuration dictionary.
+
+        Raises
+        ------
+        ValueError
+            If the configuration dictionary is missing the `physics_type` key or it contain an invalid value.
+        """
         if not 'physics_type' in self.config.keys():
             raise ValueError('"physics_type" ("hd" / "mhd") not specified.')
         elif self.config['physics_type'] != 'hd' and self.config['physics_type'] != 'mhd':
             raise ValueError('Unknown physics type.')
+        return
 
     def user_module(self, filename='smod_user_defined'):
+        """
+        Writes the user module for the Legolas run.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the user module file.
+        
+        Examples
+        --------
+        The example below defines a homogeneous hydrodynamic equilibrium with constant density and temperature.
+        The values of the equilibrium parameters are set in the configuration dictionary.
+
+        >>> from pylbo.gimli import Variables, Equilibrium, Legolas
+        >>> var = Variables()
+        >>> eq = Equilibrium(var, rho0=var.rhoc, v02=0, v03=0, T0=var.Tc)
+        >>> config = {
+        >>>     "geometry": "Cartesian",
+        >>>     "x_start": 0,
+        >>>     "x_end": 1,
+        >>>     "gridpoints": 51,
+        >>>     "parameters": {
+        >>>         "k2": 0.5,
+        >>>         "k3": 0,
+        >>>         "cte_rho0": 1,
+        >>>         "cte_T0": 1
+        >>>     },
+        >>>     "equilibrium_type": "user_defined",
+        >>>     "boundary_type": "wall_weak",
+        >>>     "physics_type": "mhd"
+        >>> }
+        >>> legolas = Legolas(eq, config)
+        >>> legolas.user_module()
+        """
         name = filename + '.f08'
         create_file(name)
         file = open(name, 'a')
         write_pad(file, '!> Submodule for user-defined equilibria.', 0)
+        write_pad(file, f'!! Generated with GIMLI v{__version__}.', 0)
         write_pad(file, 'submodule (mod_equilibrium) smod_user_defined', 0)
         write_pad(file, 'use mod_logging, only: logger', 1)
         eqparam = get_equilibrium_parameters(self.config)
@@ -127,5 +230,46 @@ class Legolas:
         return
 
     def parfile(self, filename='legolas_config', make_dir=False):
-        generate_parfiles(self.config, basename=filename, subdir=make_dir)
-        return
+        """
+        Writes the parameter file for the Legolas run.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the parameter file.
+        make_dir : bool
+            If `True`, creates a directory for the parameter file.
+        
+        Returns
+        -------
+        parfiles : list
+            A list containing the paths to the parameter files.
+        
+        Examples
+        --------
+        The example below defines a homogeneous hydrodynamic equilibrium with constant density and temperature.
+        The values of the equilibrium parameters are set in the configuration dictionary and written to the parameter file.
+        
+        >>> from pylbo.gimli import Variables, Equilibrium, Legolas
+        >>> var = Variables()
+        >>> eq = Equilibrium(var, rho0=var.rhoc, v02=0, v03=0, T0=var.Tc)
+        >>> config = {
+        >>>     "geometry": "Cartesian",
+        >>>     "x_start": 0,
+        >>>     "x_end": 1,
+        >>>     "gridpoints": 51,
+        >>>     "parameters": {
+        >>>         "k2": 0.5,
+        >>>         "k3": 0,
+        >>>         "cte_rho0": 1,
+        >>>         "cte_T0": 1
+        >>>     },
+        >>>     "equilibrium_type": "user_defined",
+        >>>     "boundary_type": "wall_weak",
+        >>>     "physics_type": "mhd"
+        >>> }
+        >>> legolas = Legolas(eq, config)
+        >>> legolas.parfile()
+        """
+        parfiles = generate_parfiles(self.config, basename=filename, subdir=make_dir)
+        return parfiles

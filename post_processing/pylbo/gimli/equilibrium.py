@@ -3,6 +3,14 @@ import sympy as sp
 from pylbo.gimli.utils import is_symbol_dependent
 
 class Variables:
+    """
+    Defines a set of variables and constants to be used in defining an Equilibrium object.
+
+    Examples
+    --------
+    >>> from pylbo.gimli import Variables
+    >>> var = Variables()
+    """
     def __init__(self):
         self.x, self.y, self.z = sp.symbols('x,y,z')
         self.rho0, self.T0, self.B0sq = sp.symbols('rho_0,T_0,B_0^2')
@@ -38,7 +46,42 @@ class Variables:
 
 class Equilibrium:
     """"
-    Class containing all equilibrium expressions and initialisation functions
+    Class containing all equilibrium expressions and initialisation functions.
+    This object is a required argument when generating user files with the Legolas and Amrvac classes.
+
+    Parameters
+    ----------
+    var : :class:`Variables`
+        The Variables object containing the symbols to be used in the equilibrium expressions.
+    rho0 : sympy expression
+        The equilibrium density expression.
+    v02, v03 : sympy expressions
+        The equilibrium velocity expressions.
+    T0 : sympy expression
+        The equilibrium temperature expression.
+    B02, B03 : sympy expressions
+        The equilibrium magnetic field expressions.
+    resistivity : sympy expression
+        The resistivity expression.
+    gravity : constant
+        The gravitational acceleration.
+    condpara : sympy expression
+        The parallel conduction expression.
+    condperp : sympy expression
+        The perpendicular conduction expression.
+    cooling : sympy expression
+        The cooling expression.
+    heating : sympy expression
+        The heating expression.
+
+    Examples
+    --------
+    The example below defines a homogeneous hydrodynamic equilibrium with constant density and temperature.
+    Their values can be set later when passing this equilibrium to the Legolas or Amrvac class along with a dictionary.
+
+    >>> from pylbo.gimli import Equilibrium, Variables
+    >>> var = Variables()
+    >>> eq = Equilibrium(var, rho0=var.rhoc, v02=0, v03=0, T0=var.Tc)
     """
     def __init__(self, var, rho0, v02, v03, T0, B02=None, B03=None,
                  resistivity=None, gravity=None, condpara=None, condperp=None,
@@ -60,9 +103,16 @@ class Equilibrium:
         }
 
     def get_physics(self):
+        """
+        Returns a dictionary containing the physics expressions and the dependencies to check for.
+        """
         return self._dict_phys
     
     def get_dependencies(self):
+        """
+        Checks for dependencies on other equilibrium quantities.
+        Returns a dictionary with the replacement expressions for use in Fortran files.
+        """
         if is_symbol_dependent([self.variables.x], self.rho0):
             rho_replace = '(rho0(x))'
         else:
@@ -71,8 +121,12 @@ class Equilibrium:
             T_replace = '(T0(x))'
         else:
             T_replace = '(T0())'
-        if is_symbol_dependent([self.variables.x], self.B02**2+self.B03**2):
+        if is_symbol_dependent([self.variables.x], self.B02) and is_symbol_dependent([self.variables.x], self.B03):
             B2_replace = '(B02(x)**2+B03(x)**2)'
+        elif is_symbol_dependent([self.variables.x], self.B02):
+            B2_replace = '(B02(x)**2+B03()**2)'
+        elif is_symbol_dependent([self.variables.x], self.B03):
+            B2_replace = '(B02()**2+B03(x)**2)'
         else:
             B2_replace = '(B02()**2+B03()**2)'
         

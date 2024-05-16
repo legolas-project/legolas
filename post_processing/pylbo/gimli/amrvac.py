@@ -5,11 +5,27 @@ from pylbo.utilities.datfiles.file_loader import load
 from pylbo.visualisation.modes.mode_data import ModeVisualisationData
 
 class Amrvac:
+    """
+    Class to prepare Legolas data for use in MPI-AMRVAC (https://amrvac.org).
+
+    Parameters
+    ----------
+    config : dict
+        The configuration dictionary detailing which Legolas file and selection of eigenmodes to use.
+    """
     def __init__(self, config):
         self.config = config
         self._validate_config()
         
     def _validate_config(self):
+        """
+        Validates the presence and value of `physics_type` in the configuration dictionary.
+
+        Raises
+        ------
+        ValueError
+            If `physics_type` is missing or invalid.
+        """
         if not 'physics_type' in self.config.keys():
             raise ValueError('"physics_type" ("hd" / "mhd") not specified.')
         elif self.config['physics_type'] == 'mhd':
@@ -24,8 +40,25 @@ class Amrvac:
                       'unit_pressure', 'unit_velocity', 'unit_time']
         else:
             raise ValueError('Unknown physics type.')
+        return
     
     def _validate_datfile(self):
+        """
+        Validates whether a valid Legolas data file was specified in the configuration.
+        Further checks whether all necessary parameters are present in the configuration to prepare Legolas data for use with MPI-AMRVAC.
+
+        Raises
+        ------
+        ValueError
+            If no datfile is specified or if the datfile is invalid; if no initial guess for the eigenvalue is specified;
+            if the initial guess for the eigenvalue is not a single float/complex number or a list/NumPy array of float/complex numbers;
+            if `ev_time` for the eigenvalue is not a float or an integer;
+            if the length of `weights` is not equal to the number of eigenvalues or if the elements of the weights do not add up to 1;
+            if `ef_factor` is not a list with length equal to the number of eigenvalues or if `ef_factor` does not have modulus 1;
+            if `quantity` for normalisation is not specified or is not a string;
+            if `quantity` is not in the list of equilibrium quantities;
+            if `percentage` is not a float.
+        """
         if not 'datfile' in self.config.keys():
             raise ValueError('No datfile specified.')
         else:
@@ -84,8 +117,22 @@ class Amrvac:
             self.config['percentage'] = 0.01
         elif not isinstance(self.config['percentage'], float):
             raise ValueError('"percentage" must be a float.')
+        return
     
     def _get_combined_perturbation(self, ef):
+        """
+        Takes Legolas's perturbations of different eigenvalues and adds them up to a single perturbation.
+
+        Parameters
+        ----------
+        ef : str
+            The eigenfunction to combine.
+        
+        Returns
+        -------
+        np.ndarray
+            The combined perturbation.
+        """
         ef_data = self.ds.get_eigenfunctions(ev_guesses=self.config['ev_guess'])
         perturbation = np.zeros(self.ds.ef_gridpoints, dtype=np.complex128)
         for ii in range(len(ef_data)):
@@ -97,6 +144,20 @@ class Amrvac:
         return perturbation
 
     def _get_total_perturbation(self, ef_type):
+        """
+        Combines the perturbations of different eigenvalues into a single perturbation.
+        Derives the pressure perturbation from the density and temperature perturbations.
+
+        Parameters
+        ----------
+        ef_type : str
+            The eigenfunction to calculate.
+
+        Returns
+        -------
+        np.ndarray
+            The total perturbation.
+        """
         if ef_type == 'p':
             rho1 = self._get_combined_perturbation('rho')
             T1 = self._get_combined_perturbation('T')
@@ -110,6 +171,14 @@ class Amrvac:
         return perturbation
     
     def _get_normalisation(self):
+        """
+        Normalises the perturbation of the specified quantity by the maximum background value.
+
+        Returns
+        -------
+        float
+            The normalisation factor.
+        """
         ef_match = self.config['quantity'].replace('0', '')
         max_bg = np.nanmax(np.abs(self.ds.equilibria[self.config['quantity']]))
         perturbation = self._get_total_perturbation(ef_match)
@@ -120,6 +189,33 @@ class Amrvac:
         return norm
 
     def prepare_legolas_data(self, loc='./'):
+        """
+        Prepares a file (.ldat) from the Legolas data for use with MPI-AMRVAC.
+
+        Parameters
+        ----------
+        loc : str, optional
+            The location to save the .ldat file. Default is the current directory.
+
+        Raises
+        ------
+        ValueError
+            If the datfile is invalid.
+        
+        Examples
+        --------
+        >>> from pylbo.gimli import Amrvac
+        >>> amrvac_config = {
+        >>>     "datfile": "./datfile.dat",
+        >>>     "physics_type": "mhd",
+        >>>     "ev_guess": [-0.1, 0.1],
+        >>>     "ev_time": 0,
+        >>>     "percentage": 0.01,
+        >>>     "quantity": "rho0"
+        >>> }
+        >>> amrvac = gimli.Amrvac(amrvac_config)
+        >>> amrvac.prepare_legolas_data()
+        """
         self._validate_datfile()
         datfile = self.config['datfile']
         position = -1
