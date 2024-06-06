@@ -117,6 +117,13 @@ class Amrvac:
             self.config['percentage'] = 0.01
         elif not isinstance(self.config['percentage'], float):
             raise ValueError('"percentage" must be a float.')
+        
+        if 'norm_range' in self.config.keys():
+            if not isinstance(self.config['norm_range'], (list, np.ndarray)) or len(self.config['norm_range']) != 2:
+                raise ValueError('"norm_range" must be a list or NumPy array with two elements.')
+            elif self.config['norm_range'][0] >= self.config['norm_range'][1]:
+                raise ValueError('First element of "norm_range" must be smaller than the second element.')
+
         return
     
     def _get_combined_perturbation(self, ef):
@@ -185,6 +192,10 @@ class Amrvac:
         if np.nanmax(np.abs(perturbation)) < 1e-10:
             raise ValueError(f"{self.config['quantity']} is not perturbed by the specified mode(s). Select another quantity, please.")
         else:
+            if 'norm_range' in self.config.keys():
+                idx1 = np.where(self.ds.ef_grid > self.config['norm_range'][0])[0][0]
+                idx2 = np.where(self.ds.ef_grid > self.config['norm_range'][1])[0][0]
+                perturbation = perturbation[idx1:idx2]
             norm = self.config['percentage'] * max_bg / np.nanmax(np.abs(perturbation))
         return norm
 
