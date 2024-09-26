@@ -16,7 +16,7 @@ module mod_global_variables
   integer, parameter :: str_len_arr = 16
 
   !> tolerance for real(dp) zero, bit higher than machine precision
-  real(dp), parameter :: dp_LIMIT = 5.0d-15
+  real(dp), parameter :: dp_LIMIT = 5.0d-16
   !> NaN value (ieee_quiet_nan)
   real(dp), protected :: NaN
 

@@ -134,7 +134,7 @@ contains
 
   !> Returns the complex element associated with the linked-list node at position
   !! (row, column) in the matrix datastructure. Non-existing nodes correspond to zero
-  !! values, so when a node at (row, column) is not foudn this function returns
+  !! values, so when a node at (row, column) is not found this function returns
   !! (complex) zero.
   function get_complex_element(this, row, column) result(element)
     !> type instance

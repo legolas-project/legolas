@@ -282,13 +282,7 @@ def solve_cubic_exact(a, b, c, d):
         - 27 * r
         + 3
         * np.sqrt(3)
-        * np.sqrt(
-            -(p**2) * q**2
-            + 4 * q**3
-            + 4 * p**3 * r
-            - 18 * p * q * r
-            + 27 * r**2
-        )
+        * np.sqrt(-(p**2) * q**2 + 4 * q**3 + 4 * p**3 * r - 18 * p * q * r + 27 * r**2)
     ) ** (1 / 3) / (3 * 2 ** (1 / 3))
     Bterm = (-(p**2) + 3 * q) / (9 * Aterm)
     cterm_min = (-1 - np.sqrt(3) * 1j) / 2

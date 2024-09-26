@@ -64,6 +64,7 @@ contains
   !> Adds a given element to the node element, does type-checking of the polymorphic
   !! element given. Allowed types are complex, real, integer.
   subroutine add_to_node_element(this, element)
+    use mod_check_values, only: is_zero
     !> type instance
     class(node_t), intent(inout) :: this
     !> element to add to the existing element
@@ -77,6 +78,9 @@ contains
       type is (integer)
         this%element = this%element + cmplx(element, kind=dp)
     end select
+
+    if (is_zero(this%element)) this%element = cmplx(0.0d0, kind=dp)
+
   end subroutine add_to_node_element
 
 

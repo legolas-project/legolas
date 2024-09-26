@@ -169,7 +169,7 @@ def test_ds_get_efs_guess_single(ds_v112):
     efs = ds_v112.get_eigenfunctions(ev_guesses=guess)
     assert isinstance(efs, np.ndarray)
     (ef,) = efs
-    assert np.isclose(guess, ef.get("eigenvalue", np.NaN))
+    assert np.isclose(guess, ef.get("eigenvalue", np.nan))
 
 
 def test_ds_get_efs_guess_list(ds_v112):
@@ -177,21 +177,21 @@ def test_ds_get_efs_guess_list(ds_v112):
     efs = ds_v112.get_eigenfunctions(ev_guesses=guess)
     assert isinstance(efs, np.ndarray)
     for i, ef in enumerate(efs):
-        assert np.isclose(guess[i], ef.get("eigenvalue", np.NaN))
+        assert np.isclose(guess[i], ef.get("eigenvalue", np.nan))
 
 
 def test_ds_get_efs_idx(ds_v112):
     efs = ds_v112.get_eigenfunctions(ev_idxs=ds_v112_ev_idx)
     assert isinstance(efs, np.ndarray)
     (ef,) = efs
-    assert np.isclose(ds_v112_ev_guess, ef.get("eigenvalue", np.NaN))
+    assert np.isclose(ds_v112_ev_guess, ef.get("eigenvalue", np.nan))
 
 
 def test_ds_get_efs_idx_list(ds_v112):
     efs = ds_v112.get_eigenfunctions(ev_idxs=[ds_v112_ev_idx] * 2)
     assert isinstance(efs, np.ndarray)
     for ef in efs:
-        assert np.isclose(ds_v112_ev_guess, ef.get("eigenvalue", np.NaN))
+        assert np.isclose(ds_v112_ev_guess, ef.get("eigenvalue", np.nan))
 
 
 def test_ds_get_evs(ds_v112):

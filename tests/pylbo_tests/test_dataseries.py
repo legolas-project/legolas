@@ -33,7 +33,7 @@ def test_series_has_efs(series_v112):
 
 
 def test_series_ef_names_not_present(series_v100):
-    assert np.all(series_v100.ef_names) is None
+    assert np.all(series_v100.ef_names == [None] * len(series_v100))
 
 
 def test_series_ef_names(series_v112):

@@ -106,7 +106,7 @@ contains
       gamma * cte_p0 * (2.0_dp * gamma + 1.0_dp) / (50.0_dp * gamma + 1.0_dp) &
     )
     ! check pressure balance
-    if (abs(cte_p0 + 0.5_dp * B_0**2 - p_e - 0.5_dp * B_e**2) > dp_LIMIT) then
+    if (abs(cte_p0 + 0.5_dp * B_0**2 - p_e - 0.5_dp * B_e**2) > 10.0_dp*dp_LIMIT) then
       call logger%error("equilibrium: total pressure balance not satisfied")
     end if
 

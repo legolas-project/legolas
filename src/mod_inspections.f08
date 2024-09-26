@@ -184,35 +184,38 @@ contains
 
   subroutine validate_equilibrium_conditions(settings, grid, background, physics)
     use mod_check_values, only: is_zero
+    use mod_global_variables, only: dp_limit
     type(settings_t), intent(in) :: settings
     type(grid_t), intent(in) :: grid
     type(background_t), intent(in) :: background
     type(physics_t), intent(in) :: physics
     real(dp) :: values(size(grid%gaussian_grid))
+    real(dp) :: tol
 
+    tol = 10.0_dp * dp_limit
     values = 0.0_dp
     ! continuity equation
     values = continuity_condition(grid%gaussian_grid, grid, background)
-    if (.not. all(is_zero(values))) then
+    if (.not. all(is_zero(values, tol))) then
       call logger%warning("continuity equation not satisfied!")
       call logger%warning("location of largest discrepancy: x = " // str(getx()))
       call logger%warning("value: " // str(getval(), fmt=exp_fmt))
     end if
     ! force balance
     values = force_balance_1_condition(grid%gaussian_grid, grid, background, physics)
-    if (.not. all(is_zero(values))) then
+    if (.not. all(is_zero(values, tol))) then
       call logger%warning("force balance 1 equation not satisfied!")
       call logger%warning("location of largest discrepancy: x = " // str(getx()))
       call logger%warning("value: " // str(getval(), fmt=exp_fmt))
     end if
     values = force_balance_2_condition(grid%gaussian_grid, grid, background)
-    if (.not. all(is_zero(values))) then
+    if (.not. all(is_zero(values, tol))) then
       call logger%warning("force balance 2 equation not satisfied!")
       call logger%warning("location of largest discrepancy: x = " // str(getx()))
       call logger%warning("value: " // str(getval(), fmt=exp_fmt))
     end if
     values = force_balance_3_condition(grid%gaussian_grid, background)
-    if (.not. all(is_zero(values))) then
+    if (.not. all(is_zero(values, tol))) then
       call logger%warning("force balance 3 equation not satisfied!")
       call logger%warning("location of largest discrepancy: x = " // str(getx()))
       call logger%warning("value: " // str(getval(), fmt=exp_fmt))
@@ -221,20 +224,20 @@ contains
     values = energy_balance_condition( &
       grid%gaussian_grid, settings, grid, background, physics &
     )
-    if (.not. all(is_zero(values))) then
+    if (.not. all(is_zero(values, tol))) then
       call logger%warning("energy balance equation not satisfied!")
       call logger%warning("location of largest discrepancy: x = " // str(getx()))
       call logger%warning("value: " // str(getval(), fmt=exp_fmt))
     end if
     ! induction equation
     values = induction_1_condition(grid%gaussian_grid, background)
-    if (.not. all(is_zero(values))) then
+    if (.not. all(is_zero(values, tol))) then
       call logger%warning("induction 1 equation not satisfied!")
       call logger%warning("location of largest discrepancy: x = " // str(getx()))
       call logger%warning("value: " // str(getval(), fmt=exp_fmt))
     end if
     values = induction_2_condition(grid%gaussian_grid, grid, background)
-    if (.not. all(is_zero(values))) then
+    if (.not. all(is_zero(values, tol))) then
       call logger%warning("induction 2 equation not satisfied!")
       call logger%warning("location of largest discrepancy: x = " // str(getx()))
       call logger%warning("value: " // str(getval(), fmt=exp_fmt))
