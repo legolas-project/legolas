@@ -139,6 +139,10 @@ contains
       this%get_derived_ef => get_curl_v_perp
     case(dB1_name)
       this%get_derived_ef => get_dB1
+    case(p_name)
+      this%get_derived_ef => get_gas_pressure
+    case(P_m_name)
+      this%get_derived_ef => get_magn_pressure
     case default
       call logger%error( &
         "derived ef assembly -- unknown eigenfunction name: "// trim(this%name) &
@@ -528,6 +532,32 @@ contains
 
     dB1 = ic * (k2 * da3 / ef_eps - k3 * da2) - ic * k2 * ef_deps * a3 / ef_eps**2
   end function get_dB1
+
+
+  function get_gas_pressure(settings, grid, eigenvector) result(p)
+    type(settings_t), intent(in) :: settings
+    type(grid_t), intent(in) :: grid
+    complex(dp), intent(in) :: eigenvector(:)
+    complex(dp) :: p(size(grid%ef_grid))
+    complex(dp) :: rho(size(grid%ef_grid))
+    complex(dp) :: T(size(grid%ef_grid))
+
+    rho = get_base_eigenfunction(sv_rho1, settings, grid, eigenvector)
+    T = get_base_eigenfunction(sv_T1, settings, grid, eigenvector)
+
+    p = rho0_on_ef_grid * T + T0_on_ef_grid * rho
+  end function get_gas_pressure
+
+
+  function get_magn_pressure(settings, grid, eigenvector) result(P_m)
+    type(settings_t), intent(in) :: settings
+    type(grid_t), intent(in) :: grid
+    complex(dp), intent(in) :: eigenvector(:)
+    complex(dp) :: P_m(size(grid%ef_grid))
+
+    P_m = B02_on_ef_grid*get_B2(settings, grid, eigenvector) + &
+      B03_on_ef_grid*get_B3(settings, grid, eigenvector)
+  end function get_magn_pressure
 
 
   function get_base_eigenfunction( &
