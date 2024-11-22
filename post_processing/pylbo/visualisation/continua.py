@@ -213,8 +213,8 @@ def _get_resistive_thermal_continuum(ds: LegolasDataSet) -> np.ndarray:
     drB02 = deps * ds.equilibria["B02"] + eps * ds.equilibria["dB02"]
     dB03 = ds.equilibria["dB03"]
 
-    return -1j * (gamma - 1) * ((kappa_para * kpara**2 
-                                + detadT * ((drB02 / eps)**2 + dB03**2)) / rho0 
+    return -1j * (gamma - 1) * ((kappa_para * kpara**2
+                                + detadT * ((drB02 / eps)**2 + dB03**2)) / rho0
                                 + dLdT - (L0 + rho0 * dLdrho) / T0) / gamma
 
 
