@@ -173,14 +173,49 @@ def _get_thermal_and_slow_continua(
         # for pressureless cases (no T) there is no slow/thermal continuum
         return (zeroes, zeroes, zeroes)
     slow_sq = get_squared_slow_continuum(ds)
+    eta = bg["eta"]
     if not _is_nonadiabatic(ds):
         return (-np.sqrt(slow_sq), np.sqrt(slow_sq), zeroes)
+    if (eta != 0).any():
+        thermal = _get_resistive_thermal_continuum(ds)
+        return (-np.sqrt(slow_sq), np.sqrt(slow_sq), thermal)
     if _is_zero(slow_sq):
         # if slow continuum vanishes, thermal continuum is analytical
         thermal = _get_thermal_continuum_analytical(ds)
         return (zeroes, zeroes, thermal)
     # for standard cases we have a third-order polynomial
     return _get_slow_and_thermal_continuum_coupled(ds)
+
+
+def _get_resistive_thermal_continuum(ds: LegolasDataSet) -> np.ndarray:
+    """
+    Calculates the thermoresistive (quasi-)continuum analytically.
+
+    Returns
+    -------
+    np.ndarray
+        The thermoresistive (quasi-)continuum.
+    """
+    kpara = _get_parallel_wave_vector(ds)
+    gamma = ds.gamma
+    zeroes = np.zeros_like(ds.grid_gauss)
+    L0 = ds.equilibria.get("L0", zeroes)
+    dLdT = ds.equilibria.get("dLdT", zeroes)
+    dLdrho = ds.equilibria.get("dLdrho", zeroes)
+    kappa_para = ds.equilibria.get("kappa_para", zeroes)
+    detadT = ds.equilibria.get("detadT", zeroes)
+    rho0 = ds.equilibria["rho0"]
+    T0 = ds.equilibria["T0"]
+    eps = ds.scale_factor
+    deps = 0
+    if ds.geometry == 'cylindrical':
+        deps = 1
+    drB02 = deps * ds.equilibria["B02"] + eps * ds.equilibria["dB02"]
+    dB03 = ds.equilibria["dB03"]
+
+    return -1j * (gamma - 1) * ((kappa_para * kpara**2 
+                                + detadT * ((drB02 / eps)**2 + dB03**2)) / rho0 
+                                + dLdT - (L0 + rho0 * dLdrho) / T0) / gamma
 
 
 def _get_thermal_continuum_analytical(ds: LegolasDataSet) -> np.ndarray:
