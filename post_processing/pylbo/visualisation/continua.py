@@ -208,14 +208,21 @@ def _get_resistive_thermal_continuum(ds: LegolasDataSet) -> np.ndarray:
     T0 = ds.equilibria["T0"]
     eps = ds.scale_factor
     deps = 0
-    if ds.geometry == 'cylindrical':
+    if ds.geometry == "cylindrical":
         deps = 1
     drB02 = deps * ds.equilibria["B02"] + eps * ds.equilibria["dB02"]
     dB03 = ds.equilibria["dB03"]
 
-    return -1j * (gamma - 1) * ((kappa_para * kpara**2
-                                + detadT * ((drB02 / eps)**2 + dB03**2)) / rho0
-                                + dLdT - (L0 + rho0 * dLdrho) / T0) / gamma
+    return (
+        -1j
+        * (gamma - 1)
+        * (
+            (kappa_para * kpara**2 + detadT * ((drB02 / eps) ** 2 + dB03**2)) / rho0
+            + dLdT
+            - (L0 + rho0 * dLdrho) / T0
+        )
+        / gamma
+    )
 
 
 def _get_thermal_continuum_analytical(ds: LegolasDataSet) -> np.ndarray:
