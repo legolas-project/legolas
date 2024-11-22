@@ -60,7 +60,7 @@ jobs:
 
     - name: Cache pFUnit
       id: pfunit-cache
-      uses: actions/cache@v1
+      uses: actions/cache@v4
       with:
         path: tests/pFUnit/
         key: ${{ runner.os }}-${{ matrix.compiler }}-pfunitv1
@@ -79,7 +79,7 @@ jobs:
 
     - name: Cache ARPACK
       id: arpack-cache
-      uses: actions/cache@v1
+      uses: actions/cache@v4
       with:
         path: tests/arpack-ng/
         key: ${{ runner.os }}-${{ matrix.compiler }}-arpackv1

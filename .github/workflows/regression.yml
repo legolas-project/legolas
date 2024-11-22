@@ -56,7 +56,7 @@ jobs:
 
     - name: Cache ARPACK
       id: arpack-cache
-      uses: actions/cache@v1
+      uses: actions/cache@v4
       with:
         path: tests/arpack-ng/
         key: ${{ runner.os }}-arpackv3
