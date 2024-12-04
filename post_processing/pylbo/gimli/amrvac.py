@@ -250,11 +250,3 @@ class Amrvac:
 
         f.close()
         return
-
-    def user_module(self):
-        print('Not implemented yet.')
-        return
-
-    def parfile(self):
-        print('Not implemented yet.')
-        return
