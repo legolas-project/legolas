@@ -16,7 +16,10 @@ def is_symbol_dependent(symbols, expr):
     sdep : bool
         Whether the expression depends on any of the symbols.
     """
-    myset = expr.free_symbols
+    try:
+        myset = expr.free_symbols
+    except:
+        return False
     sdep = False
     for symb in symbols: 
         if symb in myset:
