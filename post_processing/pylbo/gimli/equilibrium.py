@@ -6,6 +6,25 @@ class Variables:
     """
     Defines a set of variables and constants to be used in defining an Equilibrium object.
 
+    Attributes
+    ----------
+    x, y, z : sympy symbols
+        Coordinates.
+    rho0, T0, B0sq : sympy symbols
+        Density, temperature, and magnetic field squared for use in expressions depending on these quantities.
+    k2, k3 : sympy symbols
+        Wavenumbers.
+    rhoc, Tc, B2c, B3c, v2c, v3c, pc : sympy symbols
+        Constants typically used for amplitudes or uniform terms in their corresponding equilibrium quantities.
+    p1, p2, p3, p4, p5, p6, p7, p8 : sympy symbols
+        Additional free-use constants.
+    alpha, beta, delta, theta, tau, lamda, nu : sympy symbols
+        Additional free-use constants.
+    r0, rc, rj, Bth0, V, j0, g : sympy symbols
+        Additional constants, originally use in cylindrical coordinates.
+    fkey : dict
+        Dictionary translating LaTeX notation to Legolas variable names.
+
     Examples
     --------
     >>> from pylbo.gimli import Variables
@@ -66,13 +85,26 @@ class Equilibrium:
     gravity : constant
         The gravitational acceleration.
     condpara : sympy expression
-        The parallel conduction expression.
+        The parallel conduction prescription.
     condperp : sympy expression
-        The perpendicular conduction expression.
+        The perpendicular conduction prescription.
     cooling : sympy expression
-        The cooling expression.
+        The cooling prescription.
     heating : sympy expression
-        The heating expression.
+        The heating prescription.
+    
+    Attributes
+    ----------
+    variables : Variables object
+        Variables object from which all expressions are constructed.
+    rho0 : sympy expression
+        The equilibrium density expression.
+    v02, v03 : sympy expressions
+        The equilibrium velocity expressions.
+    T0 : sympy expression
+        The equilibrium temperature expression.
+    B02, B03 : sympy expressions
+        The equilibrium magnetic field expressions.
 
     Examples
     --------
