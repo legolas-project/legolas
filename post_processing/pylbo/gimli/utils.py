@@ -1,5 +1,6 @@
 import sys, os
 
+
 def is_symbol_dependent(symbols, expr):
     """
     Checks whether an expression depends on any of the symbols in a given list.
@@ -10,7 +11,7 @@ def is_symbol_dependent(symbols, expr):
         The list of symbols to check for.
     expr : sympy expression
         The expression to check for the symbols in the list.
-    
+
     Returns
     -------
     sdep : bool
@@ -21,10 +22,11 @@ def is_symbol_dependent(symbols, expr):
     except:
         return False
     sdep = False
-    for symb in symbols: 
+    for symb in symbols:
         if symb in myset:
             sdep = True
     return sdep
+
 
 def is_sympy_number(expr):
     """
@@ -34,7 +36,7 @@ def is_sympy_number(expr):
     ----------
     expr : sympy expression
         The expression to check.
-    
+
     Returns
     -------
     bool
@@ -46,6 +48,7 @@ def is_sympy_number(expr):
     else:
         return False
 
+
 def get_equilibrium_parameters(param):
     """
     Removes the wavenumbers from the equilibrium parameters.
@@ -54,19 +57,20 @@ def get_equilibrium_parameters(param):
     ----------
     param : dict
         The equilibrium parameters dictionary.
-    
+
     Returns
     -------
     str
         The equilibrium parameters without the wavenumbers.
     """
-    param_dict = param['parameters']
+    param_dict = param["parameters"]
     keys = list(param_dict.keys())
-    if 'k2' in keys:
-        keys.remove('k2')
-    if 'k3' in keys:
-        keys.remove('k3')
-    return ', '.join(keys)
+    if "k2" in keys:
+        keys.remove("k2")
+    if "k3" in keys:
+        keys.remove("k3")
+    return ", ".join(keys)
+
 
 ### I/O functions
 def create_file(filename):
@@ -79,15 +83,21 @@ def create_file(filename):
         The file path.
     """
     if os.path.exists(filename):
-        overwrite = input('File already exists. Overwrite? (y/n): ')
-        if overwrite == 'y' or overwrite == 'Y' or overwrite == 'yes' or overwrite == 'Yes':
+        overwrite = input("File already exists. Overwrite? (y/n): ")
+        if (
+            overwrite == "y"
+            or overwrite == "Y"
+            or overwrite == "yes"
+            or overwrite == "Yes"
+        ):
             os.remove(filename)
         else:
-            print('Cannot overwrite file. Exiting.')
+            print("Cannot overwrite file. Exiting.")
             sys.exit()
     file = open(filename, "x")
     file.close()
     return
+
 
 def write_pad(file, string, level):
     """
@@ -103,6 +113,6 @@ def write_pad(file, string, level):
         The indentation level.
     """
     for ix in range(level):
-        string = '  ' + string
-    file.write(string + '\n')
+        string = "  " + string
+    file.write(string + "\n")
     return
