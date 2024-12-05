@@ -3,6 +3,7 @@ from scipy.io import FortranFile
 
 from pylbo.utilities.datfiles.file_loader import load
 from pylbo.visualisation.modes.mode_data import ModeVisualisationData
+from pylbo.utilities.logger import pylboLogger
 
 
 class Amrvac:
@@ -12,7 +13,8 @@ class Amrvac:
     Parameters
     ----------
     config : dict
-        The configuration dictionary detailing which Legolas file and selection of eigenmodes to use.
+        The configuration dictionary detailing which Legolas file and selection of
+        eigenmodes to use.
     """
 
     def __init__(self, config):
@@ -21,15 +23,18 @@ class Amrvac:
 
     def _validate_config(self):
         """
-        Validates the presence and value of `physics_type` in the configuration dictionary.
+        Validates the presence and value of `physics_type` in the configuration
+        dictionary.
 
         Raises
         ------
+        KeyError
+            If `physics_type` is missing.
         ValueError
-            If `physics_type` is missing or invalid.
+            If `physics_type` is invalid.
         """
-        if not "physics_type" in self.config.keys():
-            raise ValueError('"physics_type" ("hd" / "mhd") not specified.')
+        if "physics_type" not in self.config.keys():
+            raise KeyError('"physics_type" ("hd" / "mhd") not specified.')
         elif self.config["physics_type"] == "mhd":
             self.ef_list = ["rho", "v1", "v2", "v3", "p", "B1", "B2", "B3"]
             self.eq_list = ["rho0", None, "v02", "v03", "rho0 * T0", None, "B02", "B03"]
@@ -62,60 +67,73 @@ class Amrvac:
     def _validate_datfile(self):
         """
         Validates whether a valid Legolas data file was specified in the configuration.
-        Further checks whether all necessary parameters are present in the configuration to prepare Legolas data for use with MPI-AMRVAC.
+        Further checks whether all necessary parameters are present in the configuration
+        to prepare Legolas data for use with MPI-AMRVAC.
 
         Raises
         ------
+        AssertionError
+            If the length of `weights` is not equal to the number of eigenvalues or if
+            the elements of the weights do not add up to 1; if `ef_factor` does not have
+            modulus 1; if `norm_range` does not have length 2; if `norm_range`'s first
+            element is larger than the second.
+        KeyError
+            If no datfile is specified; if no initial guess for the eigenvalue is
+            specified.
+        TypeError
+            If `ev_guess` is not a single float/complex number or a list/NumPy array of
+            float/complex numbers; if `ev_time` for the eigenvalue is not a float or an
+            integer; if `weights` is not a list or NumPy array; if `ef_factor` is not a
+            list with length equal to the number of eigenvalues, or an integer, float,
+            or complex number; if `quantity` is not a string; if `percentage` is not a
+            float; if `norm_range` is not a NumPy array.
         ValueError
-            If no datfile is specified or if the datfile is invalid; if no initial guess for the eigenvalue is specified;
-            if the initial guess for the eigenvalue is not a single float/complex number or a list/NumPy array of float/complex numbers;
-            if `ev_time` for the eigenvalue is not a float or an integer;
-            if the length of `weights` is not equal to the number of eigenvalues or if the elements of the weights do not add up to 1;
-            if `ef_factor` is not a list with length equal to the number of eigenvalues or if `ef_factor` does not have modulus 1;
-            if `quantity` for normalisation is not specified or is not a string;
-            if `quantity` is not in the list of equilibrium quantities;
-            if `percentage` is not a float.
+            If `quantity` is not in the list of equilibrium quantities.
+        Exception
+            If the datfile is invalid.
         """
-        if not "datfile" in self.config.keys():
-            raise ValueError("No datfile specified.")
+        if "datfile" not in self.config.keys():
+            raise KeyError("No datfile specified.")
         else:
             try:
                 self.ds = load(self.config["datfile"])
-            except:
-                raise ValueError("Invalid datfile specified.")
+            except Exception:
+                pylboLogger.error("Invalid datfile specified.")
 
-        if not "ev_guess" in self.config.keys():
-            raise ValueError("Initial guess for eigenvalue not specified.")
+        if "ev_guess" not in self.config.keys():
+            raise KeyError("Initial guess for eigenvalue not specified.")
         elif not isinstance(
             self.config["ev_guess"], (float, complex, list, np.ndarray)
         ):
-            raise ValueError(
-                '"ev_guess" must be a single float/complex number or a list/NumPy array of float/complex numbers.'
+            raise TypeError(
+                '"ev_guess" must be a single float/complex number or a list/NumPy array'
+                " of float/complex numbers."
             )
         elif isinstance(self.config["ev_guess"], (float, complex)):
             self.config["ev_guess"] = [self.config["ev_guess"]]
 
-        if not "ev_time" in self.config.keys():
+        if "ev_time" not in self.config.keys():
             self.config["ev_time"] = 0
-            print('No "ev_time" specified, defaulting to 0.')
+            pylboLogger.warning('No "ev_time" specified, defaulting to 0.')
         elif not isinstance(self.config["ev_time"], (float, int)):
-            raise ValueError('"ev_time" must be a float or an integer.')
+            raise TypeError('"ev_time" must be a float or an integer.')
 
         if "weights" in self.config.keys():
             if len(self.config["ev_guess"]) > 1 and not isinstance(
                 self.config["weights"], (list, np.ndarray)
             ):
-                raise ValueError(
-                    '"weights" must be a list with length equal to the number of eigenvalues and elements adding up to 1.'
+                raise TypeError(
+                    '"weights" must be a list with length equal to the number of'
+                    " eigenvalues and elements adding up to 1."
                 )
             elif len(self.config["ev_guess"]) != len(self.config["weights"]):
-                raise ValueError(
+                raise AssertionError(
                     'Length of "weights" must be equal to the number of eigenvalues.'
                 )
             elif abs(np.sum(self.config["weights"])) > 1e-12:
-                raise ValueError('Elements of "weights" must add up to 1.')
+                raise AssertionError('Elements of "weights" must add up to 1.')
         else:
-            print('No "weights" specified, defaulting to equal weights.')
+            pylboLogger.warning('No "weights" specified, defaulting to equal weights.')
             self.config["weights"] = np.ones(len(self.config["ev_guess"])) / len(
                 self.config["ev_guess"]
             )
@@ -124,53 +142,57 @@ class Amrvac:
             if len(self.config["ev_guess"]) > 1 and not isinstance(
                 self.config["ef_factor"], (list, np.ndarray)
             ):
-                raise ValueError(
-                    '"ef_factor" must be a list with length equal to the number of eigenvalues.'
+                raise TypeError(
+                    '"ef_factor" must be a list with length equal to the number of'
+                    " eigenvalues."
                 )
             elif not isinstance(self.config["ef_factor"], (float, int, complex)):
-                raise ValueError(
+                raise TypeError(
                     '"ef_factor" must be an integer, a float, or a complex number.'
                 )
             elif abs(self.config["ef_factor"] - 1) > 1e-12:
-                raise ValueError('"ef_factor" must have modulus 1.')
+                raise AssertionError('"ef_factor" must have modulus 1.')
             else:
                 self.config["ef_factor"] = [self.config["ef_factor"]]
         else:
-            print('No "ef_factor" specified, defaulting to 1 for all eigenvalues.')
+            pylboLogger.warning(
+                'No "ef_factor" specified, defaulting to 1 for all eigenvalues.'
+            )
             self.config["ef_factor"] = np.ones(len(self.config["ev_guess"]))
 
-        if not "quantity" in self.config.keys():
-            print('No "quantity" specified for normalisation, defaulting to "B02".')
+        if "quantity" not in self.config.keys():
+            pylboLogger.warning(
+                'No "quantity" specified for normalisation, defaulting to "B02".'
+            )
             self.config["quantity"] = "B02"
         elif not isinstance(self.config["quantity"], str):
-            raise ValueError('"quantity" must be a string.')
-        elif not self.config["quantity"] in self.eq_list:
+            raise TypeError('"quantity" must be a string.')
+        elif self.config["quantity"] not in self.eq_list:
             raise ValueError(f'Unknown quantity "{self.config["quantity"]}" specified.')
 
-        if not "percentage" in self.config.keys():
-            print('No "percentage" specified, defaulting to 0.01.')
+        if "percentage" not in self.config.keys():
+            pylboLogger.warning('No "percentage" specified, defaulting to 0.01.')
             self.config["percentage"] = 0.01
         elif not isinstance(self.config["percentage"], float):
-            raise ValueError('"percentage" must be a float.')
+            raise TypeError('"percentage" must be a float.')
 
         if "norm_range" in self.config.keys():
-            if (
-                not isinstance(self.config["norm_range"], (list, np.ndarray))
-                or len(self.config["norm_range"]) != 2
-            ):
-                raise ValueError(
-                    '"norm_range" must be a list or NumPy array with two elements.'
-                )
+            if not isinstance(self.config["norm_range"], (list, np.ndarray)):
+                raise TypeError('"norm_range" must be a list or NumPy array.')
+            elif len(self.config["norm_range"]) != 2:
+                raise AssertionError('"norm_range" must have length 2.')
             elif self.config["norm_range"][0] >= self.config["norm_range"][1]:
-                raise ValueError(
-                    'First element of "norm_range" must be smaller than the second element.'
+                raise AssertionError(
+                    'First element of "norm_range" must be smaller than the second'
+                    " element."
                 )
 
         return
 
     def _get_combined_perturbation(self, ef):
         """
-        Takes Legolas's perturbations of different eigenvalues and adds them up to a single perturbation.
+        Takes Legolas's perturbations of different eigenvalues and adds them up to a
+        single perturbation.
 
         Parameters
         ----------
@@ -195,7 +217,8 @@ class Amrvac:
     def _get_total_perturbation(self, ef_type):
         """
         Combines the perturbations of different eigenvalues into a single perturbation.
-        Derives the pressure perturbation from the density and temperature perturbations.
+        Derives the pressure perturbation from the density and temperature
+        perturbations.
 
         Parameters
         ----------
@@ -225,7 +248,8 @@ class Amrvac:
 
     def _get_normalisation(self):
         """
-        Normalises the perturbation of the specified quantity by the maximum background value.
+        Normalises the perturbation of the specified quantity by the maximum background
+        value.
 
         Returns
         -------
@@ -236,8 +260,9 @@ class Amrvac:
         max_bg = np.nanmax(np.abs(self.ds.equilibria[self.config["quantity"]]))
         perturbation = self._get_total_perturbation(ef_match)
         if np.nanmax(np.abs(perturbation)) < 1e-10:
-            raise ValueError(
-                f"{self.config['quantity']} is not perturbed by the specified mode(s). Select another quantity, please."
+            raise AssertionError(
+                f"{self.config['quantity']} is not perturbed by the specified mode(s)."
+                " Select another quantity, please."
             )
         else:
             if "norm_range" in self.config.keys():

@@ -1,4 +1,5 @@
-import sys, os
+import sys
+import os
 
 
 def is_symbol_dependent(symbols, expr):
@@ -19,7 +20,7 @@ def is_symbol_dependent(symbols, expr):
     """
     try:
         myset = expr.free_symbols
-    except:
+    except Exception:
         return False
     sdep = False
     for symb in symbols:
@@ -72,10 +73,10 @@ def get_equilibrium_parameters(param):
     return ", ".join(keys)
 
 
-### I/O functions
 def create_file(filename):
     """
-    Creates a file with a given path (or asks whether to overwrite it if it exists already).
+    Creates a file with a given path (or asks whether to overwrite it if it
+    exists already).
 
     Parameters
     ----------

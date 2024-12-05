@@ -5,18 +5,21 @@ from pylbo.gimli.utils import is_symbol_dependent
 
 class Variables:
     """
-    Defines a set of variables and constants to be used in defining an Equilibrium object.
+    Defines a set of variables and constants to be used in defining an Equilibrium
+    object.
 
     Attributes
     ----------
     x, y, z : sympy symbols
         Coordinates.
     rho0, T0, B0sq : sympy symbols
-        Density, temperature, and magnetic field squared for use in expressions depending on these quantities.
+        Density, temperature, and magnetic field squared for use in expressions
+        depending on these quantities.
     k2, k3 : sympy symbols
         Wavenumbers.
     rhoc, Tc, B2c, B3c, v2c, v3c, pc : sympy symbols
-        Constants typically used for amplitudes or uniform terms in their corresponding equilibrium quantities.
+        Constants typically used for amplitudes or uniform terms in their corresponding
+        equilibrium quantities.
     p1, p2, p3, p4, p5, p6, p7, p8 : sympy symbols
         Additional free-use constants.
     alpha, beta, delta, theta, tau, lamda, nu : sympy symbols
@@ -77,12 +80,14 @@ class Variables:
 class Equilibrium:
     """ "
     Class containing all equilibrium expressions and initialisation functions.
-    This object is a required argument when generating user files with the Legolas and Amrvac classes.
+    This object is a required argument when generating user files with the Legolas and
+    Amrvac classes.
 
     Parameters
     ----------
     var : :class:`Variables`
-        The Variables object containing the symbols to be used in the equilibrium expressions.
+        The Variables object containing the symbols to be used in the equilibrium
+        expressions.
     rho0 : sympy expression
         The equilibrium density expression.
     v02, v03 : sympy expressions
@@ -119,8 +124,9 @@ class Equilibrium:
 
     Examples
     --------
-    The example below defines a homogeneous hydrodynamic equilibrium with constant density and temperature.
-    Their values can be set later when passing this equilibrium to the Legolas or Amrvac class along with a dictionary.
+    The example below defines a homogeneous hydrodynamic equilibrium with constant
+    density and temperature. Their values can be set later when passing this equilibrium
+    to the Legolas or Amrvac class along with a dictionary.
 
     >>> from pylbo.gimli import Equilibrium, Variables
     >>> var = Variables()
@@ -176,7 +182,8 @@ class Equilibrium:
 
     def get_physics(self):
         """
-        Returns a dictionary containing the physics expressions and the dependencies to check for.
+        Returns a dictionary containing the physics expressions and the dependencies to
+        check for.
         """
         return self._dict_phys
 

@@ -21,11 +21,12 @@ def write_physics_calls(file, equilibrium):
     file : file
         The file object to write to.
     equilibrium : Equilibrium
-        The equilibrium object containing the user-defined equilibrium and physics functions.
+        The equilibrium object containing the user-defined equilibrium and physics
+        functions.
     """
     physics = equilibrium.get_physics()
     for key in list(physics.keys()):
-        if physics[key][0] != None:
+        if physics[key][0] is not None:
             func = physics[key][1]
             func_list = ""
             for ix in range(len(func)):
@@ -98,7 +99,7 @@ def write_equilibrium_functions(file, equilibrium):
     }
     for key in list(varlist.keys()):
         expr = varlist[key]
-        if expr == None:
+        if expr is None:
             continue
         else:
             expr = sp.sympify(expr)
@@ -140,13 +141,13 @@ def write_physics_functions(file, equilibrium):
     replacements = equilibrium.get_dependencies()
     for key in list(varlist.keys()):
         expr = varlist[key][0]
-        if expr == None:
+        if expr is None:
             continue
         else:
             expr = sp.sympify(expr)
         cst = not is_symbol_dependent(
             varlist[key][2], expr
-        )  ### also check for rho_0, T_0 and B_0^2
+        )  # also check for rho_0, T_0 and B_0^2
         fortran_function(
             file, expr, varlist[key][1][0], replacements, constant=cst, level=1
         )
@@ -171,9 +172,11 @@ class Legolas:
     Parameters
     ----------
     equilibrium : Equilibrium
-        The equilibrium object containing the user-defined equilibrium and physics functions.
+        The equilibrium object containing the user-defined equilibrium and physics
+        functions.
     config : dict
-        A dictionary containing the configuration for the Legolas run (both equilibrium parameter values and technical settings).
+        A dictionary containing the configuration for the Legolas run (both equilibrium
+        parameter values and technical settings).
     """
 
     def __init__(self, equilibrium, config):
@@ -187,11 +190,13 @@ class Legolas:
 
         Raises
         ------
+        KeyError
+            If the configuration dictionary is missing the `physics_type` key.
         ValueError
-            If the configuration dictionary is missing the `physics_type` key or it contain an invalid value.
+            If `physics_type` is not "hd" or "mhd".
         """
-        if not "physics_type" in self.config.keys():
-            raise ValueError('"physics_type" ("hd" / "mhd") not specified.')
+        if "physics_type" not in self.config.keys():
+            raise KeyError('"physics_type" ("hd" / "mhd") not specified.')
         elif (
             self.config["physics_type"] != "hd" and self.config["physics_type"] != "mhd"
         ):
@@ -209,8 +214,9 @@ class Legolas:
 
         Examples
         --------
-        The example below defines a homogeneous hydrodynamic equilibrium with constant density and temperature.
-        The values of the equilibrium parameters are set in the configuration dictionary.
+        The example below defines a homogeneous hydrodynamic equilibrium with constant
+        density and temperature. The values of the equilibrium parameters are set in the
+        configuration dictionary.
 
         >>> from pylbo.gimli import Variables, Equilibrium, Legolas
         >>> var = Variables()
@@ -258,28 +264,33 @@ class Legolas:
         )
         write_pad(
             file,
-            "call background%set_velocity_2_funcs(v02_func=v02, dv02_func=dv02, ddv02_func=ddv02)",
+            "call background%set_velocity_2_funcs(v02_func=v02, dv02_func=dv02,"
+            " ddv02_func=ddv02)",
             2,
         )
         write_pad(
             file,
-            "call background%set_velocity_3_funcs(v03_func=v03, dv03_func=dv03, ddv03_func=ddv03)",
+            "call background%set_velocity_3_funcs(v03_func=v03, dv03_func=dv03,"
+            " ddv03_func=ddv03)",
             2,
         )
         write_pad(
             file,
-            "call background%set_temperature_funcs(T0_func=T0, dT0_func=dT0, ddT0_func=ddT0)",
+            "call background%set_temperature_funcs(T0_func=T0, dT0_func=dT0,"
+            " ddT0_func=ddT0)",
             2,
         )
         if self.config["physics_type"] == "mhd":
             write_pad(
                 file,
-                "call background%set_magnetic_2_funcs(B02_func=B02, dB02_func=dB02, ddB02_func=ddB02)",
+                "call background%set_magnetic_2_funcs(B02_func=B02, dB02_func=dB02,"
+                " ddB02_func=ddB02)",
                 2,
             )
             write_pad(
                 file,
-                "call background%set_magnetic_3_funcs(B03_func=B03, dB03_func=dB03, ddB03_func=ddB03)",
+                "call background%set_magnetic_3_funcs(B03_func=B03, dB03_func=dB03,"
+                " ddB03_func=ddB03)",
                 2,
             )
         file.write("\n")
@@ -310,8 +321,9 @@ class Legolas:
 
         Examples
         --------
-        The example below defines a homogeneous hydrodynamic equilibrium with constant density and temperature.
-        The values of the equilibrium parameters are set in the configuration dictionary and written to the parameter file.
+        The example below defines a homogeneous hydrodynamic equilibrium with constant
+        density and temperature. The values of the equilibrium parameters are set in the
+        configuration dictionary and written to the parameter file.
 
         >>> from pylbo.gimli import Variables, Equilibrium, Legolas
         >>> var = Variables()
