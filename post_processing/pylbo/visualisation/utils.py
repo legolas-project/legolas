@@ -2,8 +2,8 @@ from functools import wraps
 from typing import Any
 
 import matplotlib.axes
-from pylbo.data_containers import transform_to_dataseries
 from pylbo.utilities.toolbox import get_all_eigenfunction_names
+import pylbo.data_containers as dc # avoiding cirular import
 
 _BACKGROUND_NAME_MAPPING = {
     "rho0": r"$\rho_0$",
@@ -170,7 +170,7 @@ def validate_ef_name(ds, ef_name: str) -> str:
         The validated eigenfunction name.
     """
     # copy this or we're editing the property itself
-    for dataset in transform_to_dataseries(ds).datasets:
+    for dataset in dc.transform_to_dataseries(ds).datasets:
         names = get_all_eigenfunction_names(dataset)
         if ef_name not in names:
             raise ValueError(
