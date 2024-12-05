@@ -281,9 +281,13 @@ class ModeFigure(FigureWindow):
             The axes for the colorbar.
         """
         box = self.ax.get_position()
-        # shift main axes to the left to make space
         self.ax.set_position([box.x0, box.y0, box.width - 2.5 * width, box.height])
+        # shift main and ef axes to the left to make space
         # update box to reflect the new position
+        ax_ef = self.axes.get("eigfunc", None)
+        if ax_ef is not None:
+            box = ax_ef.get_position()
+            ax_ef.set_position([box.x0, box.y0, box.width - 2.5 * width, box.height])
         box = self.ax.get_position()
         position = (box.x0 + box.width, box.y0)
         dims = (width, box.height)
