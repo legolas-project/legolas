@@ -83,7 +83,7 @@ def test_legolas_userfile(tmpdir, mod_usr):
     obj = gimli.Legolas(eq, config)
     obj.user_module(loc=tmpdir)
     assert filecmp.cmp(
-        (tmpdir / "smod_user_defined.f08").resolve(), mod_usr, shallow=False
+        str((tmpdir / "smod_user_defined.f08").resolve()), str(mod_usr), shallow=False
     )
 
 
@@ -99,5 +99,7 @@ def test_amrvac_preparation(tmpdir, datv211_harris, vacv211_harris):
     amrvac = gimli.Amrvac(config)
     amrvac.prepare_legolas_data(loc=tmpdir)
     assert filecmp.cmp(
-        (tmpdir / "v2.1.1_harris.ldat").resolve(), vacv211_harris, shallow=False
+        str((tmpdir / "v2.1.1_harris.ldat").resolve()),
+        str(vacv211_harris),
+        shallow=False,
     )
