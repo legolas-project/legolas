@@ -10,6 +10,7 @@ dependencies = [
     "tqdm",
     "psutil",
     "packaging",
+    "sympy",
 ]
 
 version_filepath = (Path(__file__).parent / "pylbo/_version.py").resolve()
