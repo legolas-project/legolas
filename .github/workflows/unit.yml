@@ -13,11 +13,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        compiler: [gfortran-12, gfortran-13]
-        gcc: [gcc-12, gcc-13]
-        coverage: [false]
         include:
+          - os: ubuntu-latest
+            compiler: gfortran-12
+            gcc: gcc-12
+            coverage: false
+          - os: ubuntu-latest
+            compiler: gfortran-13
+            gcc: gcc-13
+            coverage: false
           - os: ubuntu-latest
             compiler: gfortran-14
             gcc: gcc-14
