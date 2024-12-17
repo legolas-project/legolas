@@ -244,7 +244,7 @@ class Legolas:
         >>> legolas.user_module()
         """
         loc = validate_output_dir(loc)
-        name = loc + '/' + filename + ".f08"
+        name = loc + "/" + filename + ".f08"
         create_file(name)
         file = open(name, "a")
         write_pad(file, "!> Submodule for user-defined equilibria.", 0)

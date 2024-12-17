@@ -305,8 +305,8 @@ class Amrvac:
         loc = validate_output_dir(loc)
         self._validate_datfile()
         datfile = self.config["datfile"]
-        name = str(datfile).rsplit('/')[-1]
-        f = FortranFile(loc + '/' + name[:-4] + ".ldat", "w")
+        name = str(datfile).rsplit("/")[-1]
+        f = FortranFile(loc + "/" + name[:-4] + ".ldat", "w")
         f.write_record(np.array([self.ds.ef_gridpoints], dtype=np.int32))
         f.write_record(
             np.array(
