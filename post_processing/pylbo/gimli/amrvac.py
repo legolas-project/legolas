@@ -306,7 +306,7 @@ class Amrvac:
         for index in range(len(datfile)):
             if datfile[index] == "/":
                 position = index
-        f = FortranFile(loc + datfile[position + 1 : -4] + ".ldat", "w")
+        f = FortranFile(loc + '/' + datfile[position + 1 : -4] + ".ldat", "w")
         f.write_record(np.array([self.ds.ef_gridpoints], dtype=np.int32))
         f.write_record(
             np.array(
