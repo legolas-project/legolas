@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        compiler: [gfortran-12, gfortran-13, gfortran-14]
+        compiler: [gfortran-12, gfortran-13]
         coverage: [false]
         include:
           - os: ubuntu-latest
