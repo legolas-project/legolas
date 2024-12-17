@@ -54,7 +54,7 @@ jobs:
     - name: Install Python dependencies & Pylbo
       run: |
         python -m pip install --upgrade pip
-        pip install pytest numpy matplotlib f90nml tqdm psutil pytest-mpl
+        pip install pytest numpy matplotlib f90nml tqdm psutil pytest-mpl scipy
         cd post_processing
         python setup.py develop
 
