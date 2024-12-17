@@ -64,7 +64,7 @@ jobs:
         sudo apt-get install libblas-dev
         sudo apt-get install liblapack-dev
         sudo apt-get install lcov
-        gfortran-13 --version
+        gfortran-14 --version
         cmake --version
 
     - name: Compile Legolas
