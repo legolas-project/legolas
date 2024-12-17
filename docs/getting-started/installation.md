@@ -41,6 +41,7 @@ installed if you choose the Pylbo package install (see [below](/getting-started/
 - [psutil](https://psutil.readthedocs.io/en/latest/), for management of multiprocessing resources during parallel runs.
 - [packaging](https://packaging.pypa.io/en/stable/), for handling datfile version control.
 - [sympy](https://www.sympy.org/en/index.html), to offer a convenient way of user module configuration.
+- [scipy](https://scipy.org), for interacting with Fortran code.
 
 You can alternatively install these manually using
 ```bash
