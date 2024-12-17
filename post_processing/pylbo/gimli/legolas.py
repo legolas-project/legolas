@@ -8,6 +8,7 @@ from pylbo.gimli.utils import (
     get_equilibrium_parameters,
     is_sympy_number,
     is_symbol_dependent,
+    validate_output_dir,
 )
 from pylbo.gimli._version import __version__
 
@@ -203,7 +204,7 @@ class Legolas:
             raise ValueError("Unknown physics type.")
         return
 
-    def user_module(self, filename="smod_user_defined", loc='./'):
+    def user_module(self, filename="smod_user_defined", loc=None):
         """
         Writes the user module for the Legolas run.
 
@@ -211,6 +212,9 @@ class Legolas:
         ----------
         filename : str
             The name of the user module file.
+        loc : str, ~os.PathLike
+            Path to the directory where the user module will be stored. Default is the
+            current directory.
 
         Examples
         --------
@@ -239,6 +243,7 @@ class Legolas:
         >>> legolas = Legolas(eq, config)
         >>> legolas.user_module()
         """
+        loc = validate_output_dir(loc)
         name = loc + '/' + filename + ".f08"
         create_file(name)
         file = open(name, "a")

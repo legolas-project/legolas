@@ -4,6 +4,7 @@ from scipy.io import FortranFile
 from pylbo.utilities.datfiles.file_loader import load
 from pylbo.visualisation.modes.mode_data import ModeVisualisationData
 from pylbo.utilities.logger import pylboLogger
+from pylbo.gimli.utils import validate_output_dir
 
 
 class Amrvac:
@@ -272,14 +273,15 @@ class Amrvac:
             norm = self.config["percentage"] * max_bg / np.nanmax(np.abs(perturbation))
         return norm
 
-    def prepare_legolas_data(self, loc="./"):
+    def prepare_legolas_data(self, loc=None):
         """
         Prepares a file (.ldat) from the Legolas data for use with MPI-AMRVAC.
 
         Parameters
         ----------
-        loc : str, optional
-            The location to save the .ldat file. Default is the current directory.
+        loc : str, ~os.PathLike
+            Path to the directory where the .ldat file will be stored. Default is the
+            current directory.
 
         Raises
         ------
@@ -300,13 +302,11 @@ class Amrvac:
         >>> amrvac = gimli.Amrvac(amrvac_config)
         >>> amrvac.prepare_legolas_data()
         """
+        loc = validate_output_dir(loc)
         self._validate_datfile()
         datfile = self.config["datfile"]
-        position = -1
-        for index in range(len(datfile)):
-            if datfile[index] == "/":
-                position = index
-        f = FortranFile(loc + '/' + datfile[position + 1 : -4] + ".ldat", "w")
+        name = str(datfile).rsplit('/')[-1]
+        f = FortranFile(loc + '/' + name[:-4] + ".ldat", "w")
         f.write_record(np.array([self.ds.ef_gridpoints], dtype=np.int32))
         f.write_record(
             np.array(

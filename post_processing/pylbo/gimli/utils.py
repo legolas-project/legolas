@@ -1,5 +1,30 @@
 import sys
 import os
+from pathlib import Path
+
+
+def validate_output_dir(output_dir):
+    """
+    Validates and returns the output directory for the parfiles.
+
+    Parameters
+    ----------
+    output_dir : str, ~os.PathLike
+        The output directory to store the parfiles in. If not given, defaults to
+        the current working directory.
+
+    Raises
+    ------
+    NotADirectoryError
+        If the output directory is not found.
+
+    """
+    if output_dir is None:
+        output_dir = Path.cwd()
+    output = Path(output_dir).resolve()
+    if not output.is_dir():
+        raise NotADirectoryError(output)
+    return str(output)
 
 
 def is_symbol_dependent(symbols, expr):
