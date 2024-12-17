@@ -15,7 +15,7 @@ jobs:
       matrix:
         name: [regression]
         os: [ubuntu-latest]
-        compiler: [gfortran-11]
+        compiler: [gfortran-14]
         coverage: [true]
 
     env:
@@ -97,7 +97,7 @@ jobs:
         cd coverage
         lcov --capture --directory $LEGOLASDIR/build \
             --output-file ${{ matrix.name }}.info \
-            --gcov-tool /usr/bin/gcov-11
+            --gcov-tool /usr/bin/gcov-14
         # filter out coverage files
         find $LEGOLASDIR/build -name '*.gc*' -delete
 
