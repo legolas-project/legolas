@@ -127,6 +127,7 @@ jobs:
       run: |
         mkdir coverage
         cd coverage
+        ls $LEGOLASDIR/build
         lcov --capture --directory $LEGOLASDIR/build \
             --output-file unit-tests-${{ matrix.compiler }}.info \
             --gcov-tool /usr/bin/gcov-14
