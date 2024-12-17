@@ -203,7 +203,7 @@ class Legolas:
             raise ValueError("Unknown physics type.")
         return
 
-    def user_module(self, filename="smod_user_defined"):
+    def user_module(self, filename="smod_user_defined", loc='./'):
         """
         Writes the user module for the Legolas run.
 
@@ -239,7 +239,7 @@ class Legolas:
         >>> legolas = Legolas(eq, config)
         >>> legolas.user_module()
         """
-        name = filename + ".f08"
+        name = loc + '/' + filename + ".f08"
         create_file(name)
         file = open(name, "a")
         write_pad(file, "!> Submodule for user-defined equilibria.", 0)
