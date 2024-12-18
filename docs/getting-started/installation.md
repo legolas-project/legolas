@@ -45,11 +45,11 @@ installed if you choose the Pylbo package install (see [below](/getting-started/
 
 You can alternatively install these manually using
 ```bash
-pip install numpy matplotlib f90nml tqdm psutil packaging
+pip install numpy matplotlib f90nml tqdm psutil packaging sympy scipy
 ```
 or
 ```bash
-conda install numpy matplotlib f90nml tqdm psutil packaging
+conda install numpy matplotlib f90nml tqdm psutil packaging sympy scipy
 ```
 depending on your preference. On Linux it's usually best to use the versions available in your package repository.
 
