@@ -101,5 +101,5 @@ def test_amrvac_preparation(tmpdir, datv211_harris, vacv211_harris):
     assert filecmp.cmp(
         str((tmpdir / "v2.1.1_harris.ldat").resolve()),
         str(vacv211_harris),
-        shallow=True,
+        shallow=False,
     )
