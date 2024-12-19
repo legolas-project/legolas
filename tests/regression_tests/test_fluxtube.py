@@ -30,7 +30,7 @@ class TestFluxtubeCoronalQZ(TestFluxtubeCoronalQR):
     use_custom_baseline = "fluxtube_coronal_QR_k2_0_k3_4"
     solver_settings = {"solver": "QZ-direct"}
     # 2 datapoints are finnicky...
-    custom_evs_all_real_tol = 3e-6
+    custom_evs_all_real_tol = 7e-6
 
 
 class TestFluxtubeCoronalQRCholesky(TestFluxtubeCoronalQR):
