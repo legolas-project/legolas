@@ -28,6 +28,7 @@ release = RELEASE
 
 # -- General configuration ---------------------------------------------------
 extensions = [
+    "autoapi.extension",
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
@@ -44,7 +45,6 @@ intersphinx_mapping = {
 }
 
 # autoAPI settings
-extensions.append("autoapi.extension")
 autoapi_type = "python"
 autoapi_dirs = ["../../post_processing/pylbo/"]
 autoapi_options = [

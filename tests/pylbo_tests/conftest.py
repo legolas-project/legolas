@@ -135,6 +135,21 @@ def datv112_eta():
     return utils / "v1.1.2_datfile_eta.dat"
 
 
+@pytest.fixture
+def mod_usr():
+    return utils / "v2.1.1_mod_usr.f08"
+
+
+@pytest.fixture
+def datv211_harris():
+    return utils / "v2.1.1_harris.dat"
+
+
+@pytest.fixture
+def vacv211_harris():
+    return utils / "v2.1.1_harris.ldat"
+
+
 @pytest.mark.timeout(5)
 @pytest.fixture
 def ds_v090():
