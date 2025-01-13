@@ -153,6 +153,8 @@ def write_physics_functions(file, equilibrium):
             file, expr, varlist[key][1][0], replacements, constant=cst, level=1
         )
         for ix in range(len(varlist[key][2])):
+            if varlist[key][1][0] == "g0":
+                break
             dexpr = sp.diff(expr, varlist[key][2][ix])
             cst = not is_symbol_dependent(varlist[key][2], dexpr)
             fortran_function(

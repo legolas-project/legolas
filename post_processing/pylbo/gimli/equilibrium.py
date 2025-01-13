@@ -161,7 +161,7 @@ class Equilibrium:
                 ["eta", "detadT", "detadr"],
                 [self.variables.T0, self.variables.x],
             ],
-            "gravity": [gravity, ["g0"], []],
+            "gravity": [gravity, ["g0"], [self.variables.x]],
             "parallel_conduction": [
                 condpara,
                 ["tcpara", "dtcparadT"],
