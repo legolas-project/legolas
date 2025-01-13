@@ -5,6 +5,7 @@ from pylbo.utilities.datfiles.file_loader import load
 from pylbo.visualisation.modes.mode_data import ModeVisualisationData
 from pylbo.utilities.logger import pylboLogger
 from pylbo.gimli.utils import validate_output_dir
+from pylbo.data_containers import transform_to_dataseries
 
 
 class Amrvac:
@@ -96,10 +97,7 @@ class Amrvac:
         if "datfile" not in self.config.keys():
             raise KeyError("No datfile specified.")
         else:
-            try:
-                self.ds = load(self.config["datfile"])
-            except Exception:
-                pylboLogger.error("Invalid datfile specified.")
+            self.ds = load(self.config["datfile"])
 
         if "ev_guess" not in self.config.keys():
             raise KeyError("Initial guess for eigenvalue not specified.")
@@ -235,11 +233,17 @@ class Amrvac:
             rho1 = self._get_combined_perturbation("rho")
             T1 = self._get_combined_perturbation("T")
             data1 = ModeVisualisationData(
-                self.ds, self.config["ev_guess"], ef_name="rho", add_background=True
+                transform_to_dataseries(self.ds),
+                [self.config["ev_guess"]],
+                ef_name="rho",
+                add_background=True,
             )
             rho0 = data1.get_background(rho1.shape, "rho0")
             data2 = ModeVisualisationData(
-                self.ds, self.config["ev_guess"], ef_name="T", add_background=True
+                transform_to_dataseries(self.ds),
+                [self.config["ev_guess"]],
+                ef_name="T",
+                add_background=True,
             )
             T0 = data2.get_background(T1.shape, "T0")
             perturbation = rho1 * T0 + rho0 * T1
