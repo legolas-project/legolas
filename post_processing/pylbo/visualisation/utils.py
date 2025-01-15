@@ -3,7 +3,7 @@ from typing import Any
 
 import matplotlib.axes
 from pylbo.utilities.toolbox import get_all_eigenfunction_names
-import pylbo.data_containers as dc # avoiding cirular import
+import pylbo.data_containers as dc  # avoiding cirular import
 
 _BACKGROUND_NAME_MAPPING = {
     "rho0": r"$\rho_0$",

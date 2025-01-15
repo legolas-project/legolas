@@ -119,10 +119,9 @@ class ModeVisualisationData:
         if complex_factor is None:
             complex_factor = []
             for omegas in self.omega:
-                complex_factor.append([1]*len(omegas))
-        
+                complex_factor.append([1] * len(omegas))
+
         return complex_factor
-        
 
     def get_mode_solution(
         self,
