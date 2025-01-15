@@ -17,7 +17,7 @@ in pieces of code that previously worked.
 
 Legolas has two levels of testing suites: unit tests and regression tests, all of which run on both the `master` and
 `develop` branches for every commit or pull request. The Pylbo framework has its own dedicated testing suite.
-All of these test suites are decouples from each other and test distinctly different things: the unit tests are low-level
+All of these test suites are decoupled from each other and test distinctly different things: the unit tests are low-level
 and test individual subroutines and functions in the Legolas source code using [pFUnit](https://github.com/Goddard-Fortran-Ecosystem/pFUnit).
 The regression tests on the other hand are high-level and compare code output from a recent commit to previously known results, while
 the Pylbo tests check data loading and management, interfacing with Legolas and visualisations.
