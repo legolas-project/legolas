@@ -28,8 +28,6 @@ module mod_derived_ef_names
   character(len=str_len_arr), parameter, public :: curl_v_para_name = "(curl v)_para"
   character(len=str_len_arr), parameter, public :: curl_v_perp_name = "(curl v)_perp"
   character(len=str_len_arr), parameter, public :: dB1_name = "dB1"
-  character(len=str_len_arr), parameter, public :: p_name = "p"
-  character(len=str_len_arr), parameter, public :: P_m_name = "P_m"
 
   character(len=:), allocatable :: state_vector(:)
   logical :: can_get_pp
@@ -68,9 +66,7 @@ contains
       v_perp_name, &
       curl_v_para_name, &
       curl_v_perp_name, &
-      dB1_name, &
-      p_name, &
-      P_m_name &
+      dB1_name &
     ]
     derived_state_vector_mask = [ &
       can_get_entropy(), &
@@ -93,9 +89,7 @@ contains
       can_get_v_pp(), &
       can_get_curl_v_pp(), &
       can_get_curl_v_pp(), &
-      can_get_dB1(), &
-      can_get_p(), &
-      can_get_P_m() &
+      can_get_dB1() &
     ]
     derived_state_vector = pack(derived_state_vector, mask=derived_state_vector_mask)
 
@@ -204,18 +198,6 @@ contains
       .and. is_in_state_vector("a3") &
     )
   end function can_get_dB1
-
-
-  pure logical function can_get_p()
-    can_get_p = can_get_entropy()
-  end function can_get_p
-
-
-  pure logical function can_get_P_m()
-    can_get_P_m = ( &
-      can_get_B1() .and. can_get_B2() .and. can_get_B3() &
-    )
-  end function can_get_P_m
 
 
   logical function can_calculate_pp_quantities(background)
