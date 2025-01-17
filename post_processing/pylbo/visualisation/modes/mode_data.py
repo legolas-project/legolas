@@ -4,10 +4,48 @@ import difflib
 from typing import Union
 
 import numpy as np
-from pylbo.data_containers import LegolasDataSeries
+from pylbo.data_containers import (
+    LegolasDataSet,
+    LegolasDataSeries,
+    transform_to_dataseries,
+)
 from pylbo.exceptions import BackgroundNotPresent
 from pylbo.utilities.logger import pylboLogger
-from pylbo.visualisation.utils import ef_name_to_latex, validate_ef_name
+from pylbo.visualisation.utils import (
+    ef_name_to_latex,
+    validate_ef_name,
+)
+from pylbo.utilities.toolbox import (
+    transform_to_list,
+    transform_to_numpy,
+)
+
+
+def _handle_expected_input_value(ds: LegolasDataSeries, value) -> list[list[complex]]:
+    if value is None:
+        return value
+    value_temp = transform_to_list(value)
+    if (
+        len(ds) == 1
+        and not isinstance(value_temp[0], list)
+        and not isinstance(value_temp[0], np.ndarray)
+    ):
+        return [value_temp]
+    if len(ds) > 1:
+        if len(ds) != len(value_temp) and len(value_temp) != 1:
+            raise ValueError("Need as many values (or lists of values) as datasets.")
+        elif len(value_temp) == 1:
+            value_temp = transform_to_numpy([[value] for dataset in ds.datasets])
+        else:
+            for i, value_val in enumerate(value_temp):
+                value_temp[i] = transform_to_numpy(transform_to_list(value_val))
+
+    return value_temp
+
+
+def _check_resolution_dataseries(ds: LegolasDataSeries) -> bool:
+    nr_gridpoints = np.unique([dataset.gridpoints for dataset in ds.datasets])
+    return len(nr_gridpoints) == 1
 
 
 class ModeVisualisationData:
@@ -48,14 +86,29 @@ class ModeVisualisationData:
 
     def __init__(
         self,
-        ds: LegolasDataSeries,
-        omega: list[np.ndarray[complex]],
+        ds: Union[LegolasDataSet, LegolasDataSeries],
+        omega: Union[
+            complex, list[complex], np.ndarray, list[list[complex]], list[np.ndarray]
+        ],
         ef_name: str = None,
         use_real_part: bool = True,
-        complex_factor: list[np.ndarray[complex]] = None,
+        complex_factor: Union[
+            complex, list[complex], np.ndarray, list[list[complex]], list[np.ndarray]
+        ] = None,
         add_background: bool = False,
     ) -> None:
-        self.ds = ds
+        # check and prepare right format for dataseries/omega/complex_factor
+        if isinstance(ds, LegolasDataSeries):
+            pylboLogger.warning(
+                "Make sure data in LegolasDataSeries has same equilibrium."
+            )
+            same_res = _check_resolution_dataseries(ds)
+            if not same_res:
+                raise ValueError("Legolas does not support different resolutions.")
+        self.ds = transform_to_dataseries(ds)
+        omega_temp = _handle_expected_input_value(self.ds, omega)
+        self.complex_factor = _handle_expected_input_value(self.ds, complex_factor)
+
         self.ds_bg = self.ds.datasets[0]
         self.use_real_part = use_real_part
         if add_background and not self.ds_bg.has_background:
@@ -63,10 +116,10 @@ class ModeVisualisationData:
         self.add_background = add_background
         self._print_bg_info = True
 
-        self._ef_name = None if ef_name is None else validate_ef_name(ds, ef_name)
+        self._ef_name = None if ef_name is None else validate_ef_name(self.ds, ef_name)
         self._ef_name_latex = None if ef_name is None else self.get_ef_name_latex()
         self._all_efs = [
-            dataset.get_eigenfunctions(ev_guesses=omega[i])
+            dataset.get_eigenfunctions(ev_guesses=omega_temp[i])
             for i, dataset in enumerate(self.ds.datasets)
         ]
         self.omega = []
@@ -74,7 +127,7 @@ class ModeVisualisationData:
         for all_efs in self._all_efs:
             self.omega.append([efs.get("eigenvalue") for efs in all_efs])
             self.eigenfunction.append([efs.get(self._ef_name) for efs in all_efs])
-        self.complex_factor = self._validate_complex_factor(complex_factor)
+        self.complex_factor = self._validate_complex_factor(self.complex_factor)
 
     @property
     def k2(self) -> float:

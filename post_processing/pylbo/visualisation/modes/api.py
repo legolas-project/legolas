@@ -3,12 +3,8 @@ from __future__ import annotations
 from typing import Union
 
 import numpy as np
-from pylbo.data_containers import (
-    LegolasDataSet,
-    LegolasDataSeries,
-    transform_to_dataseries,
-)
-from pylbo.utilities.toolbox import transform_to_list, transform_to_numpy
+from pylbo.data_containers import LegolasDataSet, LegolasDataSeries
+from pylbo.utilities.toolbox import transform_to_numpy
 from pylbo.visualisation.modes.cartesian_2d import CartesianSlicePlot2D
 from pylbo.visualisation.modes.cartesian_3d import CartesianSlicePlot3D
 from pylbo.visualisation.modes.cylindrical_2d import CylindricalSlicePlot2D
@@ -16,33 +12,6 @@ from pylbo.visualisation.modes.cylindrical_3d import CylindricalSlicePlot3D
 from pylbo.visualisation.modes.mode_data import ModeVisualisationData
 from pylbo.visualisation.modes.temporal_1d import TemporalEvolutionPlot1D
 from pylbo.visualisation.modes.vtk_export import VTKCartesianData, VTKCylindricalData
-
-
-def _handle_expected_input_value(ds: LegolasDataSeries, value) -> list[list[complex]]:
-    if value is None:
-        return value
-    value_temp = transform_to_list(value)
-    if (
-        len(ds) == 1
-        and not isinstance(value_temp[0], list)
-        and not isinstance(value_temp[0], np.ndarray)
-    ):
-        return [value_temp]
-    if len(ds) > 1:
-        if len(ds) != len(value_temp) and len(value_temp) != 1:
-            raise ValueError("Need as many values (or lists of values) as datasets.")
-        elif len(value_temp) == 1:
-            value_temp = transform_to_numpy([[value] for dataset in ds.datasets])
-        else:
-            for i, value_val in enumerate(value_temp):
-                value_temp[i] = transform_to_numpy(transform_to_list(value_val))
-
-    return value_temp
-
-
-def _check_resolution_dataseries(ds: LegolasDataSeries) -> bool:
-    nr_gridpoints = np.unique([dataset.gridpoints for dataset in ds.datasets])
-    return len(nr_gridpoints) == 1
 
 
 def plot_1d_temporal_evolution(
@@ -106,14 +75,7 @@ def plot_1d_temporal_evolution(
     TemporalEvolutionPlot1D
         The plot object.
     """
-    if isinstance(ds, LegolasDataSeries):
-        print("WARNING: Make sure data in LegolasDataSeries has same " + "equilibrium.")
-        same_res = _check_resolution_dataseries(ds)
-        if not same_res:
-            raise ValueError("Legolas does not support different resolutions.")
-    ds = transform_to_dataseries(ds)
-    omega = _handle_expected_input_value(ds, omega)
-    complex_factor = _handle_expected_input_value(ds, complex_factor)
+
     data = ModeVisualisationData(
         ds, omega, ef_name, use_real_part, complex_factor, add_background
     )
@@ -195,14 +157,7 @@ def plot_2d_slice(
     p : CartesianSlicePlot2D or CylindricalSlicePlot2D
         The plot object.
     """
-    if isinstance(ds, LegolasDataSeries):
-        print("WARNING: Make sure data in LegolasDataSeries has same " + "equilibrium.")
-        same_res = _check_resolution_dataseries(ds)
-        if not same_res:
-            raise ValueError("Legolas does not support different resolutions.")
-    ds = transform_to_dataseries(ds)
-    omega = _handle_expected_input_value(ds, omega)
-    complex_factor = _handle_expected_input_value(ds, complex_factor)
+
     data = ModeVisualisationData(
         ds, omega, ef_name, use_real_part, complex_factor, add_background
     )
@@ -279,14 +234,7 @@ def plot_3d_slice(
     p : CartesianSlicePlot3D or CylindricalSlicePlot3D
         The plot object.
     """
-    if isinstance(ds, LegolasDataSeries):
-        print("WARNING: Make sure data in LegolasDataSeries has same " + "equilibrium.")
-        same_res = _check_resolution_dataseries(ds)
-        if not same_res:
-            raise ValueError("Legolas does not support different resolutions.")
-    ds = transform_to_dataseries(ds)
-    omega = _handle_expected_input_value(ds, omega)
-    complex_factor = _handle_expected_input_value(ds, complex_factor)
+
     u3 = transform_to_numpy(u3)
     data = ModeVisualisationData(
         ds, omega, ef_name, use_real_part, complex_factor, add_background
@@ -337,14 +285,7 @@ def prepare_vtk_export(
     VTKCartesianData or VTKCylindricalData
         Object that can be used to generate VTK files.
     """
-    if isinstance(ds, LegolasDataSeries):
-        print("WARNING: Make sure data in LegolasDataSeries has same " + "equilibrium.")
-        same_res = _check_resolution_dataseries(ds)
-        if not same_res:
-            raise ValueError("Legolas does not support different resolutions.")
-    ds = transform_to_dataseries(ds)
-    omega = _handle_expected_input_value(ds, omega)
-    complex_factor = _handle_expected_input_value(ds, complex_factor)
+
     data = ModeVisualisationData(
         ds, omega, None, use_real_part, complex_factor, add_background=False
     )
