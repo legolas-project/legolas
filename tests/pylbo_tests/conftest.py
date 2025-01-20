@@ -150,6 +150,21 @@ def vacv211_harris():
     return utils / "v2.1.1_harris.ldat"
 
 
+@pytest.fixture
+def datv211_mri_k70_n500():
+    return utils / "v2.1.1_mri_k70_n500.dat"
+
+
+@pytest.fixture
+def datv211_mri_k80_n500():
+    return utils / "v2.1.1_mri_k80_n500.dat"
+
+
+@pytest.fixture
+def datv211_mri_k80_n300():
+    return utils / "v2.1.1_mri_k80_n300.dat"
+
+
 @pytest.mark.timeout(5)
 @pytest.fixture
 def ds_v090():
@@ -282,4 +297,35 @@ def series_v200_mixed_efs():
     files_without_efs = [utils / "v2.0.0_mri_matrix.dat"] * 3
     # alternate between files with and without efs
     files = [file for pair in zip(files_with_efs, files_without_efs) for file in pair]
+    return pylbo.load_series(files)
+
+
+@pytest.mark.timeout(5)
+@pytest.fixture
+def series_v211_mixed_res():
+    files_n500 = [utils / "v2.1.1_mri_k80_n50.dat"] * 2
+    files_n300 = [utils / "v2.1.1_mri_k80_n49.dat"] * 2
+    # alternate between resolutions
+    files = [file for pair in zip(files_n500, files_n300) for file in pair]
+    return pylbo.load_series(files)
+
+
+@pytest.mark.timeout(5)
+@pytest.fixture
+def series_v211_mixed_derived_efs():
+    files_with_der_efs = [utils / "v2.1.1_mri_k80_n50_no_derived.dat"] * 3
+    files_without_der_efs = [utils / "v2.1.1_mri_k70_n50.dat"] * 3
+    # alternate between files with and without efs
+    files = [
+        file for pair in zip(files_with_der_efs, files_without_der_efs) for file in pair
+    ]
+    return pylbo.load_series(files)
+
+
+@pytest.mark.timeout(5)
+@pytest.fixture
+def series_v211_mri_parameter():
+    files_k80 = [utils / "v2.1.1_mri_k80_n50.dat"] * 3
+    files_k70 = [utils / "v2.1.1_mri_k70_n50.dat"] * 3
+    files = [file for pair in zip(files_k80, files_k70) for file in pair]
     return pylbo.load_series(files)

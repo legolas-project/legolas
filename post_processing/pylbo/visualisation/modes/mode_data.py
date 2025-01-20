@@ -172,7 +172,11 @@ class ModeVisualisationData:
         if complex_factor is None:
             complex_factor = []
             for omegas in self.omega:
-                complex_factor.append([1] * len(omegas))
+                complex_factor.append([1.0] * len(omegas))
+        else:
+            for i in range(len(self.omega)):
+                if len(self.omega[i]) != len(complex_factor[i]):
+                    raise ValueError("Omega and complex_factor need same shape.")
 
         return complex_factor
 
