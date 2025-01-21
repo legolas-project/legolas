@@ -117,3 +117,11 @@ def test_load_v210_custom_basis(ds_v210_rotcyl_efs_custom_basis):
         "a3": "quadratic",
     }
     assert ds.header.get("basis_functions") == expected
+
+
+def test_load_v211_parameter(series_v211_mri_parameter):
+    ds = series_v211_mri_parameter
+    assert np.allclose(
+        ds.parameters["k3"],
+        np.array(sorted([50.0, 80.0] * 3)),
+    )

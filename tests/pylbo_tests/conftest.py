@@ -314,7 +314,7 @@ def series_v211_mixed_res():
 @pytest.fixture
 def series_v211_mixed_derived_efs():
     files_with_der_efs = [utils / "v2.1.1_mri_k80_n50_no_derived.dat"] * 3
-    files_without_der_efs = [utils / "v2.1.1_mri_k70_n50.dat"] * 3
+    files_without_der_efs = [utils / "v2.1.1_mri_k50_n50.dat"] * 3
     # alternate between files with and without efs
     files = [
         file for pair in zip(files_with_der_efs, files_without_der_efs) for file in pair
@@ -326,6 +326,6 @@ def series_v211_mixed_derived_efs():
 @pytest.fixture
 def series_v211_mri_parameter():
     files_k80 = [utils / "v2.1.1_mri_k80_n50.dat"] * 3
-    files_k70 = [utils / "v2.1.1_mri_k70_n50.dat"] * 3
-    files = [file for pair in zip(files_k80, files_k70) for file in pair]
-    return pylbo.load_series(files)
+    files_k50 = [utils / "v2.1.1_mri_k50_n50.dat"] * 3
+    files = [file for pair in zip(files_k80, files_k50) for file in pair]
+    return pylbo.load_series(files, sorting_par="k3")
