@@ -183,6 +183,19 @@ class TestSliceZ_2DCartBackground(Slice2D):
                 add_background=True,
             )
 
+    def test_bg_with_derived(self, ds):
+        with pytest.raises(ValueError):
+            pylbo.plot_2d_slice(
+                ds,
+                self.omega,
+                "S",
+                self.u2vals,
+                self.u3vals,
+                0,
+                "z",
+                add_background=True,
+            )
+
     def test_animation_with_bg(self, view, tmpdir, mode_solution):
         view.create_animation(
             times=np.arange(5), filename=tmpdir / "test_2d.mp4", fps=1

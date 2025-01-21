@@ -287,12 +287,13 @@ class ModeVisualisationData:
         Raises
         ------
         ValueError
-            If the eigenfunction name is a magnetic vector potential component.
+            If the eigenfunction name is a magnetic vector potential component or
+            derived eigenfunction that is not the magnetic field.
         """
-        if self._ef_name in ("a1", "a2", "a3"):
-            raise ValueError(
-                "Unable to add a background to the magnetic vector potential."
-            )
+        if self._ef_name in ("a1", "a2", "a3") + tuple(
+            self.ds_bg.derived_ef_names
+        ) and self._ef_name not in ("B1", "B2", "B3"):
+            raise ValueError("Unable to add a background to this field.")
         name = None
         name_temp = difflib.get_close_matches(self._ef_name, self.ds_bg.eq_names, 1)
         if name_temp != []:
@@ -301,6 +302,6 @@ class ModeVisualisationData:
             pylboLogger.info(
                 f"adding background for '{self._ef_name}', closest match is '{name}'"
             )
-        else:
-            print(f"Background is zero or not implemented for '{self._ef_name}'")
+        elif self._print_bg_info:
+            pylboLogger.info(f"Background is zero for '{self._ef_name}'")
         return name
