@@ -206,6 +206,21 @@ class TestSliceY_2DCart(Slice2D):
         view.draw()
         assert self.cbar_matches(view, mode_solution)
 
+    def test_animation_dots(self, view, tmpdir, mode_solution):
+        view.create_animation(
+            times=np.arange(5),
+            filename=tmpdir / "test_2d_dots.mp4",
+            fps=1,
+            draw_dots=True,
+            ndots=6,
+        )
+        assert view._view_dot is not None
+        xy = view._view_dot.get_offsets()
+        x, _ = np.array(xy).transpose()
+        assert len(x) == 6
+        assert view.update_colorbar is True
+        assert np.allclose(view.solutions, mode_solution)
+
 
 class TestSliceZ_2DCyl(Slice2D):
     filename = "slice_2d_z_cyl_rho.npy"
@@ -266,6 +281,25 @@ class TestSliceZ_2DCyl(Slice2D):
             times=np.arange(5), filename=tmpdir / "test_contour.mp4", fps=1
         )
         assert np.allclose(view.solutions, mode_solution)
+
+
+class TestSliceTheta_2DCyl(Slice2D):
+    filename = "slice_2d_theta_cyl_rho.npy"
+    omega = 0.01746995 + 0.02195201j
+    slicing_axis = "theta"
+    u2vals = np.pi
+    u3vals = np.linspace(0, 2, 50)
+    xlabel = "r"
+    ylabel = "z"
+
+    @pytest.fixture(scope="class")
+    def ds(self, ds_v121_magth):
+        return ds_v121_magth
+
+    def test_contour_filled(self, view, mode_solution):
+        view.set_contours(levels=25, fill=True)
+        view.draw()
+        assert self.cbar_matches(view, mode_solution)
 
 
 class TestSliceTheta_2DCyl(Slice2D):

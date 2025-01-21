@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Union
 
 import numpy as np
+import pylbo
 from matplotlib import animation
 from matplotlib.cm import ScalarMappable
 from pylbo.utilities.toolbox import transform_to_list
@@ -264,7 +265,7 @@ class CartesianSlicePlot2D(ModeFigure):
                     self._update_view_clims(solution)
                 else:
                     self._update_view_clims(initial_solution)
-                if self.slicing_axis == self._u3axis and draw_dots:
+                if draw_dots:
                     self._draw_comoving_dot(t, ndots)
                 self._set_t_txt(t)
                 writer.grab_frame()
@@ -285,7 +286,7 @@ class CartesianSlicePlot2D(ModeFigure):
 
     def _draw_comoving_dot(self, t, ndots):
         """
-        Overplots the data in an animation with red dots that
+        Overplots the data in an animation with dots that
         are comoving with the flow.
 
         Parameters
@@ -295,7 +296,19 @@ class CartesianSlicePlot2D(ModeFigure):
 
         """
         dotcolor = "red"
-        x0 = 0.0
+
+        if self.slicing_axis == self._u3axis:
+            bg = self.data.ds_bg.equilibria["v02"]
+            edge_max = np.max(self.u2_data)
+            edge_min = np.min(self.u2_data)
+        else:
+            bg = self.data.ds_bg.equilibria["v03"]
+            edge_max = np.max(self.u3_data)
+            edge_min = np.min(self.u3_data)
+        if np.allclose(bg, 0.0):
+            pylbo.logger.warning("Projected velocity is zero.")
+
+        x0 = edge_min
 
         if not self.ax.name == "polar":
             lims = self.ax.get_xlim()
@@ -311,17 +324,12 @@ class CartesianSlicePlot2D(ModeFigure):
             yloc = np.linspace(ymin, ymax, ndots + 2)[1:-1]
             scaling = yloc
 
-        xloc = (
-            x0
-            + t
-            * np.interp(
-                yloc, self.data.ds_bg.grid_gauss, self.data.ds_bg.equilibria["v02"]
-            )
-            / scaling
-        )
-        for i in range(len(xloc)):
-            while xloc[i] > np.max(self.u2_data):  # for periodic reappearance
-                xloc[i] -= np.max(self.u2_data)
+        xloc = x0 + t * np.interp(yloc, self.data.ds_bg.grid_gauss, bg) / scaling
+        for i in range(len(xloc)):  # for periodic reappearance
+            if xloc[i] > edge_max:
+                xloc[i] = edge_min + xloc[i] - edge_max
+            if xloc[i] < edge_min:
+                xloc[i] = edge_max - (edge_min - xloc[i])
         if self._view_dot is not None:
             self._view_dot.remove()
         if self.ax.name == "polar":
