@@ -8,7 +8,7 @@
 !!        We define all of these in one module so they allow for easy setting through
 !!        the parfile, and hence allow for more flexible control in the submodules.
 module mod_equilibrium_params
-  use mod_global_variables, only: dp
+  use mod_global_variables, only: dp, str_len
   implicit none
 
   public
@@ -82,6 +82,8 @@ module mod_equilibrium_params
   real(dp)  :: g
   !> general boolean for varied use, defaults to False
   logical   :: eq_bool
+  !> path to the file containing numerical equilibrium data
+  character(len=str_len) :: input_file
 
 contains
 
@@ -131,6 +133,7 @@ contains
     g = NaN
 
     eq_bool = .false.
+    input_file = ''
   end subroutine init_equilibrium_params
 
 end module mod_equilibrium_params
