@@ -378,4 +378,4 @@ def is_custom_grid(grid):
     bool
         `True` if the grid is a custom grid, `False` otherwise.
     """
-    return not np.all(np.diff(grid) == np.diff(grid)[0])
+    return not np.allclose(np.diff(grid), np.diff(grid)[0])

@@ -269,3 +269,8 @@ def test_resonance_location_continuum_not_monotone():
     sigma = 3.5
     result = toolbox.find_resonance_location(continuum, grid, sigma)
     assert np.all(np.isclose([0.35, 0.65], result))
+
+
+def test_custom_grid():
+    assert toolbox.is_custom_grid(np.linspace(0, 1, 11)) == False
+    assert toolbox.is_custom_grid(np.array([0.0, 1.0, 3.0])) == True
