@@ -362,3 +362,20 @@ def find_resonance_location(continuum, grid, omega):
                 np.interp(omega.real, [c[idx + 1], c[idx]], [grid[idx + 1], grid[idx]])
             )
     return np.array(list(set(locs)), dtype=float)
+
+
+def is_custom_grid(grid):
+    """
+    Checks if a given grid is a custom grid, i.e. not equidistant.
+
+    Parameters
+    ----------
+    grid : numpy.ndarray
+        The grid to test.
+
+    Returns
+    -------
+    bool
+        `True` if the grid is a custom grid, `False` otherwise.
+    """
+    return not np.all(np.diff(grid) == np.diff(grid)[0])

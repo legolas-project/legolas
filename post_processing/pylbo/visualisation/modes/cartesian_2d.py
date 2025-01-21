@@ -6,7 +6,7 @@ import numpy as np
 import pylbo
 from matplotlib import animation
 from matplotlib.cm import ScalarMappable
-from pylbo.utilities.toolbox import transform_to_list
+from pylbo.utilities.toolbox import transform_to_list, is_custom_grid
 from pylbo.visualisation.modes.mode_data import ModeVisualisationData
 from pylbo.visualisation.modes.mode_figure import ModeFigure
 from pylbo.visualisation.modes.vectorplot_handler import VectorplotHandler
@@ -379,6 +379,8 @@ class CartesianSlicePlot2D(ModeFigure):
     def add_streamlines(
         self, xgrid=None, coordgrid=None, field="v", add_background=True, **kwargs
     ) -> None:
+        if is_custom_grid(self.data.ds_bg.ef_grid):
+            raise ValueError("Streamlines are not supported for non-equidistant grids.")
         self._has_streamlines = True
         self._add_streamplot(
             xgrid=xgrid,
@@ -432,6 +434,8 @@ class CartesianSlicePlot2D(ModeFigure):
             xgrid = self.data.ds_bg.ef_grid
         if coordgrid is None:
             coordgrid = self._u2 if self.slicing_axis == self._u3axis else self._u3
+        xgrid = np.asarray(xgrid)
+        coordgrid = np.asarray(coordgrid)
 
         streamline_data = ModeVisualisationData(
             self.data.ds,
@@ -442,6 +446,10 @@ class CartesianSlicePlot2D(ModeFigure):
             self.data.add_background,
         )
 
+        if field not in ["v", "B"]:
+            raise ValueError("Field must be either 'v' or 'B'.")
+        if field == "B" and not self.data.ds_bg.has_derived_efs:
+            raise ValueError("No derived B eigenfunctions included.")
         vector_handler = VectorplotHandler(
             xgrid=xgrid,
             coordgrid=coordgrid,

@@ -128,6 +128,33 @@ class TestSliceZ_2DCart(Slice2D):
         assert self.cbar_matches(view, mode_solution)
         assert np.allclose(view.solutions, mode_solution)
 
+    def test_quivers_v(self, view, ds):
+        view.add_quivers(
+            xgrid=np.linspace(ds.ef_grid[0], ds.ef_grid[-1], 10),
+            coordgrid=np.linspace(np.min(self.u2vals), np.max(self.u2vals), 8),
+            field="v",
+        )
+        assert view.quiver_handler.quivers.U.size == 80
+
+    def test_quivers_b(self, view, ds):
+        bfield = view.add_quivers(
+            xgrid=np.linspace(ds.ef_grid[0], ds.ef_grid[-1], 10),
+            coordgrid=np.linspace(np.min(self.u2vals), np.max(self.u2vals), 8),
+            field="B",
+        )
+        assert view.quiver_handler.quivers.U.size == 80
+
+    def test_quivers_invalid_field(self, view):
+        with pytest.raises(ValueError):
+            view.add_quivers(
+                xgrid=np.linspace(0, 1, 2), coordgrid=np.linspace(0, 1, 2), field="a"
+            )
+
+    def test_quivers_nogrids(self, view, ds):
+        view.add_quivers(field="v")
+        assert view.quiver_handler.quivers.U.size == len(ds.ef_grid) * len(self.u2vals)
+        assert np.allclose(view.quiver_handler.quivers.X[: len(ds.ef_grid)], ds.ef_grid)
+
 
 class TestSliceZ_2DCartBackground(Slice2D):
     filename = "slice_2d_z_cart_rho_bg.npy"
@@ -281,6 +308,22 @@ class TestSliceZ_2DCyl(Slice2D):
             times=np.arange(5), filename=tmpdir / "test_contour.mp4", fps=1
         )
         assert np.allclose(view.solutions, mode_solution)
+
+    def test_quivers_invalid_field(self, view):
+        with pytest.raises(ValueError):
+            view.add_quivers(
+                xgrid=np.linspace(0, 1, 2), coordgrid=np.linspace(0, 1, 2), field="B"
+            )
+
+    def test_quivers_polar(self, view, ds):
+        view = pylbo.plot_2d_slice(
+            ds, self.omega, "rho", self.u2vals, self.u3vals, 0, "z", polar=True
+        )
+        view.add_quivers(field="v")
+        assert view.quiver_handler.quivers.U.size == len(ds.ef_grid) * len(self.u2vals)
+        assert np.allclose(
+            view.quiver_handler.quivers.X[: len(self.u2vals)], self.u2vals
+        )
 
 
 class TestSliceTheta_2DCyl(Slice2D):
