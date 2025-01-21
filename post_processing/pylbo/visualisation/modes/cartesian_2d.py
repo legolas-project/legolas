@@ -273,6 +273,7 @@ class CartesianSlicePlot2D(ModeFigure):
                 pbar.update()
         self._solutions = initial_solution
         self._time = self.time_data
+        self.data._print_bg_info = True
 
     def _ensure_first_frame_is_drawn(self) -> None:
         if None in transform_to_list(self._view):
