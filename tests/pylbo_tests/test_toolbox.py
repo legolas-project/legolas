@@ -272,5 +272,5 @@ def test_resonance_location_continuum_not_monotone():
 
 
 def test_custom_grid():
-    assert toolbox.is_custom_grid(np.linspace(0, 1, 11)) == False
-    assert toolbox.is_custom_grid(np.array([0.0, 1.0, 3.0])) == True
+    assert toolbox.is_custom_grid(np.linspace(0, 1, 11)) is False
+    assert toolbox.is_custom_grid(np.array([0.0, 1.0, 3.0])) is True
