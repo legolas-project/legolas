@@ -1,8 +1,10 @@
 import numpy as np
 import pylbo
 import pytest
+from pathlib import Path
 
 from .viz_modes import ModeVizTest
+from matplotlib.testing.compare import compare_images
 
 
 class Slice2D(ModeVizTest):
@@ -155,6 +157,12 @@ class TestSliceZ_2DCart(Slice2D):
         assert view.quiver_handler.quivers.U.size == len(ds.ef_grid) * len(self.u2vals)
         assert np.allclose(view.quiver_handler.quivers.X[: len(ds.ef_grid)], ds.ef_grid)
 
+    def test_streamlines_invalid_field(self, view):
+        with pytest.raises(ValueError):
+            view.add_quivers(
+                xgrid=np.linspace(0, 1, 2), coordgrid=np.linspace(0, 1, 2), field="a"
+            )
+
 
 class TestSliceZ_2DCartBackground(Slice2D):
     filename = "slice_2d_z_cart_rho_bg.npy"
@@ -261,6 +269,19 @@ class TestSliceY_2DCart(Slice2D):
         assert view.update_colorbar is True
         assert np.allclose(view.solutions, mode_solution)
 
+    def test_streamlines_nogrids(self, view, tmpdir, modebaselinedir):
+        view.add_streamlines(field="v")
+        image_test = tmpdir / "slice_2d_y_cart_streamlines.png"
+        view.save(filename=image_test)
+
+        image_baseline = modebaselinedir / "slice_2d_y_cart_streamlines.png"
+        result = compare_images(str(image_baseline), str(image_test), tol=2)
+        if result is not None:
+            pytest.fail(result, pytrace=False)
+        # test succeeded if result = None, check if files are kept
+        if result is None:
+            Path(image_test).unlink()
+
 
 class TestSliceZ_2DCyl(Slice2D):
     filename = "slice_2d_z_cyl_rho.npy"
@@ -356,3 +377,16 @@ class TestSliceTheta_2DCyl(Slice2D):
         view.set_contours(levels=25, fill=True)
         view.draw()
         assert self.cbar_matches(view, mode_solution)
+
+    def test_streamlines_polar(self, view, tmpdir, modebaselinedir):
+        view.add_streamlines(field="v")
+        image_test = tmpdir / "slice_2d_theta_cyl_streamlines.png"
+        view.save(filename=image_test)
+
+        image_baseline = modebaselinedir / "slice_2d_theta_cyl_streamlines.png"
+        result = compare_images(str(image_baseline), str(image_test), tol=2)
+        if result is not None:
+            pytest.fail(result, pytrace=False)
+        # test succeeded if result = None, check if files are kept
+        if result is None:
+            Path(image_test).unlink()
