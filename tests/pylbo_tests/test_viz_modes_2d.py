@@ -137,7 +137,7 @@ class TestSliceZ_2DCart(Slice2D):
         assert view.quiver_handler.quivers.U.size == 80
 
     def test_quivers_b(self, view, ds):
-        bfield = view.add_quivers(
+        view.add_quivers(
             xgrid=np.linspace(ds.ef_grid[0], ds.ef_grid[-1], 10),
             coordgrid=np.linspace(np.min(self.u2vals), np.max(self.u2vals), 8),
             field="B",
@@ -337,25 +337,6 @@ class TestSliceZ_2DCyl(Slice2D):
         assert np.allclose(
             view.quiver_handler.quivers.X[: len(self.u2vals)], self.u2vals
         )
-
-
-class TestSliceTheta_2DCyl(Slice2D):
-    filename = "slice_2d_theta_cyl_rho.npy"
-    omega = 0.01746995 + 0.02195201j
-    slicing_axis = "theta"
-    u2vals = np.pi
-    u3vals = np.linspace(0, 2, 50)
-    xlabel = "r"
-    ylabel = "z"
-
-    @pytest.fixture(scope="class")
-    def ds(self, ds_v121_magth):
-        return ds_v121_magth
-
-    def test_contour_filled(self, view, mode_solution):
-        view.set_contours(levels=25, fill=True)
-        view.draw()
-        assert self.cbar_matches(view, mode_solution)
 
 
 class TestSliceTheta_2DCyl(Slice2D):

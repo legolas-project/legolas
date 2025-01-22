@@ -1,8 +1,5 @@
-import numpy as np
-import pylbo
 import pytest
 
-from .viz_modes import ModeVizTest
 from pylbo.visualisation.modes.mode_data import ModeVisualisationData
 
 
