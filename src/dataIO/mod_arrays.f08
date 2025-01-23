@@ -26,6 +26,8 @@ module mod_arrays
 
 contains
 
+    !> Imports arrays from the file specified by the parfile parameter input_file.
+    !! To be called in the equilibrium submodule.
     subroutine import_equilibrium_data(settings, grid)
         type(settings_t), intent(inout) :: settings
         type(grid_t), intent(inout) :: grid
@@ -64,6 +66,8 @@ contains
     end subroutine import_equilibrium_data
 
 
+    !> Transders input to Legolas's grid, and subsequently calls to numerical
+    !! derivation. Called in mod_equilibrium after grid initialisation.
     subroutine interpolate_equilibrium_to_grid(settings, grid)
         type(settings_t), intent(inout) :: settings
         type(grid_t), intent(inout) :: grid
@@ -87,6 +91,7 @@ contains
     end subroutine interpolate_equilibrium_to_grid
 
 
+    !> Handles the interpolation from input to Legolas's grid.
     subroutine interpolate(gpts)
         integer, intent(in) :: gpts
         integer  :: ipts, idl, idu
@@ -121,6 +126,7 @@ contains
     end subroutine interpolate
 
 
+    !> Calculates the numerical derivatives on Legolas's grid.
     subroutine derivatives(gpts)
         integer, intent(in) :: gpts
         real(dp) :: x(gpts), array(gpts), d_array(gpts)
@@ -143,6 +149,7 @@ contains
     end subroutine derivatives
 
 
+    !> Looks up the equilibrium value for given quantity and position.
     subroutine lookup_equilibrium_value(type, x, derivative, out)
         character(len=*), intent(in) :: type
         real(dp), intent(in)  :: x
@@ -166,6 +173,7 @@ contains
     end subroutine lookup_equilibrium_value
 
 
+    !> Translates equilibrium name to index.
     subroutine tag_to_index(tag, index)
         character(len=*), intent(in) :: tag
         integer, intent(out) :: index
@@ -204,6 +212,7 @@ contains
     end subroutine tag_to_index
 
 
+    !> Deallocates this module's arrays. Called in main as part of cleanup.
     subroutine deallocate_input()
         deallocate(input)
         deallocate(equil_on_grid)
