@@ -117,7 +117,7 @@ contains
                 idu = minloc(input(:, 1), mask=(input(:, 1) > x), dim=1)
             end if
 
-            do j = 1, num_var
+            do j = 2, num_var
                 !!! linear interpolation
                 equil_on_grid(i, j) = input(idl, j) + (x - input(idl, 1)) * &
                     (input(idu, j) - input(idl, j)) / (input(idu, 1) - input(idl, 1))
