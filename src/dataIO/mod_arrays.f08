@@ -31,7 +31,7 @@ contains
         type(grid_t), intent(inout) :: grid
 
         integer :: error, lpts, idx
-        character(len=str_len) :: name
+        character(len=4) :: name
         real(dp), allocatable  :: array(:)
 
         open( &
@@ -183,7 +183,7 @@ contains
         character(len=*), intent(in) :: tag
         integer, intent(out) :: index
 
-        select case(tag)
+        select case(trim(tag))
             case("u1")
                 index = 1
             case("x")
@@ -210,7 +210,7 @@ contains
                 index = 10
             case default
                 call logger%warning( &
-                    "Unknown quantity " // tag // &
+                    "Unknown quantity " // trim(tag) // &
                     " in imported equilibrium data ignored" &
                 )
                 index = -1
