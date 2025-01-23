@@ -100,7 +100,7 @@ contains
 
         ipts = size(input, dim=1)
         if (equil_on_grid(1, 1) < input(1, 1) .or. &
-            equil_on_grid(gpts, 1) < input(ipts, 1)) then
+            equil_on_grid(gpts, 1) > input(ipts, 1)) then
             call logger%warning("Linear extrapolation of the imported data to the grid")
         end if
 
