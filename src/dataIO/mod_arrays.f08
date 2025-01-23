@@ -30,8 +30,7 @@ contains
         type(settings_t), intent(inout) :: settings
         type(grid_t), intent(inout) :: grid
 
-        integer :: error, lpts, idx
-        character(len=4) :: name
+        integer :: lpts, idx
         real(dp), allocatable  :: array(:)
 
         open( &
@@ -45,21 +44,9 @@ contains
         allocate(input(lpts, num_var))
         input(:,:) = 0.0_dp
 
-        do
-            read(file_id, *, iostat=error) name
-            select case(error)
-            case(0)
-                call tag_to_index(name, idx)
-                read(file_id, *) array
-                if (idx > 0) then
-                    input(:, idx) = array
-                end if
-            case(iostat_end)
-                exit
-            case default
-                call logger%error("Error in reading the numerical file")
-                stop
-            end select
+        do idx = 1, num_var
+            read(file_id) array
+            input(:, idx) = array
         end do
 
         close(file_id)
@@ -210,8 +197,7 @@ contains
                 index = 10
             case default
                 call logger%warning( &
-                    "Unknown quantity " // trim(tag) // &
-                    " in imported equilibrium data ignored" &
+                    "Unknown quantity " // trim(tag) &
                 )
                 index = -1
         end select

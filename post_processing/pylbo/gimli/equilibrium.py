@@ -282,7 +282,7 @@ class NumericalEquilibrium:
             assert isinstance(self.arrays[key], list) or isinstance(
                 self.arrays[key], np.ndarray
             )
-            assert len(self.array[key]) == length
+            assert len(self.arrays[key]) == length
 
     def to_legolas_arrays(self, filename="arrays", loc="./"):
         """
@@ -295,6 +295,8 @@ class NumericalEquilibrium:
         loc : str, optional
             The location to save the .lar file. Default is the current directory.
         """
+        if loc[-1] != '/':
+            loc = loc + '/'
         f = FortranFile(loc + filename + ".lar", "w")
 
         to_write = [
@@ -312,11 +314,14 @@ class NumericalEquilibrium:
             "grav",
         ]
 
-        f.write_record(np.array([len(self.arrays["rho0"])], dtype=np.int32))
+        length = len(self.arrays["rho0"])
+        f.write_record(np.array([length], dtype=np.int32))
 
-        for key in to_write:
+        for ii in range(len(to_write)):
+            key = to_write[ii]
             if key in self.arrays.keys():
-                f.write_record(key.ljust(4))
                 f.write_record(np.array(self.arrays[key], dtype=np.float64))
+            elif ii > 2:
+                f.write_record(np.zeros(length, dtype=np.float64))
 
         f.close()
