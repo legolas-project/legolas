@@ -278,7 +278,7 @@ class TestSliceY_2DCart(Slice2D):
         result = compare_images(str(image_baseline), str(image_test), tol=2)
         if result is not None:
             pytest.fail(result, pytrace=False)
-        # test succeeded if result = None, check if files are kept
+        # test succeeded if result = None
         if result is None:
             Path(image_test).unlink()
 
@@ -387,6 +387,6 @@ class TestSliceTheta_2DCyl(Slice2D):
         result = compare_images(str(image_baseline), str(image_test), tol=2)
         if result is not None:
             pytest.fail(result, pytrace=False)
-        # test succeeded if result = None, check if files are kept
+        # test succeeded if result = None
         if result is None:
             Path(image_test).unlink()
