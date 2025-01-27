@@ -214,10 +214,10 @@ contains
 
     !> Deallocates this module's arrays. Called in main as part of cleanup.
     subroutine deallocate_input()
-        deallocate(input)
-        deallocate(equil_on_grid)
-        deallocate(d_equil_on_grid)
-        deallocate(dd_equil_on_grid)
+        if (allocated(input)) deallocate(input)
+        if (allocated(equil_on_grid)) deallocate(equil_on_grid)
+        if (allocated(d_equil_on_grid)) deallocate(d_equil_on_grid)
+        if (allocated(dd_equil_on_grid)) deallocate(dd_equil_on_grid)
     end subroutine deallocate_input
 
 end module mod_arrays
