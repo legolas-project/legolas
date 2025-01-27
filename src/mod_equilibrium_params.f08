@@ -84,6 +84,8 @@ module mod_equilibrium_params
   logical   :: eq_bool
   !> path to the file containing numerical equilibrium data
   character(len=str_len) :: input_file
+  !> number of points to use for equidistant sampling of imported numerical data
+  integer  :: n_input
 
 contains
 
@@ -134,6 +136,7 @@ contains
 
     eq_bool = .false.
     input_file = ''
+    n_input = 1000
   end subroutine init_equilibrium_params
 
 end module mod_equilibrium_params

@@ -12,7 +12,6 @@ module mod_equilibrium
   use mod_global_variables, only: dp
   use mod_physical_constants, only: dpi
   use mod_equilibrium_params, only: k2, k3, input_file
-  use mod_arrays, only: interpolate_equilibrium_to_grid
   use mod_logging, only: logger, str, exp_fmt
   use mod_settings, only: settings_t
   use mod_background, only: background_t
@@ -239,9 +238,6 @@ contains
     ! Call submodule
     call set_equilibrium_values(settings, grid, background, physics)
     call grid%initialise()
-    if (.not. input_file == "") then
-      call interpolate_equilibrium_to_grid(settings, grid)
-    end if
 
     if (settings%physics%cooling%is_enabled()) then
       call physics%heatloss%cooling%initialise()
