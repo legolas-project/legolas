@@ -295,8 +295,8 @@ class NumericalEquilibrium:
         loc : str, optional
             The location to save the .lar file. Default is the current directory.
         """
-        if loc[-1] != '/':
-            loc = loc + '/'
+        if loc[-1] != "/":
+            loc = loc + "/"
         f = FortranFile(loc + filename + ".lar", "w")
 
         to_write = [
