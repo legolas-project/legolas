@@ -66,86 +66,114 @@ contains
     end subroutine import_equilibrium_data
 
 
-    !> Transders input to Legolas's grid, and subsequently calls to numerical
+    !> Transfers input to Legolas's Gaussian grid, and subsequently calls to numerical
     !! derivation. Called in mod_equilibrium after grid initialisation.
     subroutine interpolate_equilibrium_to_grid(settings, grid)
-        type(settings_t), intent(inout) :: settings
-        type(grid_t), intent(inout) :: grid
-        integer  :: gridpts
+        type(settings_t), intent(in) :: settings
+        type(grid_t), intent(in) :: grid
+        integer  :: ipts, gridpts
 
         if (.not. allocated(input)) return
+        ipts = size(input, dim=1)
 
-        gridpts = settings%grid%get_gridpts()
+        gridpts = settings%grid%get_gauss_gridpts()
         allocate(equil_on_grid(gridpts, num_var))
         equil_on_grid(:, :) = 0.0_dp
 
-        equil_on_grid(:, 1) = grid%base_grid
-        call interpolate(gridpts)
+        equil_on_grid(:, 1) = grid%gaussian_grid
+        call interpolate(input, equil_on_grid)
 
         allocate(d_equil_on_grid(gridpts, num_var))
         d_equil_on_grid(:, :) = 0.0_dp
         allocate(dd_equil_on_grid(gridpts, num_var))
         dd_equil_on_grid(:, :) = 0.0_dp
 
-        call derivatives(gridpts)
+        call derivatives(settings, grid)
     end subroutine interpolate_equilibrium_to_grid
 
 
-    !> Handles the interpolation from input to Legolas's grid.
-    subroutine interpolate(gpts)
-        integer, intent(in) :: gpts
-        integer  :: ipts, idl, idu
+    !> Handles the column-by-column interpolation from origin to array.
+    subroutine interpolate(origin, array)
+        real(dp), intent(in) :: origin(:,:)
+        real(dp), intent(inout) :: array(:,:)
+        integer  :: ipts, gpts, idl, idu
         integer  :: i, j
         real(dp) :: x
 
-        ipts = size(input, dim=1)
-        if (equil_on_grid(1, 1) < input(1, 1) .or. &
-            equil_on_grid(gpts, 1) > input(ipts, 1)) then
+        ipts = size(origin, dim=1)
+        gpts = size(array, dim=1)
+
+        if (array(1, 1) < origin(1, 1) .or. &
+            array(gpts, 1) > origin(ipts, 1)) then
             call logger%warning("Linear extrapolation of the imported data to the grid")
         end if
 
         do i = 1, gpts
-            x = equil_on_grid(i, 1)
-            if (x <= input(1, 1)) then
+            x = array(i, 1)
+            if (x <= origin(1, 1)) then
                 idl = 1
                 idu = 2
-            else if (x >= input(ipts, 1)) then
+            else if (x >= origin(ipts, 1)) then
                 idl = ipts - 1
                 idu = ipts
             else
-                idl = maxloc(input(:, 1), mask=(input(:, 1) < x), dim=1)
-                idu = minloc(input(:, 1), mask=(input(:, 1) > x), dim=1)
+                idl = maxloc(origin(:, 1), mask=(origin(:, 1) < x), dim=1)
+                idu = minloc(origin(:, 1), mask=(origin(:, 1) > x), dim=1)
             end if
 
             do j = 2, num_var
                 !!! linear interpolation
-                equil_on_grid(i, j) = input(idl, j) + (x - input(idl, 1)) * &
-                    (input(idu, j) - input(idl, j)) / (input(idu, 1) - input(idl, 1))
+                array(i, j) = origin(idl, j) + (x - origin(idl, 1)) * &
+                    (origin(idu, j) - origin(idl, j)) / &
+                    (origin(idu, 1) - origin(idl, 1))
             end do
         end do
     end subroutine interpolate
 
 
-    !> Calculates the numerical derivatives on Legolas's grid.
-    subroutine derivatives(gpts)
-        integer, intent(in) :: gpts
-        real(dp) :: x(gpts), array(gpts), d_array(gpts)
-        integer  :: i
+    !> Sets the numerical derivatives on Legolas's Gaussian grid.
+    subroutine derivatives(settings, grid)
+        type(settings_t), intent(in) :: settings
+        type(grid_t), intent(in) :: grid
+        real(dp), allocatable :: x(:), array(:), d_array(:)
+        real(dp), allocatable :: tmp(:,:)
+        integer  :: i, ipts, gpts, gausspts
 
-        x = equil_on_grid(:, 1)
-        d_equil_on_grid(:, 1) = x
-        dd_equil_on_grid(:, 1) = x
+        ipts = size(input, dim=1)
+        gpts = settings%grid%get_ef_gridpts()
+        gausspts = settings%grid%get_gauss_gridpts()
 
+        allocate(tmp(gpts, num_var))
+        tmp(:, 1) = grid%ef_grid
+        call interpolate(input, tmp)
+
+        allocate(x(gpts))
+        x = tmp(:, 1)
+        allocate(array(gpts))
+        allocate(d_array(gpts))
+
+        ! first derivative
         do i = 2, num_var
-            ! first derivative
-            array = equil_on_grid(:, i)
+            array = tmp(:, i)
             call get_numerical_derivative(x, array, d_array)
-            d_equil_on_grid(:, i) = d_array
-            ! second derivative
-            array = d_array
-            call get_numerical_derivative(x, array, d_array)
-            dd_equil_on_grid(:, i) = d_array
+            tmp(:, i) = d_array
         end do
+        d_equil_on_grid(:, 1) = grid%gaussian_grid
+        call interpolate(tmp, d_equil_on_grid)
+
+        ! second derivative
+        do i = 2, num_var
+            array = tmp(:, i)
+            call get_numerical_derivative(x, array, d_array)
+            tmp(:, i) = d_array
+        end do
+        dd_equil_on_grid(:, 1) = grid%gaussian_grid
+        call interpolate(tmp, dd_equil_on_grid)
+
+        deallocate(x)
+        deallocate(array)
+        deallocate(d_array)
+        deallocate(tmp)
     end subroutine derivatives
 
 
