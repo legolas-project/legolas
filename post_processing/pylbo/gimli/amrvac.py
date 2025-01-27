@@ -2,7 +2,6 @@ import numpy as np
 from scipy.io import FortranFile
 
 from pylbo.utilities.datfiles.file_loader import load
-from pylbo.visualisation.modes.mode_data import ModeVisualisationData
 from pylbo.utilities.logger import pylboLogger
 from pylbo.gimli.utils import validate_output_dir
 
@@ -234,14 +233,12 @@ class Amrvac:
         if ef_type == "p":
             rho1 = self._get_combined_perturbation("rho")
             T1 = self._get_combined_perturbation("T")
-            data1 = ModeVisualisationData(
-                self.ds, self.config["ev_guess"], ef_name="rho", add_background=True
-            )
-            rho0 = data1.get_background(rho1.shape, "rho0")
-            data2 = ModeVisualisationData(
-                self.ds, self.config["ev_guess"], ef_name="T", add_background=True
-            )
-            T0 = data2.get_background(T1.shape, "T0")
+            rho0 = np.interp(
+                self.ds.ef_grid, self.ds.grid_gauss, self.ds.equilibria["rho0"]
+                )
+            T0 = np.interp(
+                self.ds.ef_grid, self.ds.grid_gauss, self.ds.equilibria["T0"]
+                )
             perturbation = rho1 * T0 + rho0 * T1
         else:
             perturbation = self._get_combined_perturbation(ef_type)
