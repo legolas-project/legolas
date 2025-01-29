@@ -413,7 +413,7 @@ class Amrvac:
             norm = self._get_ef_normalisation()
         return norm
 
-    def prepare_legolas_data(self, loc=None):
+    def prepare_legolas_data(self, name=None, loc=None):
         """
         Prepares a file (.ldat) from the Legolas data for use with MPI-AMRVAC.
 
@@ -444,8 +444,10 @@ class Amrvac:
         loc = validate_output_dir(loc)
         self._validate_datfile()
         datfile = self.config["datfile"]
-        name = str(datfile).rsplit("/")[-1]
-        f = FortranFile(loc + "/" + name[:-4] + ".ldat", "w")
+        if name is None:
+            file = str(datfile).rsplit("/")[-1]
+            name = file[:-4]
+        f = FortranFile(loc + "/" + name + ".ldat", "w")
         f.write_record(np.array([self.ds.ef_gridpoints], dtype=np.int32))
         f.write_record(
             np.array(
