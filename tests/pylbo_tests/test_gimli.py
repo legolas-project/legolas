@@ -92,7 +92,6 @@ def test_amrvac_preparation(tmpdir, datv211_harris, vacv211_harris):
         "datfile": datv211_harris,
         "physics_type": "mhd",
         "ev_guess": [0.01636j, 1.397e-2 - 2.843e-4 * 1j, -1.397e-2 - 2.843e-4 * 1j],
-        "ev_time": 0,
         "percentage": 0.01,
         "quantity": "B02",
     }
