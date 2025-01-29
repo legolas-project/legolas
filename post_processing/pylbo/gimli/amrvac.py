@@ -211,7 +211,8 @@ class Amrvac:
             w = self.config["weights"][ii]
             expfac = np.exp(-1j * ef_data[ii]["eigenvalue"] * self.config["ev_time"])
             raw = ef_data[ii][ef]
-            perturbation += w * fac * (raw / np.nanmax(np.abs(raw))) * expfac
+            scaling = ef_data[ii][self.config["quantity"].replace("0", "")]
+            perturbation += w * fac * (raw / np.nanmax(np.abs(scaling))) * expfac
         return perturbation
 
     def _get_total_perturbation(self, ef_type):
