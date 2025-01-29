@@ -290,12 +290,16 @@ class Amrvac:
         interp_i = CubicSpline(self.ds.ef_grid, array.imag)
 
         if self.config["dim"] == 3:
-            func = lambda u3, u2, u1: (
-                (interp_r(u1) + 1j * interp_i(u1))
-                * np.exp(1j * order * (k2 * u2 + k3 * u3))
-            ).real
+
+            def integrand(u3, u2, u1):
+                value = (
+                    (interp_r(u1) + 1j * interp_i(u1))
+                    * np.exp(1j * order * (k2 * u2 + k3 * u3))
+                ).real
+                return value
+
             integral = tplquad(
-                func,
+                integrand,
                 *self.config["u1_bounds"],
                 *self.config["u2_bounds"],
                 *self.config["u3_bounds"],
@@ -303,16 +307,25 @@ class Amrvac:
         elif self.config["dim"] >= 2:
             kvec = np.array([k2, k3])
             arg = np.argmax(abs(kvec))
-            func = lambda u2, u1: (
-                (interp_r(u1) + 1j * interp_i(u1))
-                * np.exp(1j * order * (kvec[arg] * u2))
-            ).real
+
+            def integrand(u2, u1):
+                value = (
+                    (interp_r(u1) + 1j * interp_i(u1))
+                    * np.exp(1j * order * (kvec[arg] * u2))
+                ).real
+                return value
+
             integral = dblquad(
-                func, *self.config["u1_bounds"], *self.config[f"u{int(arg+2)}_bounds"]
+                integrand,
+                *self.config["u1_bounds"],
+                *self.config[f"u{int(arg+2)}_bounds"],
             )
         elif self.config["dim"] >= 1:
-            func = lambda u1: interp_r(u1) + 1j * interp_i(u1)
-            integral = quad(func, *self.config["u1_bounds"])
+
+            def integrand(u1):
+                return interp_r(u1) + 1j * interp_i(u1)
+
+            integral = quad(integrand, *self.config["u1_bounds"])
 
         return integral[0]
 
