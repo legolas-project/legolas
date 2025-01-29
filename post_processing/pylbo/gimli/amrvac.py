@@ -162,9 +162,9 @@ class Amrvac:
 
         if "quantity" not in self.config.keys():
             pylboLogger.warning(
-                'No "quantity" specified for normalisation, defaulting to "B02".'
+                'No "quantity" specified for normalisation, defaulting to "rho0".'
             )
-            self.config["quantity"] = "B02"
+            self.config["quantity"] = "rho0"
         elif not isinstance(self.config["quantity"], str):
             raise TypeError('"quantity" must be a string.')
         elif self.config["quantity"] not in self.eq_list:
