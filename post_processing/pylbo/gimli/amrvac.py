@@ -1,5 +1,8 @@
 import numpy as np
 from scipy.io import FortranFile
+from scipy.interpolate import CubicSpline
+from scipy.integrate import quad, dblquad, tplquad
+from numpy.polynomial.polynomial import Polynomial
 
 from pylbo.utilities.datfiles.file_loader import load
 from pylbo.utilities.logger import pylboLogger
@@ -37,7 +40,7 @@ class Amrvac:
             raise KeyError('"physics_type" ("hd" / "mhd") not specified.')
         elif self.config["physics_type"] == "mhd":
             self.ef_list = ["rho", "v1", "v2", "v3", "p", "B1", "B2", "B3"]
-            self.eq_list = ["rho0", None, "v02", "v03", "rho0 * T0", None, "B02", "B03"]
+            self.eq_list = ["rho0", "v01", "v02", "v03", "rho0 * T0", "B01", "B02", "B03"]
             self.units = [
                 "unit_length",
                 "unit_numberdensity",
@@ -50,7 +53,7 @@ class Amrvac:
             ]
         elif self.config["physics_type"] == "hd":
             self.ef_list = ["rho", "v1", "v2", "v3", "p"]
-            self.eq_list = ["rho0", None, "v02", "v03", "rho0 * T0"]
+            self.eq_list = ["rho0", "v01", "v02", "v03", "rho0 * T0"]
             self.units = [
                 "unit_length",
                 "unit_numberdensity",
@@ -62,6 +65,14 @@ class Amrvac:
             ]
         else:
             raise ValueError("Unknown physics type.")
+        
+        if "u1_bounds" in self.config.keys():
+            assert self.config["u1_bounds"][0] < self.config["u1_bounds"][1]
+        if "u2_bounds" in self.config.keys():
+            assert self.config["u2_bounds"][0] < self.config["u2_bounds"][1]
+        if "u3_bounds" in self.config.keys():
+            assert self.config["u3_bounds"][0] < self.config["u3_bounds"][1]
+
         return
 
     def _validate_datfile(self):
@@ -82,8 +93,7 @@ class Amrvac:
             specified.
         TypeError
             If `ev_guess` is not a single float/complex number or a list/NumPy array of
-            float/complex numbers; if `ev_time` for the eigenvalue is not a float or an
-            integer; if `weights` is not a list or NumPy array; if `ef_factor` is not a
+            float/complex numbers; if `weights` is not a list or NumPy array; if `ef_factor` is not a
             list with length equal to the number of eigenvalues, or an integer, float,
             or complex number; if `quantity` is not a string; if `percentage` is not a
             float; if `norm_range` is not a NumPy array.
@@ -111,12 +121,6 @@ class Amrvac:
             )
         elif isinstance(self.config["ev_guess"], (float, complex)):
             self.config["ev_guess"] = [self.config["ev_guess"]]
-
-        if "ev_time" not in self.config.keys():
-            self.config["ev_time"] = 0
-            pylboLogger.warning('No "ev_time" specified, defaulting to 0.')
-        elif not isinstance(self.config["ev_time"], (float, int)):
-            raise TypeError('"ev_time" must be a float or an integer.')
 
         if "weights" in self.config.keys():
             if len(self.config["ev_guess"]) > 1 and not isinstance(
@@ -186,6 +190,31 @@ class Amrvac:
                     'First element of "norm_range" must be smaller than the second'
                     " element."
                 )
+        
+        if self.config["energy_norm"] not in self.config.keys():
+            self.config["energy_norm"] == False
+        else:
+            assert isinstance(self.config["energy_norm"], bool)
+            if self.config["energy_norm"]:
+                if "dim" not in self.config.keys():
+                    raise KeyError("Must specify 'dim' when using energy to scale.")
+                elif not isinstance(self.config["dim"], (int, float)):
+                    raise TypeError("'dim' should be an integer or a float.")
+                elif (self.config["dim"] < 1 or self.config["dim"] > 3):
+                    raise ValueError("'dim' must lie between 1 and 3.")
+                if "u1_bounds" not in self.config.keys():
+                    raise KeyError("Must specify 'u1_bounds' when scaling with energy.")
+                elif (self.config["dim"] == 3):
+                    if "u2_bounds" not in self.config.keys():
+                        raise KeyError("Must specify 'u2_bounds'.")
+                    if "u3_bounds" not in self.config.keys():
+                        raise KeyError("Must specify 'u3_bounds'.")
+                elif (self.config["dim"] >= 2):
+                    if not (
+                        "u2_bounds" in self.config.keys() or
+                        "u3_bounds" in self.config.keys()
+                        ):
+                        raise KeyError("Must specify bounds matching largest k-value.")
 
         return
 
@@ -209,10 +238,9 @@ class Amrvac:
         for ii in range(len(ef_data)):
             fac = self.config["ef_factor"][ii]
             w = self.config["weights"][ii]
-            expfac = np.exp(-1j * ef_data[ii]["eigenvalue"] * self.config["ev_time"])
             raw = ef_data[ii][ef]
             scaling = ef_data[ii][self.config["quantity"].replace("0", "")]
-            perturbation += w * fac * (raw / np.nanmax(np.abs(scaling))) * expfac
+            perturbation += w * fac * (raw / np.nanmax(np.abs(scaling)))
         return perturbation
 
     def _get_total_perturbation(self, ef_type):
@@ -244,8 +272,40 @@ class Amrvac:
         else:
             perturbation = self._get_combined_perturbation(ef_type)
         return perturbation
+    
+    def _integrate_energy_term(self, array, order):
+        k2 = self.ds.parameters["k2"]
+        k3 = self.ds.parameters["k3"]
 
-    def _get_normalisation(self):
+        interp_r = CubicSpline(self.ds.ef_grid, array.real)
+        interp_i = CubicSpline(self.ds.ef_grid, array.imag)
+
+        if self.config["dim"] == 3:
+            func = lambda u3, u2, u1: ((interp_r(u1) + 1j * interp_i(u1)) 
+                                       * np.exp(1j * order * (k2 * u2 + k3 * u3))).real
+            integral = tplquad(
+                func,
+                *self.config["u1_bounds"],
+                *self.config["u2_bounds"],
+                *self.config["u3_bounds"]
+                )
+        elif self.config["dim"] >= 2:
+            kvec = np.array([k2, k3])
+            arg = np.argmax(abs(kvec))
+            func = lambda u2, u1: ((interp_r(u1) + 1j * interp_i(u1)) 
+                                       * np.exp(1j * order * (kvec[arg] * u2))).real
+            integral = dblquad(
+                func,
+                *self.config["u1_bounds"],
+                *self.config[f"u{int(arg+2)}_bounds"]
+                )
+        elif self.config["dim"] >= 1:
+            func = lambda u1: interp_r(u1) + 1j * interp_i(u1)
+            integral = quad(func, *self.config["u1_bounds"])
+
+        return integral[0]
+
+    def _get_ef_normalisation(self):
         """
         Normalises the perturbation of the specified quantity by the maximum background
         value.
@@ -270,6 +330,88 @@ class Amrvac:
                 perturbation = perturbation[idx1:idx2]
             norm = self.config["percentage"] * max_bg / np.nanmax(np.abs(perturbation))
         return norm
+    
+    def _get_energy_normalisation(self):
+        """
+        Normalises the perturbation eigenfunctions by the energy.
+
+        Returns
+        -------
+        float
+            The normalisation factor.
+        """
+        u1 = self.ds.ef_grid
+        u1_gauss = self.ds.grid_gauss
+        gamma_1 = self.ds.gamma - 1
+
+        eq_list = self.eq_list
+        idx = eq_list.index("rho0 * T0")
+        eq_list[idx] = "T0"
+        ef_list = self.ef_list
+        idx = ef_list.index("p")
+        ef_list[idx] = "T"
+
+        eq = {}
+        for key in eq_list:
+            eq[key] = np.interp(u1, u1_gauss, self.ds.equilibria[key])
+        efs = {}
+        for key in ef_list:
+            efs[key] = self._get_total_perturbation(key)
+
+        e0 = (
+            eq["rho0"] * (eq["v01"]**2 + eq["v02"]**2 + eq["v03"]**2) / 2
+            + eq["rho0"] * eq["T0"] / gamma_1
+            )
+        e1 = (
+            efs["rho"] * (eq["v01"]**2 + eq["v02"]**2 + eq["v03"]**2) / 2
+            + eq["rho0"] * (
+                eq["v01"] * efs["v1"]
+                + eq["v02"] * efs["v2"]
+                + eq["v03"] * efs["v3"]
+                )
+            + (eq["rho0"] * efs["T"] + efs["rho"] * eq["T0"]) / gamma_1
+            )
+        e2 = (
+            eq["rho0"] * (efs["v1"]**2 + efs["v2"]**2 + efs["v3"]**2) / 2
+            + efs["rho"] * (
+                eq["v01"] * efs["v1"]
+                + eq["v02"] * efs["v2"]
+                + eq["v03"] * efs["v3"]
+                )
+            + efs["rho"] * efs["T"] / gamma_1
+            )
+        e3 = efs["rho"] * (efs["v1"]**2 + efs["v2"]**2 + efs["v3"]**2) / 2
+
+        if self.config["physics_type"] == "mhd":
+            e0 += (eq["B01"]**2 + eq["B02"]**2 + eq["B03"]**2) / 2
+            e1 += eq["B01"] * efs["B1"] + eq["B02"] * efs["B2"] + eq["B03"] * efs["B3"]
+            e2 += efs["B1"]**2 + efs["B2"]**2 + efs["B3"]**2
+
+        coeff0 = self._integrate_energy_term(e0, 0)
+        coeff1 = self._integrate_energy_term(e1, 1)
+        coeff2 = self._integrate_energy_term(e2, 2)
+        coeff3 = self._integrate_energy_term(e3, 3)
+
+        p = Polynomial([-self.config["percentage"] * coeff0, coeff1, coeff2, coeff3])
+        roots = p.roots()
+        index = np.argmin(abs(roots))
+        norm = roots[index]
+        return norm
+    
+    def _get_normalisation(self):
+        """
+        Selects which procedure to follow for the normalisation.
+
+        Returns
+        -------
+        float
+            The normalisation factor.
+        """
+        if self.config["energy_norm"]:
+            norm = self._get_energy_normalisation()
+        else:
+            norm = self._get_ef_normalisation()
+        return norm
 
     def prepare_legolas_data(self, loc=None):
         """
@@ -293,7 +435,6 @@ class Amrvac:
         >>>     "datfile": "./datfile.dat",
         >>>     "physics_type": "mhd",
         >>>     "ev_guess": [-0.1, 0.1],
-        >>>     "ev_time": 0,
         >>>     "percentage": 0.01,
         >>>     "quantity": "rho0"
         >>> }
