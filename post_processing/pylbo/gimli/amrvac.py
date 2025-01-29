@@ -201,7 +201,7 @@ class Amrvac:
                 )
 
         if self.config["energy_norm"] not in self.config.keys():
-            self.config["energy_norm"] == False
+            self.config["energy_norm"] = False
         else:
             assert isinstance(self.config["energy_norm"], bool)
             if self.config["energy_norm"]:
