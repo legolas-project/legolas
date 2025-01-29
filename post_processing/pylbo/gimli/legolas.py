@@ -247,7 +247,7 @@ class Legolas:
         create_file(name)
         file = open(name, "a")
         write_pad(file, "!> Submodule for user-defined equilibria.", 0)
-        write_pad(file, f"!! Generated with GIMLI.", 0)
+        write_pad(file, "!! Generated with GIMLI.", 0)
         write_pad(file, "submodule (mod_equilibrium) smod_user_defined", 0)
         write_pad(file, "use mod_logging, only: logger", 1)
         eqparam = get_equilibrium_parameters(self.config)
