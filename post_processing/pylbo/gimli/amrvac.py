@@ -414,6 +414,13 @@ class Amrvac:
         roots = p.roots()
         index = np.argmin(abs(roots))
         norm = roots[index]
+        if abs(norm) > 1:
+            pylboLogger.warning(
+                "Normalization factor larger than 1. Perturbation may "
+                "be larger than or comparable to equilibrium quantity."
+            )
+        else:
+            pylboLogger.info(f"Normalization factor = {norm}")
         return norm
 
     def _get_normalisation(self):
