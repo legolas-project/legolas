@@ -403,7 +403,7 @@ class Amrvac:
         if self.config["physics_type"] == "mhd":
             e0 += (eq["B01"] ** 2 + eq["B02"] ** 2 + eq["B03"] ** 2) / 2
             e1 += eq["B01"] * efs["B1"] + eq["B02"] * efs["B2"] + eq["B03"] * efs["B3"]
-            e2 += efs["B1"] ** 2 + efs["B2"] ** 2 + efs["B3"] ** 2
+            e2 += (efs["B1"] ** 2 + efs["B2"] ** 2 + efs["B3"] ** 2) / 2
 
         coeff0 = self._integrate_energy_term(e0, 0)
         coeff1 = self._integrate_energy_term(e1, 1)
