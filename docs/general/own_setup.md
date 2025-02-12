@@ -12,7 +12,8 @@ last_modified_at: 2023-04-13
 This page explains how to configure the custom user submodule to your needs. We assume that you are already familiar with
 how to set up a legolas directory and how to run legolas in a separate directory. If this is not the case see [how to run your first problem](../../getting-started/running).
 In what follows we also assume that both a `smod_user_defined.f08` file and parfile are present in the current working directory. You can copy both of these over when running
-the setup script.
+the setup script. Alternatively, you can use Python to define an analytic (SymPy) or numerical configuration, and use `Pylbo`'s submodule `Gimli` to generate your Legolas files.
+More information can be found [here](../../sphinx/autoapi/pylbo/index.html#pylbo.gimli).
 
 ## Read before proceeding
 When implementing your own setup it is useful to know how Legolas treats the user submodule. The program state at a given time is governed by the following objects (click the links for a full overview of accessible attributes and type-bound procedures):
@@ -281,7 +282,7 @@ call settings%physics%enable_perpendicular_conduction()
 call settings%physics%enable_parallel_conduction(fixed_tc_para_value=0.0001_dp)
 call settings%physics%enable_perpendicular_conduction(fixed_tc_perp_value=0.0001_dp)
 ```
-Both the parallel and perpendicular resistivity functions can be user-defined as well using [these](../../ford/type/physics_t.html#boundprocedure-set_parallel_conduction_funcs) type-bound procedures.
+Both the parallel and perpendicular conduction functions can be user-defined as well using [these](../../ford/type/physics_t.html#boundprocedure-set_parallel_conduction_funcs) type-bound procedures.
 
 ### Radiative cooling and heating
 To have an equilibrium in thermal balance you should enable heating and leave the `force_thermal_balance` option to `.true.`.

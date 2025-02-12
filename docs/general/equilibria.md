@@ -77,6 +77,10 @@ physical effects, and links to the source docs.
   ```fortran
   equilibrium_type = "magnetothermal_instabilities"
   ```
+- [Numerical setup](../../ford/module/smod_equil_numerical.html): imports user data from a file generated with pylbo. See [here](../../sphinx/autoapi/pylbo/index.html#pylbo.gimli.NumericalEquilibrium)
+  ```fortran
+  equilibrium_type = "numerical"
+  ```
 - [Rayleigh-Taylor instabilities](../../ford/module/smod_equil_rti.html): Cartesian, flow, external gravity
   ```fortran
   equilibrium_type = "rayleigh_taylor"
