@@ -1,8 +1,16 @@
 from .regression import RegressionTest
 import pytest
+from os import getcwd
+
+
+def get_filepath():
+    here = getcwd()
+    up = here.rsplit("/", 1)[0]
+    return up + "/pylbo_tests/utility_files/test_numerical.lar"
 
 
 class TestNumericalQR(RegressionTest):
+
     name = "Numerical"
     filename = "numerical_QR"
     equilibrium = "numerical"
@@ -12,8 +20,8 @@ class TestNumericalQR(RegressionTest):
         "k2": 1.0,
         "k3": 0,
         "eq_bool": True,
-        "input_file": "../pylbo_tests/utility_files/test_numerical.lar",
-        "n_input": 2000
+        "input_file": get_filepath(),
+        "n_input": 2000,
     }
 
     physics_settings = {"physics_type": "hd"}
