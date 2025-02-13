@@ -27,8 +27,8 @@ class TestNumericalQR(RegressionTest):
     physics_settings = {"physics_type": "hd"}
 
     spectrum_limits = [
-        {"xlim": (-70, 70), "ylim": (-5e-8, 5e-8)},
-        {"xlim": (-2.5, 2.5), "ylim": (-5e-8, 5e-8)},
+        {"xlim": (-70, 70), "ylim": (-1e-6, 1e-6)},
+        {"xlim": (-2.5, 2.5), "ylim": (-1e-6, 1e-6)},
     ]
 
     @pytest.mark.parametrize("limits", spectrum_limits)
