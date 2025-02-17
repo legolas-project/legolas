@@ -150,6 +150,11 @@ def vacv211_harris():
     return utils / "v2.1.1_harris.ldat"
 
 
+@pytest.fixture
+def numerical_lar():
+    return utils / "test_numerical.lar"
+
+
 @pytest.mark.timeout(5)
 @pytest.fixture
 def ds_v090():

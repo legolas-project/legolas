@@ -10,7 +10,6 @@ from pylbo.gimli.utils import (
     is_symbol_dependent,
     validate_output_dir,
 )
-from pylbo.gimli._version import __version__
 
 
 def write_physics_calls(file, equilibrium):
@@ -248,7 +247,7 @@ class Legolas:
         create_file(name)
         file = open(name, "a")
         write_pad(file, "!> Submodule for user-defined equilibria.", 0)
-        write_pad(file, f"!! Generated with GIMLI v{__version__}.", 0)
+        write_pad(file, "!! Generated with GIMLI.", 0)
         write_pad(file, "submodule (mod_equilibrium) smod_user_defined", 0)
         write_pad(file, "use mod_logging, only: logger", 1)
         eqparam = get_equilibrium_parameters(self.config)

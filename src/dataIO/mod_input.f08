@@ -326,7 +326,7 @@ contains
       k2, k3, cte_rho0, cte_T0, cte_B01, cte_B02, cte_B03, cte_v02, cte_v03, &
       cte_p0, p1, p2, p3, p4, p5, p6, p7, p8, &
       alpha, beta, delta, theta, tau, lambda, nu, &
-      r0, rc, rj, Bth0, Bz0, V, j0, g, eq_bool
+      r0, rc, rj, Bth0, Bz0, V, j0, g, eq_bool, input_file, n_input
 
     call init_equilibrium_params()
     read(unit, nml=paramlist, iostat=iostat, iomsg=iomsg)

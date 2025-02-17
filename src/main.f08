@@ -23,6 +23,7 @@ program legolas
   use mod_grid, only: grid_t, new_grid
   use mod_eigenfunctions, only: eigenfunctions_t, new_eigenfunctions
   use mod_physics, only: physics_t, new_physics
+  use mod_arrays, only: deallocate_input
   implicit none
 
   !> A matrix in eigenvalue problem wBX = AX
@@ -168,6 +169,7 @@ contains
     call grid%delete()
     call background%delete()
     call settings%delete()
+    call deallocate_input()
   end subroutine cleanup
 
 

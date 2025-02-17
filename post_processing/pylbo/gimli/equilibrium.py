@@ -1,4 +1,6 @@
 import sympy as sp
+import numpy as np
+from scipy.io import FortranFile
 
 from pylbo.gimli.utils import is_symbol_dependent
 
@@ -78,7 +80,7 @@ class Variables:
 
 
 class Equilibrium:
-    """ "
+    """
     Class containing all equilibrium expressions and initialisation functions.
     This object is a required argument when generating user files with the Legolas and
     Amrvac classes.
@@ -217,3 +219,109 @@ class Equilibrium:
             "B_0^2": B2_replace,
         }
         return dict_dependencies
+
+
+class NumericalEquilibrium:
+    """
+    Class to convert numerical arrays to a Legolas-readable format.
+
+    Parameters
+    ----------
+    arrays : dict
+        A dictionary linking key/header to a numerical array.
+        Must contain "rho0" and "T0" and one of ("u1", "x", "r"). Optional arrays are
+        "v01", "v02", "v03", "B01", "B02", "B03", and "grav".
+
+    Attributes
+    ----------
+    arrays : dict
+        Dictionary with specified arrays.
+
+    Examples
+    --------
+    The example below defines a homogeneous hydrodynamic equilibrium with constant
+    density and temperature.
+
+    >>> import numpy as np
+    >>> from pylbo.gimli import NumericalEquilibrium
+    >>> dictionary = {
+    >>>     "x" : np.linspace(0, 1, 100),
+    >>>     "rho0": 2 * np.ones(100),
+    >>>     "T0" : 0.5 * np.ones(100)
+    >>> }
+    >>> equil = NumericalEquilibrium(dictionary)
+    >>> equil.to_legolas_arrays(filename="homogeneous")
+    """
+
+    def __init__(self, arrays):
+        self.arrays = arrays
+        if isinstance(self.arrays, dict):
+            self._validate()
+        else:
+            raise TypeError("Provided object is not a dictionary.")
+
+    def _validate(self):
+        keyring = self.arrays.keys()
+        if not ("rho0" in keyring and "T0" in keyring):
+            raise KeyError("Must include rho0 and T0 arrays.")
+
+        count = 0
+        for key in ["u1", "x", "r"]:
+            if key in keyring:
+                count += 1
+        if count == 0:
+            raise KeyError("No u1, x, or r array specified.")
+        elif count > 1:
+            raise RuntimeError("Combination of u1, x, and r encountered. Keep only 1.")
+
+        assert isinstance(self.arrays["rho0"], list) or isinstance(
+            self.arrays["rho0"], np.ndarray
+        )
+        length = len(self.arrays["rho0"])
+        for key in keyring:
+            assert isinstance(self.arrays[key], list) or isinstance(
+                self.arrays[key], np.ndarray
+            )
+            assert len(self.arrays[key]) == length
+
+    def to_legolas_arrays(self, filename="arrays", loc="./"):
+        """
+        Prepares a numerical arrays file (.lar) for use with Legolas.
+
+        Parameters
+        ----------
+        filename : str, optional
+            Name of the .lar file. Default is 'arrays'.
+        loc : str, optional
+            The location to save the .lar file. Default is the current directory.
+        """
+        if loc[-1] != "/":
+            loc = loc + "/"
+        f = FortranFile(loc + filename + ".lar", "w")
+
+        to_write = [
+            "u1",
+            "x",
+            "r",
+            "rho0",
+            "v01",
+            "v02",
+            "v03",
+            "T0",
+            "B01",
+            "B02",
+            "B03",
+            "grav",
+        ]
+
+        length = len(self.arrays["rho0"])
+        f.write_record(np.array([length], dtype=np.int32))
+
+        for ii in range(len(to_write)):
+            key = to_write[ii]
+            if key in self.arrays.keys():
+                f.write_record(np.array(self.arrays[key], dtype=np.float64))
+            elif ii > 2:
+                f.write_record(np.zeros(length, dtype=np.float64))
+
+        f.close()
