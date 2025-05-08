@@ -172,22 +172,3 @@ class CartesianSlicePlot3D(CartesianSlicePlot2D):
 
     def _set_t_txt(self, t):
         self.t_txt.set_text(f"t = {t:.2f}")
-
-    # def create_animation(
-    #     self, times: np.ndarray, filename: str, fps: float = 10, dpi: int = 200
-    # ) -> None:
-    #     """
-    #     Creates an animation of the eigenmode solution over a given time interval.
-
-    #     Parameters
-    #     ----------
-    #     times : np.ndarray
-    #         The times at which to create the animation.
-    #     filename : str
-    #         The filename of the animation.
-    #     fps : float
-    #         The frames per second of the animation.
-    #     dpi : int
-    #         The resolution of the animation.
-    #     """
-    #     raise ValueError(f"{self.__class__.__name__} does not support animation.")
