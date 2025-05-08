@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import difflib
 from typing import Union
 
 import numpy as np
@@ -294,14 +293,13 @@ class ModeVisualisationData:
             self.ds_bg.derived_ef_names
         ) and self._ef_name not in ("B1", "B2", "B3"):
             raise ValueError("Unable to add a background to this field.")
-        name = None
-        name_temp = difflib.get_close_matches(self._ef_name, self.ds_bg.eq_names, 1)
-        if name_temp != []:
-            (name,) = name_temp
-        if self._print_bg_info and name is not None:
-            pylboLogger.info(
-                f"adding background for '{self._ef_name}', closest match is '{name}'"
-            )
+        if self._ef_name[-1].is_digit():
+            name = self._ef_name[:-1] + "0" + self._ef_name[-1]
+        else:
+            name = self._ef_name + "0"
+        bg_has_name = name in self.ds_bg.eq_names
+        if self._print_bg_info and bg_has_name:
+            pylboLogger.info(f"adding background '{name}' for '{self._ef_name}'.")
         elif self._print_bg_info:
             pylboLogger.info(f"Background is zero for '{self._ef_name}'")
         return name
