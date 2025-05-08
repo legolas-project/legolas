@@ -14,6 +14,6 @@ module mod_version
   implicit none
 
   !> legolas version number
-  character(len=10), parameter    :: LEGOLAS_VERSION = "2.1.1"
+  character(len=10), parameter    :: LEGOLAS_VERSION = "2.2.1"
 
 end module mod_version

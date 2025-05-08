@@ -165,6 +165,11 @@ def datv211_mri_k80_n300():
     return utils / "v2.1.1_mri_k80_n300.dat"
 
 
+@pytest.fixture
+def numerical_lar():
+    return utils / "test_numerical.lar"
+
+
 @pytest.mark.timeout(5)
 @pytest.fixture
 def ds_v090():

@@ -11,7 +11,7 @@
 module mod_equilibrium
   use mod_global_variables, only: dp
   use mod_physical_constants, only: dpi
-  use mod_equilibrium_params, only: k2, k3
+  use mod_equilibrium_params, only: k2, k3, input_file
   use mod_logging, only: logger, str, exp_fmt
   use mod_settings, only: settings_t
   use mod_background, only: background_t
@@ -202,6 +202,12 @@ module mod_equilibrium
       type(background_t), intent(inout) :: background
       type(physics_t), intent(inout) :: physics
     end subroutine tc_pinch_eq
+    module subroutine numerical_eq(settings, grid, background, physics)
+      type(settings_t), intent(inout) :: settings
+      type(grid_t), intent(inout) :: grid
+      type(background_t), intent(inout) :: background
+      type(physics_t), intent(inout) :: physics
+    end subroutine numerical_eq
     module subroutine user_defined_eq(settings, grid, background, physics)
       type(settings_t), intent(inout) :: settings
       type(grid_t), intent(inout) :: grid
@@ -303,6 +309,8 @@ contains
       set_equilibrium_values => harris_sheet_eq
     case("tc_pinch")
       set_equilibrium_values => tc_pinch_eq
+    case("numerical")
+      set_equilibrium_values => numerical_eq
     case("user_defined")
       set_equilibrium_values => user_defined_eq
     case default

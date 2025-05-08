@@ -1,5 +1,5 @@
 !> Submodule for user-defined equilibria.
-!! Generated with GIMLI v0.4.
+!! Generated with GIMLI.
 submodule (mod_equilibrium) smod_user_defined
   use mod_logging, only: logger
   use mod_equilibrium_params, only: cte_rho0, cte_T0

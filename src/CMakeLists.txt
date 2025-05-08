@@ -47,6 +47,7 @@ set (sources
         mod_interpolation.f08
         mod_integration.f08
         dataIO/mod_input.f08
+        dataIO/mod_arrays.f08
         physics/cooling_curves/mod_cooling_curve_names.f08
         physics/cooling_curves/mod_data_dalgarno.f08
         physics/cooling_curves/mod_data_dalgarno2.f08
@@ -99,6 +100,7 @@ set (sources
         equilibria/smod_equil_taylor_couette.f08
         equilibria/smod_equil_harris_sheet.f08
         equilibria/smod_equil_tc_pinch.f08
+        equilibria/smod_equil_numerical.f08
         ${USR_SMOD_LOC}/smod_user_defined.f08
         boundaries/mod_boundary_manager.f08
         boundaries/mod_essential_boundaries.f08

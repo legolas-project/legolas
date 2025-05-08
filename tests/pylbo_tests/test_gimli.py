@@ -1,5 +1,6 @@
 import pylbo.gimli as gimli
 import sympy as sp
+import numpy as np
 import filecmp
 
 
@@ -101,5 +102,17 @@ def test_amrvac_preparation(tmpdir, datv211_harris, vacv211_harris):
     assert filecmp.cmp(
         str((tmpdir / "v2.1.1_harris.ldat").resolve()),
         str(vacv211_harris),
+        shallow=False,
+    )
+
+
+def test_numerical_equilibrium(tmpdir, numerical_lar):
+    x = np.linspace(-np.pi, np.pi, 1000)
+    dictionary = {"x": x, "rho0": 2.0 + np.sin(x), "T0": 1.0 / (2.0 + np.sin(x))}
+    equil = gimli.NumericalEquilibrium(dictionary)
+    equil.to_legolas_arrays(filename="test_numerical", loc=str(tmpdir.resolve()))
+    assert filecmp.cmp(
+        str((tmpdir / "test_numerical.lar").resolve()),
+        str(numerical_lar),
         shallow=False,
     )

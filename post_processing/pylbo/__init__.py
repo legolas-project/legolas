@@ -22,6 +22,7 @@ from pylbo.visualisation.modes.api import (
     plot_3d_slice,
     prepare_vtk_export,
 )
+import pylbo.gimli
 
 # allow deprecation warnings to be shown
 warnings.filterwarnings("default", category=DeprecationWarning)

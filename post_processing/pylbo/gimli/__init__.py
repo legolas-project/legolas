@@ -1,6 +1,6 @@
 import warnings
 
-from pylbo.gimli.equilibrium import Equilibrium, Variables
+from pylbo.gimli.equilibrium import Variables, Equilibrium, NumericalEquilibrium
 from pylbo.gimli.legolas import Legolas
 from pylbo.gimli.amrvac import Amrvac
 
