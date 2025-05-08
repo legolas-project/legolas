@@ -43,8 +43,29 @@ def _handle_expected_input_value(ds: LegolasDataSeries, value) -> list[list[comp
 
 
 def _check_grid_dataseries(ds: LegolasDataSeries) -> bool:
-    nr_grids = np.unique([dataset.grid for dataset in ds.datasets])
-    return len(nr_grids) == 1
+    """
+    Check if all datasets in the dataseries have the same grid.
+
+    Parameters
+    ----------
+    ds : ~pylbo.data_containers.LegolasDataSeries
+        The dataseries to check.
+
+    Returns
+    -------
+    bool
+        True if all datasets have the same grid, False otherwise.
+    """
+
+    nr_gridpoints = np.unique([dataset.gridpoints for dataset in ds.datasets])
+    if len(nr_gridpoints) > 1:
+        return False
+
+    grid_basic = ds.datasets[0].grid
+    for dataset in ds.datasets[1:]:
+        if not np.allclose(grid_basic, dataset.grid, atol=1e-14):
+            return False
+    return True
 
 
 class ModeVisualisationData:
