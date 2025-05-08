@@ -108,7 +108,7 @@ class ModeVisualisationData:
         omega_temp = _handle_expected_input_value(self.ds, omega)
         self.complex_factor = _handle_expected_input_value(self.ds, complex_factor)
 
-        self.ds_bg = self.ds.datasets[0]
+        self.ds_bg = self.ds.datasets[np.argmax(self.ds.has_background)]
         self.use_real_part = use_real_part
         if add_background and not self.ds_bg.has_background:
             raise BackgroundNotPresent(self.ds_bg.datfile, "add background to solution")
