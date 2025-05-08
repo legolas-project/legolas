@@ -293,7 +293,7 @@ class ModeVisualisationData:
             self.ds_bg.derived_ef_names
         ) and self._ef_name not in ("B1", "B2", "B3"):
             raise ValueError("Unable to add a background to this field.")
-        if self._ef_name[-1].is_digit():
+        if self._ef_name[-1].isdigit():
             name = self._ef_name[:-1] + "0" + self._ef_name[-1]
         else:
             name = self._ef_name + "0"
