@@ -43,9 +43,9 @@ def _handle_expected_input_value(ds: LegolasDataSeries, value) -> list[list[comp
     return value_temp
 
 
-def _check_resolution_dataseries(ds: LegolasDataSeries) -> bool:
-    nr_gridpoints = np.unique([dataset.gridpoints for dataset in ds.datasets])
-    return len(nr_gridpoints) == 1
+def _check_grid_dataseries(ds: LegolasDataSeries) -> bool:
+    nr_grids = np.unique([dataset.grid for dataset in ds.datasets])
+    return len(nr_grids) == 1
 
 
 class ModeVisualisationData:
@@ -102,9 +102,9 @@ class ModeVisualisationData:
             pylboLogger.warning(
                 "Make sure data in LegolasDataSeries has same equilibrium."
             )
-            same_res = _check_resolution_dataseries(ds)
-            if not same_res:
-                raise ValueError("Legolas does not support different resolutions.")
+            same_grid = _check_grid_dataseries(ds)
+            if not same_grid:
+                raise ValueError("Mode visualisation does not support different grids.")
         self.ds = transform_to_dataseries(ds)
         omega_temp = _handle_expected_input_value(self.ds, omega)
         self.complex_factor = _handle_expected_input_value(self.ds, complex_factor)
