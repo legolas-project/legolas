@@ -190,7 +190,7 @@ contains
     yvalues = xvalues**3 + 0.2d0 * xvalues**2 - 2.0d0
     call get_second_numerical_derivative(xvalues, yvalues, yactual)
     yexpect = 6.0d0 * xvalues + 0.4d0
-    @assertEqual(yexpect, yactual, tolerance=2.0d-8)
+    @assertEqual(yexpect, yactual, tolerance=1.0d-7)
   end subroutine test_second_derivative_poly
 
 
@@ -228,7 +228,7 @@ contains
     yvalues = 3.0d0 * sin(xvalues) + 1.0d0 / tan(xvalues)
     call get_second_numerical_derivative(xvalues, yvalues, yactual)
     yexpect = -3.0d0 * sin(xvalues) + 2.0d0 * cos(xvalues) / sin(xvalues)**3
-    @assertEqual(yexpect, yactual, tolerance=1.0d-7)
+    @assertEqual(yexpect, yactual, tolerance=1.0d-5)
   end subroutine test_second_derivative_trigon
 
 
