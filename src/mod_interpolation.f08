@@ -273,7 +273,7 @@ contains
         - 3618 * y(i + 5) &
         + 1019 * y(i + 6) &
         - 126 * y(i + 7) &
-      ) / (180 * dx)
+      ) / (180 * dx**2)
     end do
     ! middle: 6th order central differences
     do i = 4, nvals-3
@@ -285,7 +285,7 @@ contains
         + 270 * y(i + 1) &
         - 27 * y(i + 2) &
         + 2 * y(i + 3) &
-      ) / (180 * dx)
+      ) / (180 * dx**2)
     end do
     ! right side: 6th order backwards differences for last 3 points
     do i = nvals-2, nvals
@@ -298,7 +298,7 @@ contains
         + 7911 * y(i - 2) &
         - 4014 * y(i - 1) &
         + 938 * y(i) &
-      ) / (180 * dx)
+      ) / (180 * dx**2)
     end do
   end subroutine get_second_numerical_derivative
 
