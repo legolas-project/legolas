@@ -73,7 +73,7 @@ contains
     subroutine interpolate_and_derive()
         integer  :: i
         real(dp) :: x_out(n_input), y_out(n_input)
-        real(dp) :: derivative(n_input), derivative2(n_input)
+        real(dp) :: derivative(n_input)
 
         allocate(interp(n_input, num_var))
         allocate(d_interp(n_input, num_var))
@@ -86,8 +86,8 @@ contains
             call get_numerical_derivative(x_out, y_out, derivative)
             d_interp(:, i) = derivative
 
-            call get_numerical_derivative(x_out, derivative, derivative2)
-            dd_interp(:, i) = derivative2
+            call get_second_numerical_derivative(x_out, y_out, derivative)
+            dd_interp(:, i) = derivative
 
             if (i == 2) then
                 interp(:, 1) = x_out

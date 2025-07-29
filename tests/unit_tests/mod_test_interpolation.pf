@@ -2,7 +2,7 @@ module mod_test_interpolation
   use funit
   use mod_suite_utils
   use mod_interpolation, only: interpolate_table, get_numerical_derivative, &
-    lookup_table_value
+    get_second_numerical_derivative, lookup_table_value
   implicit none
 
   real(dp), allocatable   :: xvalues(:), yvalues(:)
@@ -168,6 +168,68 @@ contains
     yexpect = 3.0d0 * cos(xvalues) - 1 / sin(xvalues)**2
     @assertEqual(yexpect, yactual, tolerance=1.0d-9)
   end subroutine test_derivative_trigon
+
+
+  @test
+  subroutine test_second_derivative_parabola()
+    call set_name("derivative (y=x**2, x=[-2, 2])")
+    call reset_arrays(1000, 1000)
+    xvalues = linspace(-2.0d0, 2.0d0, 1000)
+    yvalues = xvalues**2
+    call get_second_numerical_derivative(xvalues, yvalues, yactual)
+    yexpect = 2.0d0
+    @assertEqual(yexpect, yactual, tolerance=1.0d-8)
+  end subroutine test_second_derivative_parabola
+
+
+  @test
+  subroutine test_second_derivative_poly()
+    call set_name("derivative (y=x**3 + 0.2x**2 - 2, x=[-3, 1])")
+    call reset_arrays(2000, 2000)
+    xvalues = linspace(-3.0d0, 1.0d0, 2000)
+    yvalues = xvalues**3 + 0.2d0 * xvalues**2 - 2.0d0
+    call get_second_numerical_derivative(xvalues, yvalues, yactual)
+    yexpect = 6.0d0 * xvalues + 0.4d0
+    @assertEqual(yexpect, yactual, tolerance=1.0d-7)
+  end subroutine test_second_derivative_poly
+
+
+  @test
+  subroutine test_second_derivative_cosine()
+    use mod_physical_constants, only: dpi
+
+    call set_name("derivative (y=cos(x), x=[-2pi, 2pi]")
+    call reset_arrays(2000, 2000)
+    xvalues = linspace(-2.0d0 * dpi, 2.0d0 * dpi, 2000)
+    yvalues = cos(xvalues)
+    call get_second_numerical_derivative(xvalues, yvalues, yactual)
+    yexpect = -cos(xvalues)
+    @assertEqual(yexpect, yactual, tolerance=1.0d-9)
+  end subroutine test_second_derivative_cosine
+
+
+  @test
+  subroutine test_second_derivative_root()
+    call set_name("derivative (y=sqrt(x), x=[0, 24])")
+    call reset_arrays(4000, 4000)
+    xvalues = linspace(1.0d0, 24.0d0, 4000)
+    yvalues = sqrt(xvalues)
+    call get_second_numerical_derivative(xvalues, yvalues, yactual)
+    yexpect = -1.0d0 / (4.0d0 * (sqrt(xvalues))**3)
+    @assertEqual(yexpect, yactual, tolerance=1.0d-9)
+  end subroutine test_second_derivative_root
+
+
+  @test
+  subroutine test_second_derivative_trigon()
+    call set_name("derivative (y=3sin(x) + 1/tan(x), x=[0.5, 2.5])")
+    call reset_arrays(4000, 4000)
+    xvalues = linspace(0.5d0, 2.5d0, 4000)
+    yvalues = 3.0d0 * sin(xvalues) + 1.0d0 / tan(xvalues)
+    call get_second_numerical_derivative(xvalues, yvalues, yactual)
+    yexpect = -3.0d0 * sin(xvalues) + 2.0d0 * cos(xvalues) / sin(xvalues)**3
+    @assertEqual(yexpect, yactual, tolerance=1.0d-5)
+  end subroutine test_second_derivative_trigon
 
 
   @test

@@ -13,6 +13,7 @@ module mod_interpolation
 
   public :: interpolate_table
   public :: get_numerical_derivative
+  public :: get_second_numerical_derivative
   public :: lookup_table_value
 
 contains
@@ -199,6 +200,107 @@ contains
       ) / (60 * dx)
     end do
   end subroutine get_numerical_derivative
+
+
+  !> Calculates the second numerical derivative of a given array.
+  !! A sixth-order accurate central difference stencil is used to calculate the
+  !! derivative. Near the edges a sixth-order accurate forward and backward
+  !! difference stencil is used for the left and right boundary, respectively.
+  !! It is assumed that the x values are all equally spaced. If this is not the case,
+  !! a polynomial interpolation on a uniform grid can be done and that one can be
+  !! differentiated instead.
+  !!
+  !! @warning Throws an error if <tt>x_values</tt> and <tt>y_values</tt> differ
+  !!          in size. @endwarning
+  subroutine get_second_numerical_derivative(x, y, dy, dxtol)
+    use mod_check_values, only: is_equal
+    use mod_logging, only: str
+
+    !> x-values against which to differentiate
+    real(dp), intent(in)  :: x(:)
+    !> array of y-values, assuming \(y(x)\) relation
+    real(dp), intent(in)  :: y(:)
+    !> derivative of \(y\) with respect to \(x\), same size as input arrays
+    real(dp), intent(out) :: dy(size(y))
+    !> optional tolerance for equally spaced arrays
+    real(dp), intent(in), optional  :: dxtol
+
+    integer   :: i, nvals, nbprints
+    real(dp)  :: dx, dxi, tol
+
+    ! x_values and y_values should be the same length
+    if (size(x) /= size(y)) then
+      call logger%error("numerical derivative: x and y should have the same size!")
+      return
+    end if
+    nbprints = 0
+    tol = 1.0d-10
+    if (present(dxtol)) then
+      tol = dxtol ! LCOV_EXCL_LINE
+    end if
+
+    nvals = size(x)
+    dx = x(2) - x(1)
+    ! LCOV_EXCL_START
+    do i = 2, nvals-1
+      dxi = x(i) - x(i-1)
+      if (.not. is_equal(dx, dxi, tol=tol)) then
+        call logger%warning( &
+          "numerical derivative: x is not equally spaced, derivative may be wrong!" &
+        )
+        call logger%warning( &
+          "at index " // str(i) // " expected dx=" // str(dx, fmt="e20.10") // &
+          " but got dx=" // str(dxi, fmt="e20.10") &
+        )
+        call logger%warning("---> diff = " // str(abs(dx - dxi), fmt="e20.6"))
+        nbprints = nbprints + 1
+        if (nbprints == 10) then
+          call logger%warning("...")
+          exit
+        end if
+      end if
+    end do
+    ! LCOV_EXCL_STOP
+
+    ! left side: 6th order forward differences for first 3 points
+    do i = 1, 3
+      dy(i) = ( &
+        938 * y(i) &
+        - 4014 * y(i + 1) &
+        + 7911 * y(i + 2) &
+        - 9490 * y(i + 3) &
+        + 7380 * y(i + 4) &
+        - 3618 * y(i + 5) &
+        + 1019 * y(i + 6) &
+        - 126 * y(i + 7) &
+      ) / (180 * dx**2)
+    end do
+    ! middle: 6th order central differences
+    do i = 4, nvals-3
+      dy(i) = ( &
+        2 * y(i - 3) &
+        - 27 * y(i - 2) &
+        + 270 * y(i - 1) &
+        - 490 * y(i) &
+        + 270 * y(i + 1) &
+        - 27 * y(i + 2) &
+        + 2 * y(i + 3) &
+      ) / (180 * dx**2)
+    end do
+    ! right side: 6th order backwards differences for last 3 points
+    do i = nvals-2, nvals
+      dy(i) = ( &
+        - 126 * y(i - 7) &
+        + 1019 * y(i - 6) &
+        - 3618 * y(i - 5) &
+        + 7380 * y(i - 4) &
+        - 9490 * y(i - 3) &
+        + 7911 * y(i - 2) &
+        - 4014 * y(i - 1) &
+        + 938 * y(i) &
+      ) / (180 * dx**2)
+    end do
+  end subroutine get_second_numerical_derivative
 
 
   !> Function for fast table-lookup, returns the corresponding y-value
