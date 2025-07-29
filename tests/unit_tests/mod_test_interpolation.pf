@@ -2,7 +2,7 @@ module mod_test_interpolation
   use funit
   use mod_suite_utils
   use mod_interpolation, only: interpolate_table, get_numerical_derivative, &
-    lookup_table_value
+    get_second_numerical_derivative, lookup_table_value
   implicit none
 
   real(dp), allocatable   :: xvalues(:), yvalues(:)
@@ -117,6 +117,9 @@ contains
     call get_numerical_derivative(xvalues, yvalues, yactual)
     yexpect = 2.0d0 * xvalues
     @assertEqual(yexpect, yactual, tolerance=1.0d-9)
+    call get_second_numerical_derivative(xvalues, yvalues, yactual)
+    yexpect = 2.0d0
+    @assertEqual(yexpect, yactual, tolerance=1.0d-9)
   end subroutine test_derivative_parabola
 
 
@@ -128,6 +131,9 @@ contains
     yvalues = xvalues**3 + 0.2d0 * xvalues**2 - 2.0d0
     call get_numerical_derivative(xvalues, yvalues, yactual)
     yexpect = 3.0d0 * xvalues**2 + 0.4d0 * xvalues
+    @assertEqual(yexpect, yactual, tolerance=1.0d-9)
+    call get_second_numerical_derivative(xvalues, yvalues, yactual)
+    yexpect = 6.0d0 * xvalues + 0.4d0
     @assertEqual(yexpect, yactual, tolerance=1.0d-9)
   end subroutine test_derivative_poly
 
@@ -143,6 +149,9 @@ contains
     call get_numerical_derivative(xvalues, yvalues, yactual)
     yexpect = -sin(xvalues)
     @assertEqual(yexpect, yactual, tolerance=1.0d-9)
+    call get_second_numerical_derivative(xvalues, yvalues, yactual)
+    yexpect = -cos(xvalues)
+    @assertEqual(yexpect, yactual, tolerance=1.0d-9)
   end subroutine test_derivative_cosine
 
 
@@ -155,6 +164,9 @@ contains
     call get_numerical_derivative(xvalues, yvalues, yactual)
     yexpect = 1.0d0 / (2.0d0 * sqrt(xvalues))
     @assertEqual(yexpect, yactual, tolerance=1.0d-9)
+    call get_second_numerical_derivative(xvalues, yvalues, yactual)
+    yexpect = -1.0d0 / (4.0d0 * (sqrt(xvalues))**3)
+    @assertEqual(yexpect, yactual, tolerance=1.0d-9)
   end subroutine test_derivative_root
 
 
@@ -166,6 +178,9 @@ contains
     yvalues = 3.0d0 * sin(xvalues) + 1.0d0 / tan(xvalues)
     call get_numerical_derivative(xvalues, yvalues, yactual)
     yexpect = 3.0d0 * cos(xvalues) - 1 / sin(xvalues)**2
+    @assertEqual(yexpect, yactual, tolerance=1.0d-9)
+    call get_second_numerical_derivative(xvalues, yvalues, yactual)
+    yexpect = -3.0d0 * sin(xvalues) + 2.0d0 * cos(xvalues) / sin(xvalues)**3
     @assertEqual(yexpect, yactual, tolerance=1.0d-9)
   end subroutine test_derivative_trigon
 
