@@ -19,7 +19,7 @@ generated Pylbo documentation.
 Both of these have their own webpages and are accessible through this page using the buttons below.
 These are generated completely automatic and are hence kept independent of the main website.
 If you feel something is missing or needs a better explanation please let us know, preferably through
-an [issue on GitHub](https://github.com/n-claes/legolas/issues).
+an [issue on GitHub](https://github.com/legolas-project/legolas/issues).
 
 [Legolas docs](../ford/index.html){: .btn .btn--primary .btn--large }
 [Pylbo docs](../sphinx/index.html){: .btn .btn--primary .btn--large }
