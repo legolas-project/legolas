@@ -107,7 +107,7 @@ Afterwards you export the `$ARPACK_ROOT` environment variable, pointing to your 
 # Legolas
 Legolas can be obtained by cloning the online repository:
 ```bash
-git clone https://github.com/n-claes/legolas.git
+git clone https://github.com/legolas-project/legolas.git
 ```
 which will put it in the local repository `legolas`.
 Next you set the environment variable `$LEGOLASDIR` which points to this directory and add the `setup_tools` subdirectory to your PATH.

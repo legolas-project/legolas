@@ -19,7 +19,7 @@ Since this is far from user-friendly we developed the post-processing Python pac
 and access all information stored within. We even developed special classes to do post-processing, for more information
 and examples we refer to [this page](../using_pylbo). Maybe at some point in the future Pylbo will move to its own dedicated
 repository and be included as a submodule in the legolas repository, but for now it is included in the
-[`post_processing`](https://github.com/n-claes/legolas/tree/master/post_processing) folder.
+[`post_processing`](https://github.com/legolas-project/legolas/tree/master/post_processing) folder.
 
 Note that if you do Legolas runs on high resolution and save the eigenfunctions, the files can easily be a few
 gigabytes in size. It may be useful to know that Pylbo _never_ loads the file into memory. Instead we keep track

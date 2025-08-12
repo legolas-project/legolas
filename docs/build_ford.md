@@ -1,7 +1,7 @@
 src_dir: ../src
 output_dir: ford
 project: Legolas
-project_github: https://github.com/n-claes/legolas
+project_github: https://github.com/legolas-project/legolas
 project_website: ../../../index.html
 summary: ![LOGO](../../../assets/images/logo_legolas_640x237.png)<br>
          Legolas is a novel finite-element based code that allows for
@@ -24,9 +24,9 @@ extra_mods: json_module: http://jacobwilliams.github.io/json-fortran/
 ### Source code documentation
 Welcome to the main page of the Legolas source code documentation.
 Here you can browse all the different source files, modules and call graphs
-(a limited list is shown below). These pages are automatically generated 
+(a limited list is shown below). These pages are automatically generated
 from in-line source code documentation on the `master` branch of the 
-[GitHub repository](https://github.com/n-claes/legolas),
+[GitHub repository](https://github.com/legolas-project/legolas),
 and are built after every commit.
 
 You can return to the main site [here](../../../index.html).
