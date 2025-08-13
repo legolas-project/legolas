@@ -3,6 +3,7 @@ from typing import Any
 
 import matplotlib.axes
 from pylbo.utilities.toolbox import get_all_eigenfunction_names
+import pylbo.data_containers as dc  # avoiding cirular import
 
 _BACKGROUND_NAME_MAPPING = {
     "rho0": r"$\rho_0$",
@@ -153,8 +154,8 @@ def validate_ef_name(ds, ef_name: str) -> str:
 
     Parameters
     ----------
-    ds : ~pylbo.data_containers.LegolasDataSet
-        The dataset containing the eigenfunctions.
+    ds : ~pylbo.data_containers.LegolasDataContainer
+        The dataset/series containing the eigenfunctions.
     ef_name : str
         The name of the eigenfunction.
 
@@ -169,12 +170,13 @@ def validate_ef_name(ds, ef_name: str) -> str:
         The validated eigenfunction name.
     """
     # copy this or we're editing the property itself
-    names = get_all_eigenfunction_names(ds)
-    if ef_name not in names:
-        raise ValueError(
-            f"The eigenfunction '{ef_name}' is not part of the "
-            f"eigenfunctions {names}."
-        )
+    for dataset in dc.transform_to_dataseries(ds).datasets:
+        names = get_all_eigenfunction_names(dataset)
+        if ef_name not in names:
+            raise ValueError(
+                f"The eigenfunction '{ef_name}' is not part of the "
+                f"eigenfunctions {names}."
+            )
     return ef_name
 
 

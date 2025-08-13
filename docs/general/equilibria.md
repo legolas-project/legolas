@@ -53,7 +53,7 @@ physical effects, and links to the source docs.
   ```fortran
   equilibrium_type = "photospheric_flux_tube"
   ```
-- [Interchange modes](../../ford/module/smod_equil_interchange_modes.html): cylindrical, external gravity
+- [Interchange modes](../../ford/module/smod_equil_interchange_modes.html): Cartesian, external gravity
   ```fortran
   equilibrium_type = "interchange_modes"
   ```

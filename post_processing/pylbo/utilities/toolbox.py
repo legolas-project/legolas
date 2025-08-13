@@ -240,7 +240,9 @@ def get_maximum_eigenvalue(
     evs = eigenvalues.copy()
     if re_range is not None:
         # set eigenvalues outside of range to NaN
-        evs[np.logical_or(func(evs) < re_range[0], func(evs) > re_range[1])] = np.nan
+        evs[np.logical_or(np.real(evs) < re_range[0], np.real(evs) > re_range[1])] = (
+            np.nan
+        )
     if np.all(np.isnan(func(evs))):
         raise ValueError("get_maximum_eigenvalue: no eigenvalues found within range")
     return eigenvalues[np.nanargmax(func(evs))]
@@ -317,12 +319,12 @@ def count_zeroes(eigfuncs, real=True):
     return np.sum(np.diff(np.sign(func(eigfuncs)), axis=1) != 0, axis=1)
 
 
-def find_resonance_location(continuum, grid, sigma):
+def find_resonance_location(continuum, grid, omega):
     """
-    Finds the resonance location between sigma and the continuum. For example, if
+    Finds the resonance location between omega and the continuum. For example, if
     the continuum is given by [5, 6, 7, 8, 9, 10] and the grid is equal to
-    [0, 1, 2, 3, 4, 5], then for a sigma = 9 the resonance location is 4. For a sigma
-    equal to 8.5 the resonance location is 3.5. For a sigma outside of the continuum
+    [0, 1, 2, 3, 4, 5], then for an omega = 9 the resonance location is 4. For an omega
+    equal to 8.5 the resonance location is 3.5. For an omega outside of the continuum
     the resonance location is None. If the continuum array is not monotone, then
     the resonance location is interpolated between the first matched interval.
 
@@ -333,7 +335,7 @@ def find_resonance_location(continuum, grid, sigma):
         the resonance with the real part is calculated.
     grid : numpy.ndarray
         The grid on which the continuum is defined.
-    sigma : complex
+    omega : complex
         A given eigenvalue.
 
     Returns
@@ -342,21 +344,38 @@ def find_resonance_location(continuum, grid, sigma):
         The position where there is resonance between the eigenmode and the continuum.
         Returns None if there is no resonance with the specified continuum.
     """
-    if np.min(continuum.real) > sigma or np.max(continuum.real) < sigma:
+    if np.min(continuum.real) > omega.real or np.max(continuum.real) < omega.real:
         return None
     # if continuum is monotone then do simple interpolation
     if np.all(np.diff(continuum.real) > 0):
-        return np.array([np.interp(sigma, continuum.real, grid)], dtype=float)
+        return np.array([np.interp(omega.real, continuum.real, grid)], dtype=float)
     # otherwise find intervals and handle multiple matches
     locs = []
     c = continuum.real
     for idx in range(len(continuum) - 1):
-        if c[idx] <= sigma <= c[idx + 1]:
+        if c[idx] <= omega.real <= c[idx + 1]:
             locs.append(
-                np.interp(sigma, [c[idx], c[idx + 1]], [grid[idx], grid[idx + 1]])
+                np.interp(omega.real, [c[idx], c[idx + 1]], [grid[idx], grid[idx + 1]])
             )
-        elif c[idx + 1] <= sigma <= c[idx]:
+        elif c[idx + 1] <= omega.real <= c[idx]:
             locs.append(
-                np.interp(sigma, [c[idx + 1], c[idx]], [grid[idx + 1], grid[idx]])
+                np.interp(omega.real, [c[idx + 1], c[idx]], [grid[idx + 1], grid[idx]])
             )
     return np.array(list(set(locs)), dtype=float)
+
+
+def is_custom_grid(grid):
+    """
+    Checks if a given grid is a custom grid, i.e. not equidistant.
+
+    Parameters
+    ----------
+    grid : numpy.ndarray
+        The grid to test.
+
+    Returns
+    -------
+    bool
+        `True` if the grid is a custom grid, `False` otherwise.
+    """
+    return not np.allclose(np.diff(grid), np.diff(grid)[0])

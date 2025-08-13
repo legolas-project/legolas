@@ -38,7 +38,7 @@ class TemporalEvolutionPlot1D(ModeFigure):
         show_ef_panel: bool,
         **kwargs,
     ) -> None:
-        self._u1 = data.ds.ef_grid
+        self._u1 = data.ds_bg.ef_grid
         self._u2 = self._check_if_number(u2, "u2")
         self._u3 = self._check_if_number(u3, "u3")
         self._time = self._check_if_array(time, "time")
@@ -47,11 +47,22 @@ class TemporalEvolutionPlot1D(ModeFigure):
 
     def set_plot_arrays(self) -> None:
         self.solution_shape = (len(self._u1), len(self._time))
-        for ef, omega in zip(self.data.eigenfunction, self.data.omega):
-            # transpose here so data[:, i] gives eigenfunction data at time i
-            data = np.broadcast_to(ef, shape=reversed(self.solution_shape)).transpose()
-            self.ef_data.append({"ef": data, "omega": omega})
-        x_2d, time_2d = np.meshgrid(self.data.ds.ef_grid, self._time, indexing="ij")
+        for efs, omegas, factors, k2, k3 in zip(
+            self.data.eigenfunction,
+            self.data.omega,
+            self.data.complex_factor,
+            self.data.k2,
+            self.data.k3,
+        ):
+            for ef, omega, factor in zip(efs, omegas, factors):
+                # transpose here so data[:, i] gives eigenfunction data at time i
+                data = np.broadcast_to(
+                    ef, shape=reversed(self.solution_shape)
+                ).transpose()
+                self.ef_data.append(
+                    {"ef": data, "omega": omega, "factor": factor, "k2": k2, "k3": k3}
+                )
+        x_2d, time_2d = np.meshgrid(self._u1, self._time, indexing="ij")
         self.time_data = time_2d
         self.u1_data = x_2d
         self.u2_data = self._u2
