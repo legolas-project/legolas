@@ -117,11 +117,10 @@ def create_file(filename):
             or overwrite == "Yes"
         ):
             os.remove(filename)
+            file = open(filename, "x")
+            file.close()
         else:
-            print("Cannot overwrite file. Exiting.")
-            sys.exit()
-    file = open(filename, "x")
-    file.close()
+            print("Continuing without overwriting file...")
     return
 
 
