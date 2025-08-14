@@ -307,7 +307,7 @@ class Legolas:
         file.close()
         return
 
-    def parfile(self, filename="legolas_config", make_dir=False):
+    def parfile(self, filename="legolas_config", loc=None):
         """
         Writes the parameter file for the Legolas run.
 
@@ -350,5 +350,7 @@ class Legolas:
         >>> legolas = Legolas(eq, config)
         >>> legolas.parfile()
         """
-        parfiles = generate_parfiles(self.config, basename=filename, subdir=make_dir)
+        parfiles = generate_parfiles(
+            self.config, basename=filename, output_dir=loc
+        )
         return parfiles
