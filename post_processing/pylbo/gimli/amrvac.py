@@ -1,12 +1,64 @@
 import numpy as np
+import sympy as sp
 from scipy.io import FortranFile
+from sympy.printing.fortran import fcode
 from scipy.interpolate import CubicSpline
 from scipy.integrate import quad, dblquad, tplquad
 from numpy.polynomial.polynomial import Polynomial
 
 from pylbo.utilities.datfiles.file_loader import load
 from pylbo.utilities.logger import pylboLogger
-from pylbo.gimli.utils import validate_output_dir
+from pylbo.gimli.utils import (
+    create_file,
+    write_pad,
+    get_equilibrium_parameters,
+    is_sympy_number,
+    validate_output_dir,
+)
+
+
+def write_equilibrium_functions(file, eq):
+    """
+    Iterates over all equilibrium quantities and writes them to the MPI-AMRVAC user module.
+
+    Parameters
+    ----------
+    file : file
+        The file object to write to.
+    equilibrium : Equilibrium
+        The equilibrium object containing the user-defined equilibrium functions.
+    """
+    translation = eq.variables.fkey
+    translation["x_v"] = "w(ixI^S, 1)"
+    xv = sp.Symbol('x_v')
+    varlist = {
+        "rho_": (eq.rho0).subs(eq.variables.x, xv),
+        "mom(1)": None,
+        "mom(2)": (eq.v02).subs(eq.variables.x, xv),
+        "mom(3)": (eq.v03).subs(eq.variables.x, xv),
+        "p_": (eq.rho0 * eq.T0).subs(eq.variables.x, xv),
+        "mag(1)": None,
+        "mag(2)": (eq.B02).subs(eq.variables.x, xv),
+        "mag(3)": (eq.B03).subs(eq.variables.x, xv),
+    }
+    for key in list(varlist.keys()):
+        expr = varlist[key]
+        if expr is None:
+            write_pad(file, f"w(ixI^S, {key}) = 0.0d0", 2)
+        elif is_sympy_number(expr):
+            write_pad(
+                file,
+                fcode(sp.sympify(float(expr)), assign_to=f"w(ixI^S, {key})").lstrip(),
+                2
+            )
+        else:
+            func = fcode(expr, assign_to=f"w(ixI^S, {key})").lstrip()
+            for key in list(translation.keys()):
+                func = func.replace(key, translation[key])
+            func = func.replace("\n", " &\n")
+            func = func.replace("@", "")
+            write_pad(file, func, 2)
+    return
 
 
 class Amrvac:
@@ -16,8 +68,7 @@ class Amrvac:
     Parameters
     ----------
     config : dict
-        The configuration dictionary detailing which Legolas file and selection of
-        eigenmodes to use.
+        The configuration dictionary detailing everything needed for the desired functionalities.
     """
 
     def __init__(self, config):
@@ -225,6 +276,13 @@ class Amrvac:
                     ):
                         raise KeyError("Must specify bounds matching largest k-value.")
 
+        return
+    
+    def _validate_config_for_mod_usr(self):
+        """
+        Validates whether the configuration dictionary contains all the arguments to
+        generate a mod_usr.t file for use with MPI-AMRVAC.
+        """
         return
 
     def _get_combined_perturbation(self, ef):
@@ -444,6 +502,8 @@ class Amrvac:
 
         Parameters
         ----------
+        name : str
+            Name of the .ldat file
         loc : str, ~os.PathLike
             Path to the directory where the .ldat file will be stored. Default is the
             current directory.
@@ -472,6 +532,7 @@ class Amrvac:
         if name is None:
             file = str(datfile).rsplit("/")[-1]
             name = file[:-4]
+        self.config["ldatfile"] = name
         f = FortranFile(loc + "/" + name + ".ldat", "w")
         f.write_record(np.array([self.ds.ef_gridpoints], dtype=np.int32))
         f.write_record(
@@ -492,4 +553,227 @@ class Amrvac:
         f.write_record(np.array(u, dtype=np.float64))
 
         f.close()
+        return name
+
+    def user_module(self, filename="mod_usr", loc=None):
+        """
+        Writes the user module for MPI-AMRVAC.
+
+        Parameters
+        ----------
+        ldatfile : str
+            Name of the ldat file (returned by prepare_legolas_data)
+        filename : str
+            Name of the user module file, defaults to mod_usr
+        loc : str, ~os.PathLike
+            Path to the directory where the user module will be stored. Default is the
+            current directory.
+        """
+        self._validate_config_for_mod_usr()
+        quantities = ["density", "v1", "v2", "v3", "pressure"]
+        keyring = ["rho_", "mom(1)", "mom(2)", "mom(3)", "p_"]
+        if self.config["physics_type"] == "mhd":
+            quantities = quantities + ["B1", "B2", "B3"]
+            keyring = keyring + ["mag(1)", "mag(2)", "mag(3)"]
+
+        loc = validate_output_dir(loc)
+        path = loc + "/" + filename + ".t"
+        create_file(path)
+        file = open(path, "a")
+
+        write_pad(file, "!> User module for perturbation with Legolas eigenmodes.", 0)
+        write_pad(file, "!! Generated with GIMLI.", 0)
+        write_pad(file, "module mod_usr", 0)
+        write_pad(file, "use, intrinsic :: iso_fortran_env", 1)
+        write_pad(file, f"use mod_{self.config["physics_type"]}", 1)
+        write_pad(file, "use mod_global_parameters", 1)
+        write_pad(file, "implicit none", 1)
+        file.write("\n")
+        write_pad(
+            file,
+            f"character(len=100), parameter :: legolas_file = '{self.config["ldatfile"]+".ldat"}'",
+            1
+        )
+        file.write("\n")
+        write_pad(file, "integer, parameter :: dp = real64", 1)
+        write_pad(file, "integer, parameter :: file_id = 123", 1)
+        file.write("\n")
+        eqparam = get_equilibrium_parameters(self.config)
+        write_pad(file, f"real(dp) :: {eqparam}", 1)
+        file.write("\n")
+        write_pad(file, "complex(dp), parameter :: ic = (0.0d0, 1.0d0)", 1)
+        file.write("\n")
+        write_pad(file, "integer :: ef_gridpts", 1)
+        write_pad(file, "real(dp) :: k2, k3", 1)
+        write_pad(file, "real(dp), allocatable :: ef_grid(:)", 1)
+        for ii in range(len(quantities)):
+            write_pad(file, f"complex(dp), allocatable :: {quantities[ii]}(:)", 1)
+        file.write("\n")
+
+        write_pad(file, "contains", 0)
+        file.write("\n")
+
+        write_pad(file, "subroutine usr_init()", 1)
+        write_pad(
+            file,
+            f"call set_coordinate_system('{self.config["geometry"]}_{self.config["dim"]}D')",
+            2
+        )
+        write_pad(file, "call read_legolas_data()", 2)
+        file.write("\n")
+        write_pad(file, "usr_set_parameters => initialise_constants", 2)
+        write_pad(file, "usr_init_one_grid  => initialise_grid", 2)
+        file.write("\n")
+        write_pad(file, f"call {self.config["physics_type"]}_activate()", 2)
+        write_pad(file, "end subroutine usr_init", 1)
+        file.write("\n")
+
+        write_pad(file, "subroutine initialise_constants()", 1)
+        for key in eqparam.split(", "):
+            write_pad(file, f"{key} = {self.config["parameters"][key]}", 2)
+        write_pad(file, "end subroutine initialise_constants", 1)
+        file.write("\n")
+
+        write_pad(file, "subroutine initialise_grid(ixI^L, ixO^L, w, x)", 1)
+        write_pad(file, "integer, intent(in)     :: ixI^L, ixO^L", 2)
+        write_pad(file, "real(dp), intent(in)    :: x(ixI^S, ndim)", 2)
+        write_pad(file, "real(dp), intent(inout) :: w(ixI^S, nw)", 2)
+        file.write("\n")
+
+        write_equilibrium_functions(file, self.config["equilibrium"])
+        file.write("\n")
+
+        for key in keyring:
+            write_pad(
+                file,
+                f"call add_perturbation_to_w_array(ixI^L, ixO^L, w, {key}, x)",
+                2
+            )
+        file.write("\n")
+
+        write_pad(
+            file,
+            f"call {self.config["physics_type"]}_to_conserved(ixI^L, ixO^L, w, x)",
+            2
+        )
+        write_pad(file, "end subroutine initialise_grid", 1)
+        file.write("\n")
+
+        write_pad(file, "subroutine read_legolas_data()", 1)
+        write_pad(file, "open( &", 2)
+        write_pad(file, "unit=file_id+mype, &", 3)
+        write_pad(file, "file=legolas_file, &", 3)
+        write_pad(file, "form='unformatted' &", 3)
+        write_pad(file, ")", 2)
+        file.write("\n")
+
+        write_pad(file, "read(file_id+mype) ef_gridpts", 2)
+        write_pad(file, "read(file_id+mype) k2, k3", 2)
+        file.write("\n")
+
+        write_pad(file, "call allocate_arrays(ef_gridpts)", 2)
+        write_pad(file, "read(file_id+mype) ef_grid", 2)
+        for ii in range(len(quantities)):
+            write_pad(file, f"read(file_id+mype) {quantities[ii]}", 2)
+        file.write("\n")
+
+        write_pad(
+            file,
+            "read(file_id+mype) unit_length, unit_numberdensity, unit_temperature, &",
+            2
+        )
+        if self.config["physics_type"] == "mhd":
+            write_pad(
+                file,
+                "unit_density, unit_pressure, unit_velocity, unit_magneticfield, unit_time",
+                3
+            )
+        else:
+            write_pad(
+                file,
+                "unit_density, unit_pressure, unit_velocity, unit_time",
+                3
+            )
+        file.write("\n")
+
+        write_pad(file, "close(file_id+mype)", 2)
+        write_pad(file, "end subroutine read_legolas_data", 1)
+        file.write("\n")
+
+        write_pad(file, "subroutine allocate_arrays(gridpts)", 1)
+        write_pad(file, "integer, intent(in) :: gridpts", 2)
+        file.write("\n")
+        write_pad(file, "allocate(ef_grid(gridpts))", 2)
+        write_pad(file, "allocate(density(gridpts))", 2)
+        write_pad(file, f"allocate({", ".join(quantities[1:])}, mold=density)", 2)
+        write_pad(file, "end subroutine allocate_arrays", 1)
+        file.write("\n")
+
+        write_pad(
+            file,
+            "subroutine add_perturbation_to_w_array(ixI^L, ixO^L, w, w_index, x)",
+            1    
+        )
+        write_pad(file, "integer, intent(in)     :: ixI^L, ixO^L", 2)
+        write_pad(file, "real(dp), intent(inout) :: w(ixI^S, nw)", 2)
+        write_pad(file, "integer, intent(in)     :: w_index", 2)
+        write_pad(file, "real(dp), intent(in)    :: x(ixI^S, ndim)", 2)
+        write_pad(
+            file,
+            "complex(dp) :: amplitude, exp_factor, quantity, values(ef_gridpts)",
+            2
+        )
+        write_pad(file, "integer  :: ix^D, ib^D", 2)
+        write_pad(file, "real(dp) :: k1 = 0.0d0", 2)
+        file.write("\n")
+        write_pad(file, "call w_index_to_array(w_index, values)", 2)
+        file.write("\n")
+        write_pad(file, "{ib^D = ixImax^D - ixImin^D + 1|\\}", 2)
+        write_pad(file, "{do ix^D = 1, ib^D|\\}", 2)
+        write_pad(file, "exp_factor = {exp(ic * k^D * x({ix^D}, ^D))|*}", 3)
+        write_pad(
+            file,
+            "call ef_amplitude(x(ix^D, 1), ef_grid, values, amplitude)",
+            3
+        )
+        write_pad(file, "quantity = amplitude * exp_factor", 3)
+        write_pad(file, "w(ix^D, w_index) = w(ix^D, w_index) + realpart(quantity)", 3)
+        write_pad(file, "{end do|\\}", 2)
+        write_pad(file, "end subroutine add_perturbation_to_w_array", 1)
+        file.write("\n")
+
+        write_pad(file, "subroutine w_index_to_array(w_index, array)", 1)
+        write_pad(file, "integer, intent(in) :: w_index", 2)
+        write_pad(file, "complex(dp), intent(inout) :: array(ef_gridpts)", 2)
+        file.write("\n")
+        write_pad(file, f"if (w_index == {keyring[0]}) then", 2)
+        write_pad(file, f"array = {quantities[0]}", 2)
+        for ii in range(1, len(quantities)):
+            write_pad(file, f"else if (w_index == {keyring[ii]}) then", 2)
+            write_pad(file, f"array = {quantities[ii]}", 3)
+        write_pad(file, "end if", 2)
+        write_pad(file, "end subroutine w_index_to_array", 1)
+        file.write("\n")
+
+        write_pad(file, "subroutine ef_amplitude(x, grid, array, amplitude)", 1)
+        write_pad(file, "real(dp), intent(in) :: x, grid(ef_gridpts)", 2)
+        write_pad(file, "complex(dp), intent(in) :: array(ef_gridpts)", 2)
+        write_pad(file, "complex(dp), intent(out) :: amplitude", 2)
+        write_pad(file, "integer :: idl, idu", 2)
+        file.write("\n")
+        write_pad(file, "if (x <= grid(1)) then", 2)
+        write_pad(file, "amplitude = array(1)", 3)
+        write_pad(file, "else if (x >= grid(size(grid))) then", 2)
+        write_pad(file, "amplitude = array(size(grid))", 3)
+        write_pad(file, "else", 2)
+        write_pad(file, "idl = maxloc(grid, mask=(grid < x), dim=1)", 3)
+        write_pad(file, "idu = minloc(grid, mask=(grid > x), dim=1)", 3)
+        write_pad(file, "amplitude = array(idl) + (x - grid(idl)) * &", 3)
+        write_pad(file, "(array(idu) - array(idl)) / (grid(idu) - grid(idl))", 4)
+        write_pad(file, "end if", 2)
+        write_pad(file, "end subroutine ef_amplitude", 1)
+
+        write_pad(file, "end module", 0)
+        file.write("!")
+        file.close()
         return
