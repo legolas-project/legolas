@@ -150,31 +150,31 @@ class Equilibrium:
         heating=None,
     ):
         self.variables = var
-        self.rho0 = rho0
-        self.v02, self.v03 = v02, v03
-        self.T0 = T0
-        self.B02, self.B03 = B02, B03
+        self.rho0 = sp.sympify(rho0)
+        self.v02, self.v03 = sp.sympify(v02), sp.sympify(v03)
+        self.T0 = sp.sympify(T0)
+        self.B02, self.B03 = sp.sympify(B02), sp.sympify(B03)
 
         self._dict_phys = {
             "resistivity": [
-                resistivity,
+                sp.sympify(resistivity),
                 ["eta", "detadT", "detadr"],
                 [self.variables.T0, self.variables.x],
             ],
-            "gravity": [gravity, ["g0"], []],
+            "gravity": [sp.sympify(gravity), ["g0"], []],
             "parallel_conduction": [
-                condpara,
+                sp.sympify(condpara),
                 ["tcpara", "dtcparadT"],
                 [self.variables.T0],
             ],
             "perpendicular_conduction": [
-                condperp,
+                sp.sympify(condperp),
                 ["tcperp", "dtcperpdT", "dtcperpdrho", " dtcperpdB2"],
                 [self.variables.T0, self.variables.rho0, self.variables.B0sq],
             ],
-            "cooling": [cooling, ["lambdaT", "dlambdadT"], [self.variables.T0]],
+            "cooling": [sp.sympify(cooling), ["lambdaT", "dlambdadT"], [self.variables.T0]],
             "heating": [
-                heating,
+                sp.sympify(heating),
                 ["H", "dHdT", "dHdrho"],
                 [self.variables.T0, self.variables.rho0],
             ],
