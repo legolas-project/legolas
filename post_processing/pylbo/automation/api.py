@@ -14,6 +14,7 @@ def generate_parfiles(
     subdir: bool = True,
     prefix_numbers: bool = True,
     nb_prefix_digits: int = 4,
+    code: str = "legolas",
 ) -> list[str]:
     """
     Generates parfiles based on a given configuration dictionary.
@@ -101,6 +102,7 @@ def generate_parfiles(
         subdir=subdir,
         prefix_numbers=prefix_numbers,
         nb_prefix_digits=nb_prefix_digits,
+        code=code,
     )
     pfgen.create_namelist_from_dict()
     return pfgen.generate_parfiles()
