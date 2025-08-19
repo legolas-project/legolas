@@ -283,6 +283,44 @@ class Amrvac:
         Validates whether the configuration dictionary contains all the arguments to
         generate a mod_usr.t file for use with MPI-AMRVAC.
         """
+        if "geometry" not in self.config.keys():
+            raise KeyError("Geometry (Cartesian / cylindrical) not specified.")
+        elif not isinstance(self.config["geometry"], str):
+            raise TypeError(
+                "'geometry' must be a string ('Cartesian' / 'cylindrical')."
+            )
+        elif self.config["geometry"].lower() == "cartesian":
+            self.config["geometry"] = "Cartesian"
+        elif self.config["geometry"].lower() == "cylindrical":
+            self.config["geometry"] = "cylindrical"
+        else:
+            raise ValueError("'geometry' must be 'Cartesian' or 'cylindrical'.")
+        
+        if "dim" not in self.config.keys():
+            raise KeyError("'dim' required to setup MPI-AMRVAC files.")
+        elif not isinstance(self.config["dim"], (int, float)):
+            raise TypeError("'dim' must be an integer or float.")
+        elif self.config["dim"] not in [2, 2.5, 3]:
+            raise ValueError("Specified dimenisionality not supported (2, 2.5, 3).")
+        
+        if "ldatfile" not in self.config.keys():
+            raise KeyError("'ldatfile' not specified.")
+        elif not isinstance(self.config["ldatfile"], str):
+            raise TypeError("'ldatfile' must be a string.")
+        elif len(self.config["ldatfile"]) > 5:
+            if self.config["ldatfile"][-5:] == ".ldat":
+                self.config["ldatfile"] = self.config["ldatfile"][:-5]
+
+        if "parameters" not in self.config.keys():
+            raise KeyError("'parameters' (including k2 and k3) not specified.")
+        elif not isinstance(self.config["parameters"], dict):
+            raise TypeError("'parameters' must be a dictionary.")
+        elif not ("k2" in self.config["parameters"].keys() and "k3" in self.config["parameters"].keys()):
+            raise KeyError("'parameters' must contain 'k2' and 'k3'.")
+        else:
+            for key in self.config["parameters"].keys():
+                if not isinstance(self.config["parameters"][key], (int, float)):
+                    raise TypeError(f"Parameter {key} must be an integer or float.")
         return
 
     def _get_combined_perturbation(self, ef):
