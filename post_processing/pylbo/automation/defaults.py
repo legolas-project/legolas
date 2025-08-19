@@ -1,6 +1,6 @@
 import numpy as np
 
-namelist_items = {
+legolas_namelist_items = {
     "gridlist": [
         ("geometry", str),
         ("x_start", (int, np.integer, float)),
