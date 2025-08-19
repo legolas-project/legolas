@@ -599,8 +599,6 @@ class Amrvac:
 
         Parameters
         ----------
-        ldatfile : str
-            Name of the ldat file (returned by prepare_legolas_data)
         filename : str
             Name of the user module file, defaults to mod_usr
         loc : str, ~os.PathLike
