@@ -15,6 +15,7 @@ from pylbo.gimli.utils import (
     is_sympy_number,
     validate_output_dir,
 )
+from pylbo.gimli.equilibrium import Equilibrium
 
 
 def write_equilibrium_functions(file, eq):
@@ -295,6 +296,11 @@ class Amrvac:
             self.config["geometry"] = "cylindrical"
         else:
             raise ValueError("'geometry' must be 'Cartesian' or 'cylindrical'.")
+        
+        if "equilibrium" not in self.config.keys():
+            raise KeyError("Equilibrium not defined.")
+        elif not isinstance(self.config["equilibrium"], Equilibrium):
+            raise TypeError("'equilibrium' must be an Equilibrium class object.")
         
         if "dim" not in self.config.keys():
             raise KeyError("'dim' required to setup MPI-AMRVAC files.")
