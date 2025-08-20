@@ -776,19 +776,19 @@ class Amrvac:
             f"call set_coordinate_system('{self.config["geometry"]}_{self.config["dim"]}D')",
             2,
         )
-        write_pad(file, "call read_legolas_data()", 2)
         file.write("\n")
-        write_pad(file, "usr_set_parameters => initialise_constants", 2)
+        write_pad(file, "usr_set_parameters => initglobaldata_usr", 2)
         write_pad(file, "usr_init_one_grid  => initialise_grid", 2)
         file.write("\n")
         write_pad(file, f"call {self.config["physics_type"]}_activate()", 2)
         write_pad(file, "end subroutine usr_init", 1)
         file.write("\n")
 
-        write_pad(file, "subroutine initialise_constants()", 1)
+        write_pad(file, "subroutine initglobaldata_usr()", 1)
+        write_pad(file, "call read_legolas_data()", 2)
         for key in eqparam.split(", "):
             write_pad(file, f"{key} = {self.config["parameters"][key]}", 2)
-        write_pad(file, "end subroutine initialise_constants", 1)
+        write_pad(file, "end subroutine initglobaldata_usr", 1)
         file.write("\n")
 
         write_pad(file, "subroutine initialise_grid(ixI^L, ixO^L, w, x)", 1)
