@@ -6,6 +6,7 @@ from scipy.interpolate import CubicSpline
 from scipy.integrate import quad, dblquad, tplquad
 from numpy.polynomial.polynomial import Polynomial
 
+from pylbo.automation.generator import ParfileGenerator
 from pylbo.utilities.datfiles.file_loader import load
 from pylbo.utilities.logger import pylboLogger
 from pylbo.gimli.utils import (
@@ -328,6 +329,67 @@ class Amrvac:
                 if not isinstance(self.config["parameters"][key], (int, float)):
                     raise TypeError(f"Parameter {key} must be an integer or float.")
         return
+    
+    def _validate_simulation_dict(self):
+        if "parfile" not in self.config.keys():
+            raise KeyError("No 'parfile' provided.")
+        elif not isinstance(self.config["parfile"], dict):
+            raise TypeError("'parfile' must be a dictionary.")
+
+        if "u1_bounds" in self.config.keys():
+            if "xprobmin1" in self.config["parfile"].keys():
+                assert abs(self.config["u1_bounds"][0] - self.config["parfile"]["xprobmin1"]) < 1e-12
+            else:
+                self.config["parfile"]["xprobmin1"] = self.config["u1_bounds"][0]
+
+            if "xprobmax1" in self.config["parfile"].keys():
+                assert abs(self.config["u1_bounds"][1] - self.config["parfile"]["xprobmax1"]) < 1e-12
+            else:
+                self.config["parfile"]["xprobmax1"] = self.config["u1_bounds"][1]
+
+        if "u2_bounds" in self.config.keys():
+            if "xprobmin2" in self.config["parfile"].keys():
+                assert abs(self.config["u2_bounds"][0] - self.config["parfile"]["xprobmin2"]) < 1e-12
+            else:
+                self.config["parfile"]["xprobmin2"] = self.config["u2_bounds"][0]
+
+            if "xprobmax2" in self.config["parfile"].keys():
+                assert abs(self.config["u2_bounds"][1] - self.config["parfile"]["xprobmax2"]) < 1e-12
+            else:
+                self.config["parfile"]["xprobmax2"] = self.config["u2_bounds"][1]
+
+        if "u3_bounds" in self.config.keys():
+            if "xprobmin3" in self.config["parfile"].keys():
+                assert abs(self.config["u3_bounds"][0] - self.config["parfile"]["xprobmin3"]) < 1e-12
+            else:
+                self.config["parfile"]["xprobmin3"] = self.config["u3_bounds"][0]
+
+            if "xprobmax3" in self.config["parfile"].keys():
+                assert abs(self.config["u3_bounds"][1] - self.config["parfile"]["xprobmax3"]) < 1e-12
+            else:
+                self.config["parfile"]["xprobmax3"] = self.config["u3_bounds"][1]
+        
+        if "typeboundary_min1" not in self.config["parfile"].keys():    # Cartesian only
+            pylboLogger.info("'typeboundary_min1' not provided. Adding default wall boundary conditions.")
+            bc = ["symm", "asymm", "symm", "symm"]
+            if self.config["dim"] > 2:
+                bc.append("symm")
+            if self.config["physics_type"] == "mhd":
+                bc = bc + ["asymm", "symm"]
+                if self.config["dim"] > 2:
+                    bc.append("symm")
+            self.config["parfile"]["typeboundary_min1"] = [bc]
+        
+        if "typeboundary_max1" not in self.config["parfile"].keys():    # Cartesian only
+            pylboLogger.info("'typeboundary_max1' not provided. Adding default wall boundary conditions.")
+            bc = ["symm", "asymm", "symm", "symm"]
+            if self.config["dim"] > 2:
+                bc.append("symm")
+            if self.config["physics_type"] == "mhd":
+                bc = bc + ["asymm", "symm"]
+                if self.config["dim"] > 2:
+                    bc.append("symm")
+            self.config["parfile"]["typeboundary_max1"] = [bc]
 
     def _get_combined_perturbation(self, ef):
         """
@@ -819,3 +881,56 @@ class Amrvac:
         file.write("!")
         file.close()
         return
+    
+    def parfile(
+            self,
+            basename="amrvac_config",
+            loc=None,
+            subdir=True,
+            prefix_numbers=False,
+            nb_prefix_digits=4
+        ):
+        """
+        Generates parfiles based on the `parfile` dictionary.
+        The separate namelists do not have to be taken into account, and a normal
+        dictionary should be supplied where the keys correspond to the namelist
+        items that are required. Typechecking is done automatically during parfile
+        generation.
+
+        Parameters
+        ----------
+        basename : str
+            The basename for the parfile, the `.par` suffix is added automatically and is
+            not needed. If multiple parfiles are generated, these
+            will be prepended by a 4-digit number (e.g. 0003myparfile.par).
+            If not provided, the basename will default to `amrvac_config`.
+        output_dir : str, ~os.PathLike
+            Output directory where the parfiles are saved, defaults to the current
+            working directory if not specified. A subdirectory called `parfiles` will be
+            created in which the parfiles will be saved.
+        subdir : boolean
+            If `True` (default), creates a subdirectory `parfiles` in the output folder.
+        prefix_numbers : boolean
+            If `True` prepends the `basename` by a n-digit number (e.g. xxxxmyparfile.par).
+            The number of digits is specified by `nb_prefix_digits`.
+        nb_prefix_digits : int
+            Number of digits to prepend to the `basename` if `prefix_numbers` is `True`.
+            Defaults to 4.
+
+        Returns
+        -------
+        parfiles : list
+            A list with the paths to the parfiles that were generated.
+        """
+        self._validate_simulation_dict()
+        pfgen = ParfileGenerator(
+            parfile_dict=self.config["parfile"],
+            basename=basename,
+            output_dir=loc,
+            subdir=subdir,
+            prefix_numbers=prefix_numbers,
+            nb_prefix_digits=nb_prefix_digits,
+            code="amrvac",
+        )
+        pfgen.create_namelist_from_dict()
+        return pfgen.generate_parfiles()

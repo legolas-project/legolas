@@ -5,13 +5,12 @@ from pathlib import Path
 from typing import Union
 
 import f90nml
-from pylbo.automation.defaults import legolas_namelist_items
-from pylbo.gimli.defaults import amrvac_namelist_items
+from pylbo.automation.defaults import legolas_namelist_items, amrvac_namelist_items
 from pylbo.exceptions import ParfileGenerationError
 from pylbo.utilities.logger import pylboLogger
 from pylbo.utilities.toolbox import transform_to_list
 
-KEYS_EXPECTED_AS_LIST = ["basis_functions"]
+KEYS_EXPECTED_AS_LIST = ["basis_functions", "w_convert_factor", "w_write", "writelevel", "writespshift", "flux_scheme", "limiter", "loglimit", "entropycoef", "small_values_fix_iw", "typeboundary_min1", "typeboundary_max1", "typeboundary_min2", "typeboundary_max2", "typeboundary_min3", "typeboundary_max3", "amr_wavefilter", "refine_threshold", "derefine_ratio", "w_refine_weight", "logflag", "stretch_dim", "boundary_divbfix"]
 
 
 def _ensure_nb_names_and_nb_runs_matches(
