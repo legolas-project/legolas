@@ -930,6 +930,7 @@ class Amrvac:
         parfiles : list
             A list with the paths to the parfiles that were generated.
         """
+        loc = validate_output_dir(loc)
         self._validate_simulation_dict()
         pfgen = ParfileGenerator(
             parfile_dict=self.config["parfile"],
