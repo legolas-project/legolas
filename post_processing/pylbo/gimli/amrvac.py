@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 import sympy as sp
 from scipy.io import FortranFile
@@ -535,7 +536,7 @@ class Amrvac:
         eq_list = self.eq_list
         idx = eq_list.index("rho0 * T0")
         eq_list[idx] = "T0"
-        ef_list = self.ef_list
+        ef_list = copy.deepcopy(self.ef_list)
         idx = ef_list.index("p")
         ef_list[idx] = "T"
 
@@ -674,18 +675,19 @@ class Amrvac:
             current directory.
         """
         self._validate_config_for_mod_usr()
-        quantities = ["density", "v1", "v2"]
+        quantities = copy.deepcopy(self.ef_list)
+        if self.config["dim"] <= 2:
+            quantities.remove("v3")
+            if "B3" in quantities:
+                quantities.remove("B3")
+
         keyring = ["rho_", "mom(1)", "mom(2)"]
         if self.config["dim"] > 2:
-            quantities.append("v3")
             keyring.append("mom(3)")
-        quantities.append("pressure")
         keyring.append("p_")
         if self.config["physics_type"] == "mhd":
-            quantities = quantities + ["B1", "B2"]
             keyring = keyring + ["mag(1)", "mag(2)"]
             if self.config["dim"] > 2:
-                quantities.append("B3")
                 keyring.append("mag(3)")
 
         loc = validate_output_dir(loc)
@@ -718,8 +720,8 @@ class Amrvac:
         write_pad(file, "integer :: ef_gridpts", 1)
         write_pad(file, "real(dp) :: k2, k3", 1)
         write_pad(file, "real(dp), allocatable :: ef_grid(:)", 1)
-        for ii in range(len(quantities)):
-            write_pad(file, f"complex(dp), allocatable :: {quantities[ii]}(:)", 1)
+        for ii in range(len(self.ef_list)):
+            write_pad(file, f"complex(dp), allocatable :: {self.ef_list[ii]}(:)", 1)
         file.write("\n")
 
         write_pad(file, "contains", 0)
@@ -785,8 +787,8 @@ class Amrvac:
 
         write_pad(file, "call allocate_arrays(ef_gridpts)", 2)
         write_pad(file, "read(file_id+mype) ef_grid", 2)
-        for ii in range(len(quantities)):
-            write_pad(file, f"read(file_id+mype) {quantities[ii]}", 2)
+        for ii in range(len(self.ef_list)):
+            write_pad(file, f"read(file_id+mype) {self.ef_list[ii]}", 2)
         file.write("\n")
 
         write_pad(
@@ -816,8 +818,8 @@ class Amrvac:
         write_pad(file, "integer, intent(in) :: gridpts", 2)
         file.write("\n")
         write_pad(file, "allocate(ef_grid(gridpts))", 2)
-        write_pad(file, "allocate(density(gridpts))", 2)
-        write_pad(file, f"allocate({", ".join(quantities[1:])}, mold=density)", 2)
+        write_pad(file, f"allocate({self.ef_list[0]}(gridpts))", 2)
+        write_pad(file, f"allocate({", ".join(self.ef_list[1:])}, mold={self.ef_list[0]})", 2)
         write_pad(file, "end subroutine allocate_arrays", 1)
         file.write("\n")
 
@@ -860,7 +862,7 @@ class Amrvac:
         file.write("\n")
         write_pad(file, f"if (w_index == {keyring[0]}) then", 2)
         write_pad(file, f"array = {quantities[0]}", 2)
-        for ii in range(1, len(quantities)):
+        for ii in range(1, len(keyring)):
             write_pad(file, f"else if (w_index == {keyring[ii]}) then", 2)
             write_pad(file, f"array = {quantities[ii]}", 3)
         write_pad(file, "end if", 2)
