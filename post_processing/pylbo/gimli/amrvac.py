@@ -32,7 +32,7 @@ def write_equilibrium_functions(file, eq, to_fetch):
         The equilibrium object containing the user-defined equilibrium functions.
     """
     translation = eq.variables.fkey
-    translation["x_v"] = "w(ixI^S, 1)"
+    translation["x_v"] = "x(ixI^S, 1)"
     xv = sp.Symbol("x_v")
     varlist = {
         "rho_": (eq.rho0).subs(eq.variables.x, xv),
