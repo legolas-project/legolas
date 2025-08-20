@@ -318,6 +318,9 @@ class ParfileGenerator:
                     f"{prefix}{run_dict['savelist'].get('basename_datfile', basename)}"
                 )
                 run_dict["savelist"].update({"basename_datfile": datfile_name})
+            elif self.code == "amrvac":
+                run_dict["savelist"].update({"itsave(1,1)": 0})
+                run_dict["savelist"].update({"itsave(1,2)": 0})
             # set paths and write parfile
             parfile_path = (self.output_dir / parfile_name).resolve()
             self.parfiles.append(str(parfile_path))
