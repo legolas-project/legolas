@@ -172,7 +172,11 @@ class Equilibrium:
                 ["tcperp", "dtcperpdT", "dtcperpdrho", " dtcperpdB2"],
                 [self.variables.T0, self.variables.rho0, self.variables.B0sq],
             ],
-            "cooling": [sp.sympify(cooling), ["lambdaT", "dlambdadT"], [self.variables.T0]],
+            "cooling": [
+                sp.sympify(cooling),
+                ["lambdaT", "dlambdadT"],
+                [self.variables.T0],
+            ],
             "heating": [
                 sp.sympify(heating),
                 ["H", "dHdT", "dHdrho"],

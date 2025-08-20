@@ -229,7 +229,7 @@ amrvac_namelist_items = {
         ("mhd_energy", bool),
         ("mhd_n_tracer", (int, np.integer)),
         ("mhd_gamma", (int, np.integer, float)),
-        ('mhd_adiab', (int, np.integer, float)),
+        ("mhd_adiab", (int, np.integer, float)),
         ("mhd_eta", (int, np.integer, float)),
         ("mhd_eta_hyper", (int, np.integer, float)),
         ("mhd_etah", (int, np.integer, float)),

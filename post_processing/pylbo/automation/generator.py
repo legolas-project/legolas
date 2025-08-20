@@ -10,7 +10,31 @@ from pylbo.exceptions import ParfileGenerationError
 from pylbo.utilities.logger import pylboLogger
 from pylbo.utilities.toolbox import transform_to_list
 
-KEYS_EXPECTED_AS_LIST = ["basis_functions", "w_convert_factor", "w_write", "writelevel", "writespshift", "flux_scheme", "limiter", "loglimit", "entropycoef", "small_values_fix_iw", "typeboundary_min1", "typeboundary_max1", "typeboundary_min2", "typeboundary_max2", "typeboundary_min3", "typeboundary_max3", "amr_wavefilter", "refine_threshold", "derefine_ratio", "w_refine_weight", "logflag", "stretch_dim", "boundary_divbfix"]
+KEYS_EXPECTED_AS_LIST = [
+    "basis_functions",
+    "w_convert_factor",
+    "w_write",
+    "writelevel",
+    "writespshift",
+    "flux_scheme",
+    "limiter",
+    "loglimit",
+    "entropycoef",
+    "small_values_fix_iw",
+    "typeboundary_min1",
+    "typeboundary_max1",
+    "typeboundary_min2",
+    "typeboundary_max2",
+    "typeboundary_min3",
+    "typeboundary_max3",
+    "amr_wavefilter",
+    "refine_threshold",
+    "derefine_ratio",
+    "w_refine_weight",
+    "logflag",
+    "stretch_dim",
+    "boundary_divbfix",
+]
 
 
 def _ensure_nb_names_and_nb_runs_matches(
@@ -289,7 +313,7 @@ class ParfileGenerator:
             basename = self.basenames[current_run]
             parfile_name = f"{prefix}{basename}.par"
             # datfile name (no extension .dat needed)
-            if self.code == 'legolas':
+            if self.code == "legolas":
                 datfile_name = (
                     f"{prefix}{run_dict['savelist'].get('basename_datfile', basename)}"
                 )

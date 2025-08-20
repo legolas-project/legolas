@@ -350,7 +350,5 @@ class Legolas:
         >>> legolas = Legolas(eq, config)
         >>> legolas.parfile()
         """
-        parfiles = generate_parfiles(
-            self.config, basename=filename, output_dir=loc
-        )
+        parfiles = generate_parfiles(self.config, basename=filename, output_dir=loc)
         return parfiles

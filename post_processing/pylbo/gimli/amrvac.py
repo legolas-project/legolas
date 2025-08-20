@@ -33,7 +33,7 @@ def write_equilibrium_functions(file, eq, to_fetch):
     """
     translation = eq.variables.fkey
     translation["x_v"] = "w(ixI^S, 1)"
-    xv = sp.Symbol('x_v')
+    xv = sp.Symbol("x_v")
     varlist = {
         "rho_": (eq.rho0).subs(eq.variables.x, xv),
         "mom(1)": None,
@@ -52,7 +52,7 @@ def write_equilibrium_functions(file, eq, to_fetch):
             write_pad(
                 file,
                 fcode(sp.sympify(float(expr)), assign_to=f"w(ixI^S, {key})").lstrip(),
-                2
+                2,
             )
         else:
             func = fcode(expr, assign_to=f"w(ixI^S, {key})").lstrip()
@@ -280,7 +280,7 @@ class Amrvac:
                         raise KeyError("Must specify bounds matching largest k-value.")
 
         return
-    
+
     def _validate_config_for_mod_usr(self):
         """
         Validates whether the configuration dictionary contains all the arguments to
@@ -298,19 +298,19 @@ class Amrvac:
             self.config["geometry"] = "cylindrical"
         else:
             raise ValueError("'geometry' must be 'Cartesian' or 'cylindrical'.")
-        
+
         if "equilibrium" not in self.config.keys():
             raise KeyError("Equilibrium not defined.")
         elif not isinstance(self.config["equilibrium"], Equilibrium):
             raise TypeError("'equilibrium' must be an Equilibrium class object.")
-        
+
         if "dim" not in self.config.keys():
             raise KeyError("'dim' required to setup MPI-AMRVAC files.")
         elif not isinstance(self.config["dim"], (int, float)):
             raise TypeError("'dim' must be an integer or float.")
         elif self.config["dim"] not in [2, 2.5, 3]:
             raise ValueError("Specified dimenisionality not supported (2, 2.5, 3).")
-        
+
         if "ldatfile" not in self.config.keys():
             raise KeyError("'ldatfile' not specified.")
         elif not isinstance(self.config["ldatfile"], str):
@@ -323,14 +323,17 @@ class Amrvac:
             raise KeyError("'parameters' (including k2 and k3) not specified.")
         elif not isinstance(self.config["parameters"], dict):
             raise TypeError("'parameters' must be a dictionary.")
-        elif not ("k2" in self.config["parameters"].keys() and "k3" in self.config["parameters"].keys()):
+        elif not (
+            "k2" in self.config["parameters"].keys()
+            and "k3" in self.config["parameters"].keys()
+        ):
             raise KeyError("'parameters' must contain 'k2' and 'k3'.")
         else:
             for key in self.config["parameters"].keys():
                 if not isinstance(self.config["parameters"][key], (int, float)):
                     raise TypeError(f"Parameter {key} must be an integer or float.")
         return
-    
+
     def _validate_simulation_dict(self):
         if "parfile" not in self.config.keys():
             raise KeyError("No 'parfile' provided.")
@@ -339,39 +342,77 @@ class Amrvac:
 
         if "u1_bounds" in self.config.keys():
             if "xprobmin1" in self.config["parfile"].keys():
-                assert abs(self.config["u1_bounds"][0] - self.config["parfile"]["xprobmin1"]) < 1e-12
+                assert (
+                    abs(
+                        self.config["u1_bounds"][0]
+                        - self.config["parfile"]["xprobmin1"]
+                    )
+                    < 1e-12
+                )
             else:
                 self.config["parfile"]["xprobmin1"] = self.config["u1_bounds"][0]
 
             if "xprobmax1" in self.config["parfile"].keys():
-                assert abs(self.config["u1_bounds"][1] - self.config["parfile"]["xprobmax1"]) < 1e-12
+                assert (
+                    abs(
+                        self.config["u1_bounds"][1]
+                        - self.config["parfile"]["xprobmax1"]
+                    )
+                    < 1e-12
+                )
             else:
                 self.config["parfile"]["xprobmax1"] = self.config["u1_bounds"][1]
 
         if "u2_bounds" in self.config.keys():
             if "xprobmin2" in self.config["parfile"].keys():
-                assert abs(self.config["u2_bounds"][0] - self.config["parfile"]["xprobmin2"]) < 1e-12
+                assert (
+                    abs(
+                        self.config["u2_bounds"][0]
+                        - self.config["parfile"]["xprobmin2"]
+                    )
+                    < 1e-12
+                )
             else:
                 self.config["parfile"]["xprobmin2"] = self.config["u2_bounds"][0]
 
             if "xprobmax2" in self.config["parfile"].keys():
-                assert abs(self.config["u2_bounds"][1] - self.config["parfile"]["xprobmax2"]) < 1e-12
+                assert (
+                    abs(
+                        self.config["u2_bounds"][1]
+                        - self.config["parfile"]["xprobmax2"]
+                    )
+                    < 1e-12
+                )
             else:
                 self.config["parfile"]["xprobmax2"] = self.config["u2_bounds"][1]
 
         if "u3_bounds" in self.config.keys():
             if "xprobmin3" in self.config["parfile"].keys():
-                assert abs(self.config["u3_bounds"][0] - self.config["parfile"]["xprobmin3"]) < 1e-12
+                assert (
+                    abs(
+                        self.config["u3_bounds"][0]
+                        - self.config["parfile"]["xprobmin3"]
+                    )
+                    < 1e-12
+                )
             else:
                 self.config["parfile"]["xprobmin3"] = self.config["u3_bounds"][0]
 
             if "xprobmax3" in self.config["parfile"].keys():
-                assert abs(self.config["u3_bounds"][1] - self.config["parfile"]["xprobmax3"]) < 1e-12
+                assert (
+                    abs(
+                        self.config["u3_bounds"][1]
+                        - self.config["parfile"]["xprobmax3"]
+                    )
+                    < 1e-12
+                )
             else:
                 self.config["parfile"]["xprobmax3"] = self.config["u3_bounds"][1]
-        
-        if "typeboundary_min1" not in self.config["parfile"].keys():    # Cartesian only
-            pylboLogger.info("'typeboundary_min1' not provided. Adding default wall boundary conditions.")
+
+        if "typeboundary_min1" not in self.config["parfile"].keys():  # Cartesian only
+            pylboLogger.info(
+                "'typeboundary_min1' not provided. Adding default wall boundary conditions."
+            )
             bc = ["symm", "asymm", "symm", "symm"]
             if self.config["dim"] > 2:
                 bc.append("symm")
@@ -380,9 +421,11 @@ class Amrvac:
                 if self.config["dim"] > 2:
                     bc.append("symm")
             self.config["parfile"]["typeboundary_min1"] = [bc]
-        
-        if "typeboundary_max1" not in self.config["parfile"].keys():    # Cartesian only
-            pylboLogger.info("'typeboundary_max1' not provided. Adding default wall boundary conditions.")
+
+        if "typeboundary_max1" not in self.config["parfile"].keys():  # Cartesian only
+            pylboLogger.info(
+                "'typeboundary_max1' not provided. Adding default wall boundary conditions."
+            )
             bc = ["symm", "asymm", "symm", "symm"]
             if self.config["dim"] > 2:
                 bc.append("symm")
@@ -706,7 +749,7 @@ class Amrvac:
         write_pad(
             file,
             f"character(len=100), parameter :: legolas_file = '{self.config["ldatfile"]+".ldat"}'",
-            1
+            1,
         )
         file.write("\n")
         write_pad(file, "integer, parameter :: dp = real64", 1)
@@ -731,7 +774,7 @@ class Amrvac:
         write_pad(
             file,
             f"call set_coordinate_system('{self.config["geometry"]}_{self.config["dim"]}D')",
-            2
+            2,
         )
         write_pad(file, "call read_legolas_data()", 2)
         file.write("\n")
@@ -759,16 +802,14 @@ class Amrvac:
 
         for key in keyring:
             write_pad(
-                file,
-                f"call add_perturbation_to_w_array(ixI^L, ixO^L, w, {key}, x)",
-                2
+                file, f"call add_perturbation_to_w_array(ixI^L, ixO^L, w, {key}, x)", 2
             )
         file.write("\n")
 
         write_pad(
             file,
             f"call {self.config["physics_type"]}_to_conserved(ixI^L, ixO^L, w, x)",
-            2
+            2,
         )
         write_pad(file, "end subroutine initialise_grid", 1)
         file.write("\n")
@@ -794,20 +835,16 @@ class Amrvac:
         write_pad(
             file,
             "read(file_id+mype) unit_length, unit_numberdensity, unit_temperature, &",
-            2
+            2,
         )
         if self.config["physics_type"] == "mhd":
             write_pad(
                 file,
                 "unit_density, unit_pressure, unit_velocity, unit_magneticfield, unit_time",
-                3
+                3,
             )
         else:
-            write_pad(
-                file,
-                "unit_density, unit_pressure, unit_velocity, unit_time",
-                3
-            )
+            write_pad(file, "unit_density, unit_pressure, unit_velocity, unit_time", 3)
         file.write("\n")
 
         write_pad(file, "close(file_id+mype)", 2)
@@ -819,14 +856,16 @@ class Amrvac:
         file.write("\n")
         write_pad(file, "allocate(ef_grid(gridpts))", 2)
         write_pad(file, f"allocate({self.ef_list[0]}(gridpts))", 2)
-        write_pad(file, f"allocate({", ".join(self.ef_list[1:])}, mold={self.ef_list[0]})", 2)
+        write_pad(
+            file, f"allocate({", ".join(self.ef_list[1:])}, mold={self.ef_list[0]})", 2
+        )
         write_pad(file, "end subroutine allocate_arrays", 1)
         file.write("\n")
 
         write_pad(
             file,
             "subroutine add_perturbation_to_w_array(ixI^L, ixO^L, w, w_index, x)",
-            1    
+            1,
         )
         write_pad(file, "integer, intent(in)     :: ixI^L, ixO^L", 2)
         write_pad(file, "real(dp), intent(inout) :: w(ixI^S, nw)", 2)
@@ -835,7 +874,7 @@ class Amrvac:
         write_pad(
             file,
             "complex(dp) :: amplitude, exp_factor, quantity, values(ef_gridpts)",
-            2
+            2,
         )
         write_pad(file, "integer  :: ix^D, ib^D", 2)
         write_pad(file, "real(dp) :: k1 = 0.0d0", 2)
@@ -845,11 +884,7 @@ class Amrvac:
         write_pad(file, "{ib^D = ixImax^D - ixImin^D + 1|\\}", 2)
         write_pad(file, "{do ix^D = 1, ib^D|\\}", 2)
         write_pad(file, "exp_factor = {exp(ic * k^D * x({ix^D}, ^D))|*}", 3)
-        write_pad(
-            file,
-            "call ef_amplitude(x(ix^D, 1), ef_grid, values, amplitude)",
-            3
-        )
+        write_pad(file, "call ef_amplitude(x(ix^D, 1), ef_grid, values, amplitude)", 3)
         write_pad(file, "quantity = amplitude * exp_factor", 3)
         write_pad(file, "w(ix^D, w_index) = w(ix^D, w_index) + realpart(quantity)", 3)
         write_pad(file, "{end do|\\}", 2)
@@ -891,15 +926,15 @@ class Amrvac:
         file.write("!")
         file.close()
         return
-    
+
     def parfile(
-            self,
-            basename="amrvac_config",
-            loc=None,
-            subdir=True,
-            prefix_numbers=False,
-            nb_prefix_digits=4
-        ):
+        self,
+        basename="amrvac_config",
+        loc=None,
+        subdir=True,
+        prefix_numbers=False,
+        nb_prefix_digits=4,
+    ):
         """
         Generates parfiles based on the `parfile` dictionary.
         The separate namelists do not have to be taken into account, and a normal
