@@ -861,7 +861,7 @@ class Amrvac:
         write_pad(file, "complex(dp), intent(inout) :: array(ef_gridpts)", 2)
         file.write("\n")
         write_pad(file, f"if (w_index == {keyring[0]}) then", 2)
-        write_pad(file, f"array = {quantities[0]}", 2)
+        write_pad(file, f"array = {quantities[0]}", 3)
         for ii in range(1, len(keyring)):
             write_pad(file, f"else if (w_index == {keyring[ii]}) then", 2)
             write_pad(file, f"array = {quantities[ii]}", 3)
