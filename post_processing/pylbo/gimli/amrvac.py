@@ -19,7 +19,7 @@ from pylbo.gimli.utils import (
 from pylbo.gimli.equilibrium import Equilibrium
 
 
-def write_equilibrium_functions(file, eq):
+def write_equilibrium_functions(file, eq, to_fetch):
     """
     Iterates over all equilibrium quantities and writes them to the MPI-AMRVAC user module.
 
@@ -43,7 +43,7 @@ def write_equilibrium_functions(file, eq):
         "mag(2)": (eq.B02).subs(eq.variables.x, xv),
         "mag(3)": (eq.B03).subs(eq.variables.x, xv),
     }
-    for key in list(varlist.keys()):
+    for key in to_fetch:
         expr = varlist[key]
         if expr is None:
             write_pad(file, f"w(ixI^S, {key}) = 0.0d0", 2)
@@ -674,11 +674,19 @@ class Amrvac:
             current directory.
         """
         self._validate_config_for_mod_usr()
-        quantities = ["density", "v1", "v2", "v3", "pressure"]
-        keyring = ["rho_", "mom(1)", "mom(2)", "mom(3)", "p_"]
+        quantities = ["density", "v1", "v2"]
+        keyring = ["rho_", "mom(1)", "mom(2)"]
+        if self.config["dim"] > 2:
+            quantities.append("v3")
+            keyring.append("mom(3)")
+        quantities.append("pressure")
+        keyring.append("p_")
         if self.config["physics_type"] == "mhd":
-            quantities = quantities + ["B1", "B2", "B3"]
-            keyring = keyring + ["mag(1)", "mag(2)", "mag(3)"]
+            quantities = quantities + ["B1", "B2"]
+            keyring = keyring + ["mag(1)", "mag(2)"]
+            if self.config["dim"] > 2:
+                quantities.append("B3")
+                keyring.append("mag(3)")
 
         loc = validate_output_dir(loc)
         path = loc + "/" + filename + ".t"
@@ -744,7 +752,7 @@ class Amrvac:
         write_pad(file, "real(dp), intent(inout) :: w(ixI^S, nw)", 2)
         file.write("\n")
 
-        write_equilibrium_functions(file, self.config["equilibrium"])
+        write_equilibrium_functions(file, self.config["equilibrium"], keyring)
         file.write("\n")
 
         for key in keyring:
