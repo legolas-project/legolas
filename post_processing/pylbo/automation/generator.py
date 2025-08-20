@@ -289,10 +289,11 @@ class ParfileGenerator:
             basename = self.basenames[current_run]
             parfile_name = f"{prefix}{basename}.par"
             # datfile name (no extension .dat needed)
-            datfile_name = (
-                f"{prefix}{run_dict['savelist'].get('basename_datfile', basename)}"
-            )
-            run_dict["savelist"].update({"basename_datfile": datfile_name})
+            if self.code == 'legolas':
+                datfile_name = (
+                    f"{prefix}{run_dict['savelist'].get('basename_datfile', basename)}"
+                )
+                run_dict["savelist"].update({"basename_datfile": datfile_name})
             # set paths and write parfile
             parfile_path = (self.output_dir / parfile_name).resolve()
             self.parfiles.append(str(parfile_path))
