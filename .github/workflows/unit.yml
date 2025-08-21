@@ -13,15 +13,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        compiler: [gfortran-9, gfortran-10, gfortran-12]
-        coverage: [false]
         include:
           - os: ubuntu-latest
-            compiler: gfortran-11
+            compiler: gfortran-12
+            gcc: gcc-12
+            coverage: false
+          - os: ubuntu-latest
+            compiler: gfortran-13
+            gcc: gcc-13
+            coverage: false
+          - os: ubuntu-latest
+            compiler: gfortran-14
+            gcc: gcc-14
             coverage: true
 
     env:
+      CC: ${{ matrix.gcc }}
       FC: ${{ matrix.compiler }}
       PFUNIT_DIR: /home/runner/work/legolas/legolas/tests/pFUnit/build/installed
       LEGOLASDIR: /home/runner/work/legolas/legolas
@@ -129,7 +136,7 @@ jobs:
         cd coverage
         lcov --capture --directory $LEGOLASDIR/build \
             --output-file unit-tests-${{ matrix.compiler }}.info \
-            --gcov-tool /usr/bin/gcov-11
+            --gcov-tool /usr/bin/gcov-14
         # filter out coverage files
         find $LEGOLASDIR/build -name '*.gc*' -delete
 
