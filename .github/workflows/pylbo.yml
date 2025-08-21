@@ -61,6 +61,8 @@ jobs:
 
     - name: Install Legolas dependencies
       run: |
+        sudo apt-get update
+        sudo apt-get install gfortran-10
         sudo apt-get install libblas-dev
         sudo apt-get install liblapack-dev
         sudo apt-get install lcov
