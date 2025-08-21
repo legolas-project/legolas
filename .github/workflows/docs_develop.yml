@@ -20,12 +20,11 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        # Fix version for now, 3.4 throws an error (see #101)
-        pip install markdown==3.3.7
-        pip install ford==6.1.13 graphviz
+        pip install markdown
+        pip install ford graphviz
         sudo apt-get install graphviz
-        pip install -U sphinx
-        pip install numpydoc sphinx-rtd-theme lazy-object-proxy==1.4 sphinx-autoapi
+        pip install -U sphinx==7.2.6
+        pip install numpydoc sphinx-rtd-theme lazy-object-proxy sphinx-autoapi
 
     - name: Generate documentation
       run: |
