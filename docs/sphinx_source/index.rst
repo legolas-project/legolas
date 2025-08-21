@@ -6,7 +6,7 @@ Here you can browse the internal structure of the Pylbo code,
 all classes, attributes and methods should be extensively documented.
 
 These pages are automatically generated from in-line source code documentation
-on the `master` branch of the `GitHub repository <https://github.com/n-claes/legolas>`_,
+on the `master` branch of the `GitHub repository <https://github.com/legolas-project/legolas>`_,
 and are built after every commit.
 
 You can return to the main site `here <../../../index.html>`_.

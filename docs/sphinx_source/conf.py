@@ -74,4 +74,4 @@ html_theme_options = {
     "includehidden": True,
     "titles_only": True,
 }
-github_url = "https://github.com/n-claes/legolas/tree/master/post_processing/pylbo"
+github_url = "https://github.com/legolas-project/legolas/tree/master/post_processing/pylbo"

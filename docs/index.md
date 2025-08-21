@@ -22,7 +22,7 @@ feature_row:
   - image_path: /assets/images/slack_github.png
     excerpt:
       We are happy to answer any questions you may have in using Legolas and/or Pylbo. Feel free to open an issue
-      in the [GitHub repository](https://github.com/n-claes/legolas) or start a [Discussion thread](https://github.com/n-claes/legolas/discussions)
+      in the [GitHub repository](https://github.com/legolas-project/legolas) or start a [Discussion thread](https://github.com/legolas-project/legolas/discussions)
       there. We also have a dedicated Slack workspace, which you can also use to ask questions or have a nice chat with the developers.
       You can also just send us an e-mail.
     title: Contact
