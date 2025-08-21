@@ -23,7 +23,7 @@ jobs:
         pip install markdown
         pip install ford graphviz
         sudo apt-get install graphviz
-        pip install -U sphinx
+        pip install -U sphinx==7.2.6
         pip install numpydoc sphinx-rtd-theme lazy-object-proxy sphinx-autoapi
 
     - name: Generate documentation
