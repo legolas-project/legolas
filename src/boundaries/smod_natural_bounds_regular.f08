@@ -7,7 +7,7 @@ contains
     real(dp)  :: eps
     real(dp)  :: rho, T0
     real(dp)  :: B01, B02, B03
-    real(dp)  :: Gop_min
+    real(dp)  :: eps_Gop_min
 
     eps = grid%get_eps(x)
     rho = background%density%rho0(x)
@@ -15,12 +15,12 @@ contains
     B01 = background%magnetic%B01(x)
     B02 = background%magnetic%B02(x)
     B03 = background%magnetic%B03(x)
-    Gop_min = k3 * B02 - k2 * B03 / eps
+    eps_Gop_min = eps * k3 * B02 - k2 * B03 ! this is eps * Gop_min regularised at r=0
 
     ! ==================== Cubic * Quadratic ====================
     call elements%add(T0, sv_v1, sv_rho1)
     call elements%add(rho, sv_v1, sv_T1)
-    call elements%add(eps * Gop_min, sv_v1, sv_a1)
+    call elements%add(eps_Gop_min, sv_v1, sv_a1)
     ! ==================== Cubic * dCubic ====================
     call elements%add(B03, sv_v1, sv_a2, s2do=1)
     call elements%add(-eps * B02, sv_v1, sv_a3, s2do=1)
