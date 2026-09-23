@@ -6,15 +6,17 @@
 !! This equilibrium is taken from section 7.3.3, p. 258 in
 !! _Goedbloed, H., Keppens, R., & Poedts, S. (2019). Magnetohydrodynamics of Laboratory
 !!  and Astrophysical Plasmas. Cambridge University Press._ [DOI](http://doi.org/10.1017/9781316403679).
-!! @note Default values are given by
-!!
-!! - <tt>k2</tt> = \(\pi\)
-!! - <tt>k3</tt> = \(\pi\)
-!! - <tt>cte_p0</tt> = 0.5 : used to set the pressure value.
-!! - <tt>alpha</tt> = 20 : used to constrain the density.
-!! - <tt>g</tt> = 0.5 : used to set the gravity constant.
-!!
-!! and can all be changed in the parfile. @endnote
+!! @note
+!!     Default values are given by
+!!     
+!!     - <tt>k2</tt> = \(\pi\)
+!!     - <tt>k3</tt> = \(\pi\)
+!!     - <tt>cte_p0</tt> = 0.5 : used to set the pressure value.
+!!     - <tt>alpha</tt> = 20 : used to constrain the density.
+!!     - <tt>g</tt> = 0.5 : used to set the gravity constant.
+!!     
+!!     and can all be changed in the parfile.
+!! @endnote
 submodule (mod_equilibrium) smod_equil_gravito_mhd
   use mod_equilibrium_params, only: g, cte_rho0, cte_p0, alpha, beta
   implicit none

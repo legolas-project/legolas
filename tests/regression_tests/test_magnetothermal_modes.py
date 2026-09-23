@@ -16,18 +16,17 @@ class MagnetoThermalModes(RegressionTest):
     equilibrium = "magnetothermal_instabilities"
     geometry = "cylindrical"
 
-    parameters = {"k2": 0.0, "k3": 1.0, "cte_T0": 1.0}
+    parameters = {"k2": 0.0, "k3": 1.0, "cte_T0": 1.0, "eq_bool": True}
     physics_settings = {
         "radiative_cooling": True,
         "heating": True,
         "force_thermal_balance": True,
-        "cooling_curve": "rosner",
+        "cooling_curve": "Rosner",
         "parallel_conduction": True,
         "perpendicular_conduction": False,
         "unit_temperature": 2.6e6,
         "unit_magneticfield": 10.0,
         "unit_length": 1.0e8,
-        "mean_molecular_weight": 1.0,
     }
 
 

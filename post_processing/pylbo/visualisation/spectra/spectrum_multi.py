@@ -2,11 +2,9 @@ import matplotlib.colors as mpl_colors
 import numpy as np
 from pylbo.utilities.toolbox import add_pickradius_to_item, transform_to_numpy
 from pylbo.visualisation.continua import ContinuaHandler
-from pylbo.visualisation.eigenfunctions.derived_eigfunc_handler import (
-    DerivedEigenfunctionHandler,
-)
 from pylbo.visualisation.eigenfunctions.eigfunc_handler import EigenfunctionHandler
 from pylbo.visualisation.spectra.spectrum_figure import SpectrumFigure
+from pylbo.utilities.logger import pylboLogger
 
 
 class MultiSpectrumPlot(SpectrumFigure):
@@ -178,6 +176,9 @@ class MultiSpectrumPlot(SpectrumFigure):
         """
         if not self.has_valid_continua(self.dataseries):
             return
+        if self.has_zero_continua(self.dataseries):
+            pylboLogger.warning("Continua not plotted: all are zero.")
+            return
         if self._c_handler is None:
             self._c_handler = ContinuaHandler(interactive=interactive)
 
@@ -228,13 +229,3 @@ class MultiSpectrumPlot(SpectrumFigure):
                 self.dataseries, self._ef_ax, self.ax
             )
         super().add_eigenfunction_interface(efhandler=self._ef_handler)
-
-    def add_derived_eigenfunctions(self):
-        """Adds the derived eigenfunctions to the current figure."""
-        if self._def_ax is None:
-            self._def_ax = super().add_subplot_axes(self.ax, loc="right")
-        if self._def_handler is None:
-            self._def_handler = DerivedEigenfunctionHandler(
-                self.dataseries, self._def_ax, self.ax
-            )
-        super().add_eigenfunction_interface(efhandler=self._def_handler)

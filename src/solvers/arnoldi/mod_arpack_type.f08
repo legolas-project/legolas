@@ -245,7 +245,9 @@ contains
 
   !> Sets the maximum number of iterations that ARPACK is allowed to take, defaults
   !! to max(100, 10 * k) with k the number of eigenvalues.
-  !! @warning Throws a warning if <tt>maxiter</tt> is smaller than 10*N. @endwarning
+  !! @warning
+  !!     Throws a warning if <tt>maxiter</tt> is smaller than 10*N.
+  !! @endwarning
   subroutine set_maxiter(this, maxiter)
     !> type instance
     class(arpack_t), intent(inout) :: this

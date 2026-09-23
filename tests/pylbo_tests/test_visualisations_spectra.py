@@ -298,6 +298,19 @@ def test_comparison_plot_geometry(ds_v100, ds_v112):
     assert p.panel2.ax.get_subplotspec().get_geometry()[0:3] == (1, 2, 1)
 
 
+def test_comparison_plot_locked_view(ds_v100, ds_v112):
+    p = pylbo.plot_spectrum_comparison(ds_v100, ds_v112, lock_zoom=True)
+    p.draw()
+    ax1 = p.panel1.ax
+    ax2 = p.panel2.ax
+    assert np.allclose(ax1.get_xlim(), ax2.get_xlim())
+    assert np.allclose(ax1.get_ylim(), ax2.get_ylim())
+    ax1.set_xlim(-50, 50)
+    ax1.set_ylim(-25, 25)
+    assert np.allclose(ax1.get_xlim(), ax2.get_xlim())
+    assert np.allclose(ax1.get_ylim(), ax2.get_ylim())
+
+
 def test_comparison_plot_set_x_scaling(ds_v112, ds_v112_eta):
     p = pylbo.plot_spectrum_comparison(ds_v112, ds_v112_eta)
     p.draw()

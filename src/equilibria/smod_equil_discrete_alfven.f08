@@ -8,24 +8,27 @@
 !! "Non-adiabatic discrete Alfven waves in coronal loops and prominences.",
 !! Solar physics 144.2 (1993): 267-281_.
 !!
-!! @note Default values are given by
-!!
-!! - <tt>k2</tt> = 1
-!! - <tt>k3</tt> = 0.05
-!! - <tt>j0</tt> = 0.125 : used to set the current.
-!! - <tt>delta</tt> = 0.2 : used in the density profile.
-!! - cooling_curve = 'rosner'
-!! - parallel thermal conduction, no perpendicular conduction
-!!
-!! and normalisations given by
-!!
-!! - <tt>unit_density</tt> = 1.5e-15 gcm-3
-!! - <tt>unit_magneticfield</tt> = 50 Gauss
-!! - <tt>unit_length</tt> = 1e10 cm
-!!
-!! and can all be changed in the parfile. @endnote
+!! @note
+!!     Default values are given by
+!!     
+!!     - <tt>k2</tt> = 1
+!!     - <tt>k3</tt> = 0.05
+!!     - <tt>j0</tt> = 0.125 : used to set the current.
+!!     - <tt>delta</tt> = 0.2 : used in the density profile.
+!!     - cooling_curve = 'Rosner'
+!!     - parallel thermal conduction, no perpendicular conduction
+!!     
+!!     and normalisations given by
+!!     
+!!     - <tt>unit_density</tt> = 1.5e-15 gcm-3
+!!     - <tt>unit_magneticfield</tt> = 50 Gauss
+!!     - <tt>unit_length</tt> = 1e10 cm
+!!     - pure proton plasma (a=1, b=1)
+!!     
+!!     and can all be changed in the parfile.
+!! @endnote
 submodule (mod_equilibrium) smod_equil_discrete_alfven
-  use mod_equilibrium_params, only: j0, delta
+  use mod_equilibrium_params, only: j0, delta, eq_bool
   implicit none
 
   real(dp) :: x_end
@@ -36,14 +39,14 @@ contains
     if (settings%equilibrium%use_defaults) then ! LCOV_EXCL_START
       call settings%grid%set_geometry("cylindrical")
       call settings%grid%set_grid_boundaries(0.0_dp, 1.0_dp)
-      call settings%physics%enable_cooling(cooling_curve="rosner")
+      call settings%physics%enable_cooling(cooling_curve="Rosner")
       call settings%physics%enable_heating(force_thermal_balance=.true.)
       call settings%physics%enable_parallel_conduction()
       call settings%units%set_units_from_density( &
         unit_density=1.5e-15_dp, &
         unit_magneticfield=50.0_dp, &
         unit_length=1.0e10_dp, &
-        mean_molecular_weight=1.0_dp & ! pure proton plasma
+        a=1.0_dp, b=1.0_dp & ! pure proton plasma
       )
 
       j0 = 0.125_dp
@@ -51,6 +54,17 @@ contains
       k2 = 1.0_dp
       k3 = 0.05_dp
     end if ! LCOV_EXCL_STOP
+
+    ! When eq_bool is true, override the default definitions of a and b that are based
+    ! on He abundance. This is needed to reproduce the results of the original paper.
+    if (eq_bool) then
+      call settings%units%set_units_from_density( &
+        unit_density=settings%units%get_unit_density(), &
+        unit_magneticfield=settings%units%get_unit_magneticfield(), &
+        unit_length=settings%units%get_unit_length(), &
+        a=1.0_dp, b=1.0_dp & ! pure proton plasma
+      )
+    end if
 
     x_end = settings%grid%get_grid_end()
 

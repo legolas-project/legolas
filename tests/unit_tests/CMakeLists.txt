@@ -41,9 +41,10 @@ include(${setup_tools}/findLAPACK.cmake)
 include(${setup_tools}/findARPACK.cmake)
 
 # add default modules to library
-add_library(suite
-        mod_suite_utils.f90
+set( aux_modules
+    mod_suite_utils.f90
 )
+add_library(suite ${aux_modules})
 set_target_properties (suite
         PROPERTIES
         Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -91,12 +92,15 @@ set( test_sources
         mod_test_resistivity.pf
         mod_test_conduction.pf
         mod_test_boundaries.pf
+        mod_test_statevector.pf
         mod_test_splines.pf
         mod_test_quadblock.pf
         mod_test_interpolation.pf
         mod_test_integration.pf
         mod_test_inspections.pf
         mod_test_solar_atmosphere.pf
+        mod_test_iv_solver.pf
+        mod_test_iv_state_vector.pf
 )
 add_pfunit_ctest (test_legolas
         TEST_SOURCES ${test_sources}

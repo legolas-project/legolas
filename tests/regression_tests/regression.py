@@ -210,7 +210,6 @@ class RegressionTest(TestCase):
         ds_test,
         ds_base,
         names_attr,
-        get_ef_method_name,
         figname_prefix="",
         nb_plots=(3, 3),
         figsize=(10, 10),
@@ -223,7 +222,7 @@ class RegressionTest(TestCase):
         )
 
         for ds, ax in [(ds_test, ax_test), (ds_base, ax_base)]:
-            (efs,) = getattr(ds, get_ef_method_name)(eigenvalue)
+            (efs,) = ds.get_eigenfunctions(eigenvalue)
             ef_names = getattr(ds, names_attr)
             validate_subplot_sizes(ef_names, ax)
             for panel, ef_name in zip(ax.flatten(), ef_names):
@@ -290,7 +289,6 @@ class RegressionTest(TestCase):
             eigenvalue,
             ds_test,
             ds_base,
-            get_ef_method_name="get_eigenfunctions",
             names_attr="ef_names",
         )
         super().compare_test_images(
@@ -309,11 +307,10 @@ class RegressionTest(TestCase):
             eigenvalue,
             ds_test,
             ds_base,
-            get_ef_method_name="get_derived_eigenfunctions",
             names_attr="derived_ef_names",
             figname_prefix="derived_",
-            nb_plots=(5, 4),
-            figsize=(18, 10),
+            nb_plots=(5, 5),
+            figsize=(23, 10),
             set_to_zero_tol=1e-8,
         )
         super().compare_test_images(

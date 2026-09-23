@@ -33,7 +33,7 @@ def test_series_has_efs(series_v112):
 
 
 def test_series_ef_names_not_present(series_v100):
-    assert np.all(series_v100.ef_names) is None
+    assert np.all(series_v100.ef_names == [None] * len(series_v100))
 
 
 def test_series_ef_names(series_v112):
@@ -146,3 +146,37 @@ def test_series_nobg_alfven_speed(series_v200_nobg):
 def test_series_nobg_tube_speed(series_v200_nobg):
     with pytest.raises(BackgroundNotPresent):
         series_v200_nobg.get_tube_speed()
+
+
+def test_series_derived_ef_names(series_v200_mri_efs):
+    names = series_v200_mri_efs.derived_ef_names
+    expected = series_v200_mri_efs[0].derived_ef_names
+    assert names.shape == (len(series_v200_mri_efs), len(expected))
+    assert np.all(names == expected)
+
+
+def test_series_has_subset(series_v200_mixed_efs):
+    has_subset = series_v200_mixed_efs.has_ef_subset
+    assert isinstance(has_subset, np.ndarray)
+    assert np.all(has_subset == [True, False, True, False, True, False])
+
+
+def test_series_has_eigenvecs(series_v200_mixed_efs):
+    has_eigenvecs = series_v200_mixed_efs.has_eigenvectors
+    assert isinstance(has_eigenvecs, np.ndarray)
+    assert np.all(has_eigenvecs == [True, False, True, False, True, False])
+
+
+def test_series_has_residuals(series_v200_mixed_efs):
+    has_residuals = series_v200_mixed_efs.has_residuals
+    assert isinstance(has_residuals, np.ndarray)
+    assert np.all(has_residuals == [True, False, True, False, True, False])
+
+
+def test_series_max_eigenvalue(series_v200_mri_efs):
+    evs = series_v200_mri_efs.get_omega_max(real=True)
+    expected = np.array([11.184804375] * len(series_v200_mri_efs), dtype=complex)
+    assert np.all(np.isclose(expected, evs))
+    ev = series_v200_mri_efs.get_omega_max(real=False)
+    expected = np.array([-0.001919987625 + 0.6214319226j] * len(series_v200_mri_efs))
+    assert np.all(np.isclose(expected, ev))

@@ -1,6 +1,7 @@
 module mod_test_grid
   use mod_suite_utils
   use funit
+  use mod_check_values, only: is_equal
   implicit none
 
   integer :: i
@@ -27,6 +28,28 @@ contains
   end subroutine teardown_test
 
 
+  real(dp) function exponential_dx(x)
+    real(dp), intent(in) :: x
+    exponential_dx = 1.0_dp / (exp(2.0_dp * x) + 5.0_dp)
+  end function exponential_dx
+
+
+  real(dp) function negative_dx(x)
+    real(dp), intent(in) :: x
+    if (x < 0.5_dp) then
+      negative_dx = 0.1_dp
+    else
+      negative_dx = -0.1_dp
+    end if
+  end function negative_dx
+
+
+  real(dp) function gaussian_dx(x)
+    real(dp), intent(in) :: x
+    gaussian_dx = 0.75_dp - 0.74_dp * exp(-x**2 / 5.0_dp)
+  end function gaussian_dx
+
+
   logical function is_monotonic(array)
     real(dp), intent(in) :: array(:)
     is_monotonic = .true.
@@ -37,6 +60,25 @@ contains
       end if
     end do
   end function is_monotonic
+
+
+  logical function is_symmetric(array)
+    real(dp), intent(in) :: array(:)
+    real(dp) :: dx_left, dx_right
+    integer :: pts, imid, idx
+
+    is_symmetric = .true.
+    pts = size(array)
+    imid = (pts + 1) / 2
+    do idx = 1, imid - 1
+      dx_left = array(idx + 1) - array(idx)
+      dx_right = array(pts - idx + 1) - array(pts - idx)
+      if (.not. is_equal(dx_left, dx_right, tol=1.0d-8)) then
+        is_symmetric = .false.
+        exit
+      end if
+    end do
+  end function is_symmetric
 
 
   @test
@@ -212,13 +254,6 @@ contains
     @assertEqual(-2.0_dp, grid%base_grid(1))
     @assertEqual(2.0_dp, grid%base_grid(gridpts))
     @assertTrue(is_monotonic(grid%base_grid))
-
-  contains
-
-    real(dp) function exponential_dx(x)
-      real(dp), intent(in) :: x
-      exponential_dx = 1.0_dp / (exp(2.0_dp * x) + 5.0_dp)
-    end function exponential_dx
   end subroutine test_spacing_function_custom_exponential
 
 
@@ -231,17 +266,74 @@ contains
     call grid%set_spacing_function(negative_dx)
     call grid%initialise()
     @assertExceptionRaised("dx must be positive, got dx = -0.10000000")
-
-  contains
-
-    real(dp) function negative_dx(x)
-      real(dp), intent(in) :: x
-      if (x < 0.5_dp) then
-        negative_dx = 0.1_dp
-      else
-        negative_dx = -0.1_dp
-      end if
-    end function negative_dx
   end subroutine test_spacing_function_custom_negative_dx
+
+
+  @test
+  subroutine test_custom_symmetric_grid()
+    call set_name("grid: symmetric grid with custom spacing function, gaussian")
+    call settings%grid%set_grid_boundaries(-10.0_dp, 10.0_dp)
+    call settings%grid%set_gridpts(100)
+    settings%grid%symmetric_grid = .true.
+    grid = new_grid(settings)
+    call grid%set_spacing_function(gaussian_dx)
+    call grid%initialise()
+
+    @assertEqual(-10.0_dp, grid%base_grid(1))
+    @assertEqual(10.0_dp, grid%base_grid(settings%grid%get_gridpts()))
+    @assertTrue(is_monotonic(grid%base_grid))
+    @assertTrue(is_symmetric(grid%base_grid))
+  end subroutine test_custom_symmetric_grid
+
+
+  @test
+  subroutine test_custom_symmetric_grid_unequal_bounds()
+    call set_name("grid: symmetric grid with custom spacing function, unequal bounds")
+    call settings%grid%set_grid_boundaries(-7.0_dp, 4.0_dp)
+    call settings%grid%set_gridpts(100)
+    settings%grid%symmetric_grid = .true.
+    grid = new_grid(settings)
+    call grid%set_spacing_function(gaussian_dx)
+    call grid%initialise()
+
+    @assertEqual(-7.0_dp, grid%base_grid(1))
+    @assertEqual(4.0_dp, grid%base_grid(settings%grid%get_gridpts()))
+    @assertTrue(is_monotonic(grid%base_grid))
+    @assertTrue(is_symmetric(grid%base_grid))
+  end subroutine test_custom_symmetric_grid_unequal_bounds
+
+
+  @test
+  subroutine test_custom_symmetric_grid_all_positive()
+    call set_name("grid: symmetric grid with custom spacing function, all positive")
+    call settings%grid%set_grid_boundaries(0.0_dp, 10.0_dp)
+    call settings%grid%set_gridpts(100)
+    settings%grid%symmetric_grid = .true.
+    grid = new_grid(settings)
+    call grid%set_spacing_function(gaussian_dx)
+    call grid%initialise()
+
+    @assertEqual(0.0_dp, grid%base_grid(1))
+    @assertEqual(10.0_dp, grid%base_grid(settings%grid%get_gridpts()))
+    @assertTrue(is_monotonic(grid%base_grid))
+    @assertTrue(is_symmetric(grid%base_grid))
+  end subroutine test_custom_symmetric_grid_all_positive
+
+
+  @test
+  subroutine test_custom_symmetric_grid_all_negative()
+    call set_name("grid: symmetric grid with custom spacing function, all negative")
+    call settings%grid%set_grid_boundaries(-8.0_dp, -0.5_dp)
+    call settings%grid%set_gridpts(100)
+    settings%grid%symmetric_grid = .true.
+    grid = new_grid(settings)
+    call grid%set_spacing_function(gaussian_dx)
+    call grid%initialise()
+
+    @assertEqual(-8.0_dp, grid%base_grid(1))
+    @assertEqual(-0.5_dp, grid%base_grid(settings%grid%get_gridpts()))
+    @assertTrue(is_monotonic(grid%base_grid))
+    @assertTrue(is_symmetric(grid%base_grid))
+  end subroutine test_custom_symmetric_grid_all_negative
 
 end module mod_test_grid

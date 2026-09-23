@@ -141,16 +141,22 @@ class VTKDataExporter:
         np.ndarray
             The eigenmode solution.
         """
-        name = validate_ef_name(self.data.ds, name)
+        name = validate_ef_name(self.data.ds_bg, name)
         solution = 0
-        for all_efs in self.data._all_efs:
-            solution += self.data.get_mode_solution(
-                ef=self.broadcast_to_3d(all_efs.get(name)),
-                omega=all_efs.get("eigenvalue"),
-                u2=self.u2_data,
-                u3=self.u3_data,
-                t=time,
-            )
+        for all_efs, factors, k2, k3 in zip(
+            self.data._all_efs, self.data.complex_factor, self.data.k2, self.data.k3
+        ):
+            for ef, factor in zip(all_efs, factors):
+                solution += self.data.get_mode_solution(
+                    ef=self.broadcast_to_3d(ef.get(name)),
+                    omega=ef.get("eigenvalue"),
+                    complex_factor=factor,
+                    u2=self.u2_data,
+                    u3=self.u3_data,
+                    t=time,
+                    k2=k2,
+                    k3=k3,
+                )
         return solution
 
     def _log_info(self, msg: str) -> None:
@@ -342,7 +348,7 @@ class VTKCartesianData(VTKDataExporter):
         u2: np.ndarray,
         u3: np.ndarray,
     ) -> None:
-        super().__init__(data=data, u1=data.ds.ef_grid, u2=u2, u3=u3)
+        super().__init__(data=data, u1=data.ds_bg.ef_grid, u2=u2, u3=u3)
 
     def get_coordinate_data(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         return self.u1_data, self.u2_data, self.u3_data
@@ -355,7 +361,7 @@ class VTKCylindricalData(VTKDataExporter):
         u2: np.ndarray,
         u3: np.ndarray,
     ) -> None:
-        super().__init__(data=data, u1=data.ds.ef_grid, u2=u2, u3=u3)
+        super().__init__(data=data, u1=data.ds_bg.ef_grid, u2=u2, u3=u3)
 
     def get_coordinate_data(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         return (

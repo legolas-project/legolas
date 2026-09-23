@@ -5,18 +5,20 @@
 !! This equilibrium is taken from Shi et al. (2020), Oblique tearing mode
 !! instability: guide field and Hall effect. _The Astrophysical Journal_, 902:142.
 !! [DOI](https://doi.org/10.3847/1538-4357/abb6fa).
-!! @note Default values are given by
-!!
-!! - <tt>k2</tt> = 0.12
-!! - <tt>k3</tt> = 0
-!! - <tt>cte_rho0</tt> = 1
-!! - <tt>cte_T0</tt> = 1
-!! - <tt>cte_B02</tt> = 1
-!! - <tt>cte_B03</tt> = 0 : guide field parameter.
-!! - <tt>alpha</tt> = 1 : used to set the width of the current sheet.
-!! - <tt>eq_bool</tt> = False : if True, an alternative force-free Harris sheet is used.
-!!
-!! and can all be changed in the parfile. @endnote
+!! @note
+!!     Default values are given by
+!!     
+!!     - <tt>k2</tt> = 0.12
+!!     - <tt>k3</tt> = 0
+!!     - <tt>cte_rho0</tt> = 1
+!!     - <tt>cte_T0</tt> = 1
+!!     - <tt>cte_B02</tt> = 1
+!!     - <tt>cte_B03</tt> = 0 : guide field parameter.
+!!     - <tt>alpha</tt> = 1 : used to set the width of the current sheet.
+!!     - <tt>eq_bool</tt> = False : if True, an alternative force-free Harris sheet is used.
+!!     
+!!     and can all be changed in the parfile.
+!! @endnote
 submodule (mod_equilibrium) smod_equil_harris_sheet
   use mod_equilibrium_params, only: cte_rho0, cte_B02, cte_B03, cte_T0, alpha, eq_bool
   implicit none

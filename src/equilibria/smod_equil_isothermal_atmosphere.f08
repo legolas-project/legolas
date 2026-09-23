@@ -10,18 +10,23 @@
 !! _Nye, A., & Thomas, J. (1976). Solar magneto-atmospheric waves. I. An exact solution
 !! for a horizontal magnetic field. The Astrophysical Journal, 204._
 !! [_573-581_](http://articles.adsabs.harvard.edu/pdf/1976ApJ...204..573N).
-!! @note Default values are given by
+!! @note
+!!     Default values are given by
+!!     
+!!     - <tt>k2</tt> = 0
+!!     - <tt>k3</tt> = 2
+!!     - <tt>cte_rho0</tt> = 1 : used as a density prefactor.
+!!     - <tt>cte_B02</tt> = 0.25 : used to set the By-component
+!!     - <tt>cte_B03</tt> = 0.25 : used to set the Bz-component
+!!     - <tt>cte_T0</tt> = 1 : used to set the temperature (isothermal).
+!!     - <tt>g</tt> = 5 : used to set the gravity constant.
+!!     
+!!     and can all be changed in the parfile.
+!! @endnote
 !!
-!! - <tt>k2</tt> = 0
-!! - <tt>k3</tt> = 2
-!! - <tt>cte_rho0</tt> = 1 : used as a density prefactor.
-!! - <tt>cte_B02</tt> = 0.25 : used to set the By-component
-!! - <tt>cte_B03</tt> = 0.25 : used to set the Bz-component
-!! - <tt>cte_T0</tt> = 1 : used to set the temperature (isothermal).
-!! - <tt>g</tt> = 5 : used to set the gravity constant.
-!!
-!! and can all be changed in the parfile. @endnote
-!! @warning This equilibrium has no regression test yet! @endwarning
+!! @warning
+!!     This equilibrium has no regression test yet!
+!! @endwarning
 submodule (mod_equilibrium) smod_equil_isothermal_atmosphere
   use mod_equilibrium_params, only: cte_rho0, cte_B02, cte_B03, cte_T0, g
   implicit none

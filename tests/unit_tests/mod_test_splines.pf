@@ -1,10 +1,10 @@
 module mod_test_splines
   use mod_suite_utils
   use funit
-  use mod_spline_functions
+  use mod_basis_functions
   implicit none
 
-  real(dp)  :: spline_result(4), spline_expected(4)
+  real(dp)  :: actual(4), expected(4)
   real(dp), parameter :: left = 1.0d0
   real(dp), parameter :: right = 2.0d0
 
@@ -18,53 +18,53 @@ contains
 
   @after
   subroutine teardown_test()
-    spline_result = 0.0d0
-    spline_expected = 0.0d0
+    actual = 0.0d0
+    expected = 0.0d0
   end subroutine teardown_test
 
 
   @test
   subroutine test_Q_spline()
-    call set_name("basis functions (quadratic)")
-    call quadratic_factors(1.2d0, left, right, spline_result)
-    spline_expected = [0.64d0, 0.0d0, -0.12d0, 0.48d0]
-    @assertEqual(spline_expected, spline_result, tolerance=TOL)
+    call set_name("basis functions (hquad)")
+    actual = hquad(1.2d0, left, right)
+    expected = [0.64d0, 0.0d0, -0.12d0, 0.48d0]
+    @assertEqual(expected, actual, tolerance=TOL)
   end subroutine test_Q_spline
 
 
   @test
   subroutine test_dQ_spline()
-    call set_name("basis functions (derivative quadratic)")
-    call quadratic_factors_deriv(1.5d0, left, right, spline_result)
-    spline_expected = [0.0d0, 0.0d0, 1.0d0, -1.0d0]
-    @assertEqual(spline_expected, spline_result, tolerance=TOL)
+    call set_name("basis functions (dhquad)")
+    actual = dhquad(1.5d0, left, right)
+    expected = [0.0d0, 0.0d0, 1.0d0, -1.0d0]
+    @assertEqual(expected, actual, tolerance=TOL)
   end subroutine test_dQ_spline
 
 
   @test
   subroutine test_C_spline()
     call set_name("basis functions (cubic)")
-    call cubic_factors(1.7d0, left, right, spline_result)
-    spline_expected = [0.784d0, 0.216d0, -0.147d0, 0.063d0]
-    @assertEqual(spline_expected, spline_result, tolerance=TOL)
+    actual = hcubic(1.7d0, left, right)
+    expected = [0.784d0, 0.216d0, -0.147d0, 0.063d0]
+    @assertEqual(expected, actual, tolerance=TOL)
   end subroutine test_C_spline
 
 
   @test
   subroutine test_dC_spline()
-    call set_name("basis functions (derivative cubic)")
-    call cubic_factors_deriv(1.9d0, left, right, spline_result)
-    spline_expected = [0.54d0, -0.54d0, 0.63d0, -0.17d0]
-    @assertEqual(spline_expected, spline_result, tolerance=TOL)
+    call set_name("basis functions (dcubic)")
+    actual = dhcubic(1.9d0, left, right)
+    expected = [0.54d0, -0.54d0, 0.63d0, -0.17d0]
+    @assertEqual(expected, actual, tolerance=TOL)
   end subroutine test_dC_spline
 
 
   @test
   subroutine test_ddC_spline()
-    call set_name("basis functions (2nd derivative cubic)")
-    call cubic_factors_deriv2(1.8d0, left, right, spline_result)
-    spline_expected = [-3.6d0, 3.6d0, 2.8d0, 0.8d0]
-    @assertEqual(spline_expected, spline_result, tolerance=TOL)
+    call set_name("basis functions (ddcubic)")
+    actual = ddhcubic(1.8d0, left, right)
+    expected = [-3.6d0, 3.6d0, 2.8d0, 0.8d0]
+    @assertEqual(expected, actual, tolerance=TOL)
   end subroutine test_ddC_spline
 
 end module mod_test_splines

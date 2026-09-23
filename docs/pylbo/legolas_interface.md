@@ -6,7 +6,7 @@ sidebar:
   nav: "leftcontents"
 toc: true
 toc_icon: "chevron-circle-down"
-last_modified_at: 2021-04-13
+last_modified_at: 2026-01-28
 ---
 {% capture tip %}
 <i class="fas fa-lightbulb" aria-hidden="true"></i>
@@ -205,7 +205,7 @@ pylbo.run_legolas(parfiles, executable="legolas")
 pylbo.run_legolas(parfiles, nb_cpus=4, executable="legolas")
 ```
 The second case will use Python's [multiprocessing](https://docs.python.org/3/library/multiprocessing.html) module to parallelise the
-number of runs across the amount of CPUs requested (4 in this case). Every CPU will have 1 instance of Legolas running, and a progressbar
+number of runs across the amount of CPUs requested (4 in this case). Every CPU will have 1 instance of Legolas running, and a progress bar
 will be printed to keep track of the progress.
 
 The optional keyword argument `remove_parfiles` can be supplied as well, which is False by default. If this is set to True,

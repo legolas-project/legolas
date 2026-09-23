@@ -1,0 +1,72 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "2 - State vector",
+  "steps": [
+    {
+      "file": "src/settings/mod_settings.f08",
+      "description": "# Intro\nThe state vector is an attribute of the `settings` object and essentially governs which equations are used by `Legolas`.\nEverything is dynamically adjusted to match the given state vector.\nIt consists of various components, i.e. the perturbed quantities in the eigenvalue problem.",
+      "line": 16
+    },
+    {
+      "file": "src/statevector/mod_state_vector_component.f08",
+      "selection": {
+        "start": {
+          "line": 13,
+          "character": 5
+        },
+        "end": {
+          "line": 14,
+          "character": 48
+        }
+      },
+      "description": "# Components\nA state vector component contains the name of the basis function associated with the component (`spline_name`) and the reference name of the component (`name`).\nThese are private attributes without a setter, since they should be set during initialisation of the component and not changed afterwards.\nGetters are provided for retrieval if needed."
+    },
+    {
+      "file": "src/statevector/mod_state_vector_component.f08",
+      "selection": {
+        "start": {
+          "line": 102,
+          "character": 3
+        },
+        "end": {
+          "line": 131,
+          "character": 37
+        }
+      },
+      "description": "# Retrieving the basis function\nGetting the actual basis function associated with a given state vector component is done by calling this method.\nChecks are in place to make sure everything is set up properly, and appropriate errors will be thrown if this is not the case.\nThis subroutine returns a function pointer to the actual basis function, and depending on the order of the derivative given (= `spline_order`) either the regular function, first derivative or second derivative will be returned."
+    },
+    {
+      "file": "src/statevector/mod_state_vector.f08",
+      "selection": {
+        "start": {
+          "line": 33,
+          "character": 3
+        },
+        "end": {
+          "line": 40,
+          "character": 59
+        }
+      },
+      "description": "# Known components\nThese are the state vector components that are known by `Legolas`. They are public so they can be used throughout the code (i.e. when adding matrix elements and boundary conditions), but also protected such that they cannot be changed. These are the same components as contained within the state vector (see next step)."
+    },
+    {
+      "file": "src/statevector/mod_state_vector.f08",
+      "description": "# Component array\nThe state vector contains an array of _pointers_ to the state vector components defined as protected module variables.\nThis ensures that all these components are only initialised and set _once_ and no array copies are made when initialising the state vector itself.\nThe downside is that calling components through the state vector should be done by following the pointer, i.e.\n```fortran\nsettings%state_vector%components(2)%ptr\n```\nwhich retrieves the second component in the state vector.",
+      "line": 14
+    },
+    {
+      "file": "src/statevector/mod_state_vector.f08",
+      "selection": {
+        "start": {
+          "line": 44,
+          "character": 3
+        },
+        "end": {
+          "line": 76,
+          "character": 26
+        }
+      },
+      "description": "# Assembly\nAssembly of the state vector depends on the physics type. By default all protected state vector components in module scope are initialised, but the state vector component array only contains the ones associated with the given physics type.\nOnce the pointers are set every component is set to its default basis function, which gets overridden if provided by the user."
+    }
+  ]
+}

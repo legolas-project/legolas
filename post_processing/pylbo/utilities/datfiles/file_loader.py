@@ -63,6 +63,9 @@ def load(datfile):
     pylboLogger.info(f"geometry    : {ds.geometry} in {ds.x_start, ds.x_end}")
     pylboLogger.info(f"equilibrium : {ds.eq_type}")
     pylboLogger.info(f"state vector: {ds.header.get('state_vector', 'not present')}")
+    pylboLogger.info(
+        f"basis functions: {ds.header.get('basis_functions', 'not present')}"
+    )
     if ds.has_matrices:
         pylboLogger.info("matrices present in datfile")
     if ds.has_eigenvectors:
@@ -77,11 +80,13 @@ def load(datfile):
         pylboLogger.info(
             f"subset saved: {saved_efs}/{total_efs} eigenvalues have eigenfunctions"
         )
+    if ds.has_iv_snapshots:
+        pylboLogger.info("initial value problem snapshots present in datfile")
     pylboLogger.info("-" * 75)
     return ds
 
 
-def load_series(datfiles):
+def load_series(datfiles, sorting_par=None):
     """
     Loads multiple Legolas datfiles.
 
@@ -90,6 +95,8 @@ def load_series(datfiles):
     datfiles : list, numpy.ndarray
         Paths to the datfiles that should be loaded, in list/array form. Every element
         should be a string or a ~os.PathLike object.
+    sorting_par : str, optional
+        The parameter to sort the datfiles by.
 
     Raises
     ------
@@ -107,6 +114,16 @@ def load_series(datfiles):
     for datfile in datfiles:
         _validate_file(datfile)
     series = LegolasDataSeries(datfiles)
+
+    # sorting based on parameter
+    if sorting_par is not None:
+        datfiles_sorted = np.array(
+            [
+                datfile
+                for _, datfile in sorted(zip(series.parameters[sorting_par], datfiles))
+            ]
+        )
+        series = LegolasDataSeries(datfiles_sorted)
 
     # handle version printing
     versions = [ds.legolas_version.parse() for ds in series.datasets]

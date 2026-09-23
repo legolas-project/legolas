@@ -7,7 +7,7 @@ sidebar:
 toc: true
 toc_label: "Installation Guide"
 toc_icon: "cogs"
-last_modified_at: 2023-04-13
+last_modified_at: 2026-01-28
 ---
 
 Due to the heavy use of object-oriented features (Fortran 2003) and submodules (Fortran 2008), Legolas
@@ -24,7 +24,7 @@ and optional dependencies to successfully build and run both Legolas and the pos
 {% capture note %}
 <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
 **Note:** starting from Legolas 2.0 support for gfortran versions < 9.x is officially dropped.
-While the code may still comple and run with older versions, it is _highly recommended_ to use updated compilers.
+While the code may still compile and run with older versions, it is _highly recommended_ to use updated compilers.
 {% endcapture %}
 <div class="notice--warning">
   {{ note | markdownify }}
@@ -33,23 +33,25 @@ While the code may still comple and run with older versions, it is _highly recom
 ## Post-processing
 The post-processing framework Pylbo has a few standard dependencies, all of which will be automatically
 installed if you choose the Pylbo package install (see [below](/getting-started/installation/#installing-as-a-package)).
-- Python v3.6+
+- Python v3.8+
 - [Numpy](https://numpy.org), for obvious reasons.
-- [Matplotlib](https://matplotlib.org), for plotting.
+- [Matplotlib](https://matplotlib.org) v3.4+, for plotting.
 - [f90nml](https://f90nml.readthedocs.io/en/latest/), to handle reading and writing of Fortran namelists.
 - [tqdm](https://tqdm.github.io), used for progress bars.
 - [psutil](https://psutil.readthedocs.io/en/latest/), for management of multiprocessing resources during parallel runs.
 - [packaging](https://packaging.pypa.io/en/stable/), for handling datfile version control.
+- [sympy](https://www.sympy.org/en/index.html), to offer a Python framework for user module configuration.
+- [scipy](https://scipy.org), for interacting with Fortran code.
 
 You can alternatively install these manually using
 ```bash
-pip install numpy matplotlib f90nml tqdm psutil packaging
+pip install numpy matplotlib f90nml tqdm psutil packaging sympy scipy
 ```
 or
 ```bash
-conda install numpy matplotlib f90nml tqdm psutil packaging
+conda install numpy matplotlib f90nml tqdm psutil packaging sympy scipy
 ```
-depending on your preference. On Linux it's usually best to use the versions available in your package repository.
+depending on your preference. On Linux it is usually best to use the versions available in your package repository.
 
 **Note:** Python is only needed for Pylbo, not for Legolas itself. You can still run Legolas
 if the Python requirements are not satisfied, however you will not be able to immediately
@@ -109,7 +111,7 @@ git clone https://github.com/legolas-project/legolas.git
 ```
 which will put it in the local repository `legolas`.
 Next you set the environment variable `$LEGOLASDIR` which points to this directory and add the `setup_tools` subdirectory to your PATH.
-For example, if you cloned the `legolas` repository to `/users/codes/legolas`, you can edit your `.bashrc` (or `.zshrc` on macOS) as follows
+For example, if you cloned the `legolas` repository to `/users/codes/legolas`, you can edit your `.bashrc` (Linux, most commonly) or `.zshrc` (macOS) as follows
 ```bash
 export LEGOLASDIR="/users/codes/legolas"
 PATH="$PATH:$LEGOLASDIR/setup_tools"

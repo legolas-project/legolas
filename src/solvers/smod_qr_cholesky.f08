@@ -16,8 +16,10 @@ contains
 
   !> Solves the eigenvalue problem by rewriting it to a standard form
   !! through splitting of the B-matrix.
-  !! @warning Throws an error if <tt>matrix_A</tt> or <tt>matrix_B</tt>
-  !!          is not a square matrix. @endwarning
+  !! @warning
+  !!     Throws an error if <tt>matrix_A</tt> or <tt>matrix_B</tt>
+  !!     is not a square matrix.
+  !! @endwarning
   module procedure qr_cholesky
     !> banded \(U^HU\)
     type(hermitian_banded_matrix_t) :: UU

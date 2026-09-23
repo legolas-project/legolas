@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from typing import Union
+from itertools import chain
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from pylbo.utilities.logger import pylboLogger
+from pylbo.utilities.toolbox import reduce_to_unique_array
 from pylbo.visualisation.figure_window import FigureWindow
 from pylbo.visualisation.modes.mode_data import ModeVisualisationData
 from pylbo.visualisation.utils import add_axis_label, ensure_attr_set
@@ -94,6 +96,12 @@ class ModeFigure(FigureWindow):
             ensure_attr_set(self, f"{attr}_data")
         ensure_attr_set(self, "solution_shape")
 
+        self._multiple_wavenumbers = (
+            len(reduce_to_unique_array(self.data.k2))
+            + len(reduce_to_unique_array(self.data.k3))
+            > 2
+        )
+
         # don't explicitly create an empty array as this may return a broadcasted view
         self._solutions = 0
         for efdata in self.ef_data:
@@ -172,8 +180,9 @@ class ModeFigure(FigureWindow):
         ----------
         efdata : dict
             The data for the eigenfunction. This should be a dictionary with the
-            keys ``'ef'`` and ``'omega'``, with ``'ef'``containing the eigenfunction
-            and ``'omega'`` the corresponding eigenvalue.
+            keys ``'ef'``, ``'omega'`` and ``'factor'``, with ``'ef'``containing
+            the eigenfunction, ``'omega'`` the corresponding eigenvalue and
+            ``'factor'``the corresponding complex factor to be multiplied with.
         u2 : Union[float, np.ndarray]
             The data for the :math:`u_2` coordinate.
         u3 : Union[float, np.ndarray]
@@ -187,7 +196,14 @@ class ModeFigure(FigureWindow):
             The mode solution.
         """
         return self.data.get_mode_solution(
-            ef=efdata["ef"], omega=efdata["omega"], u2=u2, u3=u3, t=t
+            ef=efdata["ef"],
+            omega=efdata["omega"],
+            complex_factor=efdata["factor"],
+            u2=u2,
+            u3=u3,
+            t=t,
+            k2=efdata["k2"],
+            k3=efdata["k3"],
         )
 
     @property
@@ -224,22 +240,27 @@ class ModeFigure(FigureWindow):
     def draw_textboxes(self) -> None:
         u2u3ax = self.axes.get("eigfunc", None) or self.ax
         self.add_u2u3_txt(u2u3ax, loc="top right", outside=True)
-        self.add_k2k3_txt(self.ax, loc="bottom left", color="white", alpha=0.5)
+        if not self._multiple_wavenumbers:
+            self.add_k2k3_txt(self.ax, loc="bottom left", color="white", alpha=0.5)
 
     def draw_eigenfunction(self) -> None:
         """Draws the eigenfunction(s) to the figure."""
         ax = self.axes.get("eigfunc", None)
         if ax is None:
             return
-        grid = self.data.ds.ef_grid
-        for ef, omega in zip(self.data.eigenfunction, self.data.omega):
-            label = rf"$\omega$ = {omega:.5f}"
-            ef = getattr(self.data.complex_factor * ef, self.data.part_name)
-            ax.plot(grid, ef, lw=2, label=label)
+        grid = self.data.ds_bg.ef_grid
+        for efs, omegas, factors in zip(
+            self.data.eigenfunction, self.data.omega, self.data.complex_factor
+        ):
+            for ef, omega, factor in zip(efs, omegas, factors):
+                label = rf"$\omega$ = {omega:.5f}"
+                ef = getattr(factor * ef, self.data.part_name)
+                ax.plot(grid, ef, lw=2, label=label)
         ax.axvline(x=0, color="grey", ls="--", lw=1)
         ax.set_xlim(np.min(grid), np.max(grid))
         ax.set_ylabel(self.data._ef_name_latex)
-        ax.legend(loc="best")
+        if len(list(chain.from_iterable(self.data.omega))) < 6:
+            ax.legend(loc="best")
 
     def add_axes_labels(self) -> None:
         self.ax.set_xlabel(self.get_view_xlabel())
@@ -260,16 +281,20 @@ class ModeFigure(FigureWindow):
             The axes for the colorbar.
         """
         box = self.ax.get_position()
-        # shift main axes to the left to make space
         self.ax.set_position([box.x0, box.y0, box.width - 2.5 * width, box.height])
+        # shift main and ef axes to the left to make space
         # update box to reflect the new position
+        ax_ef = self.axes.get("eigfunc", None)
+        if ax_ef is not None:
+            box = ax_ef.get_position()
+            ax_ef.set_position([box.x0, box.y0, box.width - 2.5 * width, box.height])
         box = self.ax.get_position()
         position = (box.x0 + box.width, box.y0)
         dims = (width, box.height)
         return self.fig.add_axes([*position, *dims])
 
     def get_view_xlabel(self) -> str:
-        return self.data.ds.u1_str
+        return self.data.ds_bg.u1_str
 
     def get_view_ylabel(self) -> str:
         return ""
@@ -288,8 +313,9 @@ class ModeFigure(FigureWindow):
         **kwargs
             Additional keyword arguments to pass to :meth:`add_axis_label`.
         """
+        omega_labels = list(chain.from_iterable(self.data.omega))
         if self.omega_txt is None:
-            self.omega_txt = rf"$\omega$ = {self.data.omega:.5f}"
+            self.omega_txt = rf"$\omega$ = {omega_labels:.5f}"
         add_axis_label(ax, self.omega_txt, **kwargs)
 
     def add_k2k3_txt(self, ax, **kwargs) -> None:
@@ -306,8 +332,8 @@ class ModeFigure(FigureWindow):
         if self.k2k3_txt is None:
             self.k2k3_txt = "".join(
                 [
-                    f"{self.data.ds.k2_str} = {self.data.k2} | ",
-                    f"{self.data.ds.k3_str} = {self.data.k3}",
+                    f"{self.data.ds_bg.k2_str} = {self.data.k2[0]} | ",
+                    f"{self.data.ds_bg.k3_str} = {self.data.k3[0]}",
                 ]
             )
         add_axis_label(ax, self.k2k3_txt, **kwargs)
@@ -327,8 +353,8 @@ class ModeFigure(FigureWindow):
         if self.u2u3_txt is None:
             self.u2u3_txt = "".join(
                 [
-                    rf"{self.data.ds.u2_str} = {self._u2} | ",
-                    rf"{self.data.ds.u3_str} = {self._u3}",
+                    rf"{self.data.ds_bg.u2_str} = {self._u2} | ",
+                    rf"{self.data.ds_bg.u3_str} = {self._u3}",
                 ]
             )
         add_axis_label(ax, self.u2u3_txt, **kwargs)

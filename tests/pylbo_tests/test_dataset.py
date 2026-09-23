@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from pylbo.exceptions import BackgroundNotPresent, MatricesNotPresent
+from pylbo.exceptions import BackgroundNotPresent
 
 ds_v112_ev_guess = -0.14360602 + 0.00688731j
 ds_v112_ev_idx = 158
@@ -109,10 +109,38 @@ def test_ds_k0_squared(ds_v112):
 
 
 def test_ds_no_matrices(ds_v112):
+    from pylbo.exceptions import MatricesNotPresent
+
     with pytest.raises(MatricesNotPresent):
         ds_v112.get_matrix_B()
     with pytest.raises(MatricesNotPresent):
         ds_v112.get_matrix_A()
+
+
+def test_ds_no_eigvecs(ds_v200_hd_khi):
+    from pylbo.exceptions import EigenvectorsNotPresent
+
+    with pytest.raises(EigenvectorsNotPresent):
+        ds_v200_hd_khi.get_eigenvectors()
+
+
+def test_ds_no_residuals(ds_v200_hd_khi):
+    from pylbo.exceptions import ResidualsNotPresent
+
+    with pytest.raises(ResidualsNotPresent):
+        ds_v200_hd_khi.get_residuals()
+
+
+def test_ds_get_residuals(ds_v200_mri_efs):
+    residuals = ds_v200_mri_efs.get_residuals()
+    assert isinstance(residuals, np.ndarray)
+
+
+def test_ds_no_eigenfunctions(ds_v200_hd_khi):
+    from pylbo.exceptions import EigenfunctionsNotPresent
+
+    with pytest.raises(EigenfunctionsNotPresent):
+        ds_v200_hd_khi.get_eigenfunctions()
 
 
 def test_ds_matrix_B(ds_v100):
@@ -141,7 +169,7 @@ def test_ds_get_efs_guess_single(ds_v112):
     efs = ds_v112.get_eigenfunctions(ev_guesses=guess)
     assert isinstance(efs, np.ndarray)
     (ef,) = efs
-    assert np.isclose(guess, ef.get("eigenvalue", np.NaN))
+    assert np.isclose(guess, ef.get("eigenvalue", np.nan))
 
 
 def test_ds_get_efs_guess_list(ds_v112):
@@ -149,21 +177,21 @@ def test_ds_get_efs_guess_list(ds_v112):
     efs = ds_v112.get_eigenfunctions(ev_guesses=guess)
     assert isinstance(efs, np.ndarray)
     for i, ef in enumerate(efs):
-        assert np.isclose(guess[i], ef.get("eigenvalue", np.NaN))
+        assert np.isclose(guess[i], ef.get("eigenvalue", np.nan))
 
 
 def test_ds_get_efs_idx(ds_v112):
     efs = ds_v112.get_eigenfunctions(ev_idxs=ds_v112_ev_idx)
     assert isinstance(efs, np.ndarray)
     (ef,) = efs
-    assert np.isclose(ds_v112_ev_guess, ef.get("eigenvalue", np.NaN))
+    assert np.isclose(ds_v112_ev_guess, ef.get("eigenvalue", np.nan))
 
 
 def test_ds_get_efs_idx_list(ds_v112):
     efs = ds_v112.get_eigenfunctions(ev_idxs=[ds_v112_ev_idx] * 2)
     assert isinstance(efs, np.ndarray)
     for ef in efs:
-        assert np.isclose(ds_v112_ev_guess, ef.get("eigenvalue", np.NaN))
+        assert np.isclose(ds_v112_ev_guess, ef.get("eigenvalue", np.nan))
 
 
 def test_ds_get_evs(ds_v112):
@@ -187,6 +215,20 @@ def test_ds_get_parameters(ds_v112):
     assert isinstance(params, dict)
     for value in params.values():
         assert np.isscalar(value)
+
+
+def test_ds_v130_eigvecs(ds_v130_suydam_efs_vecs_res):
+    assert ds_v130_suydam_efs_vecs_res.has_eigenvectors
+    eigvecs = ds_v130_suydam_efs_vecs_res.get_eigenvectors()
+    assert eigvecs is not None
+    assert isinstance(eigvecs, np.ndarray)
+
+
+def test_ds_v130_residuals(ds_v130_suydam_efs_vecs_res):
+    assert ds_v130_suydam_efs_vecs_res.has_residuals
+    residuals = ds_v130_suydam_efs_vecs_res.get_residuals()
+    assert residuals is not None
+    assert isinstance(residuals, np.ndarray)
 
 
 def test_ds_nobg_empty_equilibria_dict(ds_v200_tear_nobg):
@@ -223,3 +265,23 @@ def test_ds_nobg_reynolds(ds_v200_tear_nobg):
 def test_ds_nobg_magnetic_reynolds(ds_v200_tear_nobg):
     with pytest.raises(BackgroundNotPresent):
         ds_v200_tear_nobg.get_magnetic_reynolds_nb()
+
+
+def test_ds_max_eigenvalue(ds_v200_mri_efs):
+    ev = ds_v200_mri_efs.get_omega_max(real=True)
+    assert np.isclose(11.184804375, ev)
+    ev = ds_v200_mri_efs.get_omega_max(real=False)
+    assert np.isclose(-0.001919987625 + 0.6214319226j, ev)
+
+
+def test_ds_eq_balance_no_dkappaperpdr_check(ds_v114_subset):
+    with pytest.raises(KeyError):
+        ds_v114_subset.equilibria["dkappa_perp_dr"]
+
+
+def test_ds_eq_balance_no_dkappaperp(ds_v114_subset):
+    from pylbo.utilities.eq_balance import get_equilibrium_balance
+
+    eq = get_equilibrium_balance(ds_v114_subset)
+    assert "force" in eq.keys()
+    assert "energy" in eq.keys()

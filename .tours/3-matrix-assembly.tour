@@ -1,0 +1,133 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "3 - Matrix assembly",
+  "steps": [
+    {
+      "file": "src/matrices/mod_matrix_manager.f08",
+      "description": "# Intro\nThis subroutine handles construction of the A and B matrices. On exit, A and B have been constructed using the linked-list representation and boundary condtions have been applied.",
+      "line": 120
+    },
+    {
+      "file": "src/matrices/mod_matrix_manager.f08",
+      "selection": {
+        "start": {
+          "line": 174,
+          "character": 7
+        },
+        "end": {
+          "line": 179,
+          "character": 38
+        }
+      },
+      "description": "# Quadblocks\nFor every grid point a new block is assembled, which is then partially overlayed with the block corresponding to the previous gridpoint.\nSince blocks are associated with the base grid it's those intervals that are considered in the outer loop."
+    },
+    {
+      "file": "src/matrices/mod_matrix_manager.f08",
+      "selection": {
+        "start": {
+          "line": 183,
+          "character": 9
+        },
+        "end": {
+          "line": 189,
+          "character": 64
+        }
+      },
+      "description": "# Elements 1\nMatrix elements are calculated for each point in the Gaussian grid (`x_gauss`) and are multiplied by the weight associated with the current Gaussian node (`weight`).\nAdding elements themselves is also done using a linked-list basis due to its very convenient flexibility. As matrix elements are state vector dependent we provide it as an argument (and internally, a pointer)."
+    },
+    {
+      "file": "src/matrices/mod_matrix_manager.f08",
+      "selection": {
+        "start": {
+          "line": 191,
+          "character": 9
+        },
+        "end": {
+          "line": 220,
+          "character": 15
+        }
+      },
+      "description": "# Elements 2\nHere we actually call the various routines to add specific matrix elements, depending on the physics that are enabled. This is done for every point in the Gaussian grid (`x_gauss`). All these subroutines are defined in submodules with their interface defined at the top of this module."
+    },
+    {
+      "file": "src/matrices/smod_regular_matrix.f08",
+      "selection": {
+        "start": {
+          "line": 36,
+          "character": 5
+        },
+        "end": {
+          "line": 57,
+          "character": 37
+        }
+      },
+      "description": "# Adding elements 1\nIn calculating the matrix elements we first evaluate the background and/or physics functions in the current Gaussian point (=`x`). These methods directly point to the functions provided in the user module."
+    },
+    {
+      "file": "src/matrices/smod_regular_matrix.f08",
+      "description": "# Adding elements 2\nAdding elements is quite straightforward: pass the element itself (evaluated in the Gaussian point), along with its associated state vector components.\nThis particular element is associated with (v2, a2), so for MHD this would correspond to a term from the element A(3, 7) with hj and hk (no basis function derivatives). ",
+      "line": 61
+    },
+    {
+      "file": "src/matrices/smod_regular_matrix.f08",
+      "description": "# Adding elements 3\nSimilarly, this element is associated with (rho1, v1) but the optional argument `s2do=1` has been passed. This stands for \"Spline 2 Derivative Order\" (by default 0), meaning that the second state vector component (v1 here) should use the first order derivative of its basis function (since `s2do=1`). If `s2do=2` then the second order derivative will be used.\nThis element would correspond to A(1, 2) and the term containing hj and dhk for the basis functions.\n\nAdditionally, providing the optional argument `s1do` as well would indicate to take a derivative for the basis function of the first state vector component, rho1.",
+      "line": 70
+    },
+    {
+      "file": "src/matrices/elements/mod_matrix_elements.f08",
+      "selection": {
+        "start": {
+          "line": 60,
+          "character": 5
+        },
+        "end": {
+          "line": 67,
+          "character": 50
+        }
+      },
+      "description": "# Adding elements 4\nWhen adding an element to the list the first thing here is to try and obtain the state vector indices associated with the given components.\nFor instance, when in MHD an element with (rho1, v1) is added, then `position` here would be [1, 2]. If an element with (rho1, a1) is added instead and the state vector would be HD (so no magnetic vector potential components), then this would return [1, 0], with zero because a1 is not found in the state vector. The latter would be regarded as an invalid position (since it contains 0), and the associated element is skipped."
+    },
+    {
+      "file": "src/matrices/elements/mod_matrix_elements.f08",
+      "selection": {
+        "start": {
+          "line": 69,
+          "character": 5
+        },
+        "end": {
+          "line": 88,
+          "character": 11
+        }
+      },
+      "description": "# Adding elements 5\nIf the position of the element is valid it will be added to the linked list.\nThe element passed is always casted to complex (since the `element` argument is polymorphic), making it a bit easier to add the various elements code-wise.\n\nBefore doing so we check the element for `NaN` and infinite values. If those checks pass then pointers to the spline functions associated with those elements are retrieved, based on the spline order derivative given as subroutine arguments. Finally a new node is created, and the pointers to the lists' `head` and `tail` are updated."
+    },
+    {
+      "file": "src/matrices/mod_matrix_manager.f08",
+      "selection": {
+        "start": {
+          "line": 241,
+          "character": 7
+        },
+        "end": {
+          "line": 249,
+          "character": 71
+        }
+      },
+      "description": "# Elements to matrix\nFinally, once the quadblock for this particular gridpoint has been assembled we add its contents to the linked-list matrix datastructure.\nQuadblock entries are added to the appropriate matrix rows and columns, and zero entries will be skipped."
+    },
+    {
+      "file": "src/matrices/mod_matrix_manager.f08",
+      "selection": {
+        "start": {
+          "line": 253,
+          "character": 5
+        },
+        "end": {
+          "line": 255,
+          "character": 6
+        }
+      },
+      "description": "# Applying boundary conditions\nBoundary conditions are applied after matrix assembly has been completed."
+    }
+  ]
+}

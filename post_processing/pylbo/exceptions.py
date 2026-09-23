@@ -148,3 +148,16 @@ class ParfileGenerationError(LegolasException):
                 f"Length of '{self.key}' key: {len(self.file.get(self.key))}"
             )
         return "".join([base_msg, error_msg])
+
+
+class IVSnapshotsNotPresent(LegolasException):
+    """
+    Handles trying to query for initial value snapshots when
+    these are not present in the datfile.
+    """
+
+    def __init__(self, file):
+        self.file = file
+
+    def __str__(self):
+        return f"No initial value snapshots present in {self.file}"

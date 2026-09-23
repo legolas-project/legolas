@@ -71,7 +71,7 @@ contains
 
     if (.not. this%uses_custom_base_grid) call this%set_base_grid()
     call this%set_gaussian_grid()
-    if (this%settings%io%write_eigenfunctions) call this%set_ef_grid()
+    if (this%settings%io%write_eigenfunctions .or. this%settings%iv%enabled) call this%set_ef_grid()
     this%is_initialised = .true.
   end subroutine initialise
 
@@ -185,13 +185,23 @@ contains
     do i = 2, pts
       xbar(i) = xbar(i - 1) + this%dx_func(xbar(i - 1))
     end do
-    kappa = (grid_end - xbar(pts - 1)) / (xbar(pts) - xbar(pts - 1))
 
     allocate(this%base_grid(pts))
     this%base_grid(1) = grid_start
-    do i = 1, pts - 1
-      this%base_grid(i + 1) = xbar(i) + kappa * this%dx_func(xbar(i))
-    end do
+    if (this%settings%grid%symmetric_grid) then
+      kappa = ((grid_start + grid_end) / 2 - xbar((pts - 1) / 2)) / (xbar((pts + 1) / 2) - xbar((pts - 1) / 2))
+      this%base_grid(pts) = grid_end
+      do i = 1, (pts - 1) / 2
+        this%base_grid(i + 1) = xbar(i) + kappa * this%dx_func(xbar(i))
+        this%base_grid(pts - i) = grid_start + grid_end - this%base_grid(i + 1)
+      end do
+      this%base_grid((pts + 1) / 2) = (grid_start + grid_end) / 2
+    else
+      kappa = (grid_end - xbar(pts - 1)) / (xbar(pts) - xbar(pts - 1))
+      do i = 1, pts - 1
+        this%base_grid(i + 1) = xbar(i) + kappa * this%dx_func(xbar(i))
+      end do
+    end if
     deallocate(xbar)
   end subroutine generate_grid
 
@@ -272,8 +282,8 @@ contains
   function get_updated_number_of_gridpoints(settings, dx_func) result(updated_pts)
     type(settings_t), intent(in) :: settings
     procedure(dx_func_i) :: dx_func
-    integer :: gridpts, updated_pts
-    real(dp) :: dx, xbar, grid_start, grid_end
+    integer :: gridpts, updated_pts, increment
+    real(dp) :: dx, xbar, grid_start, grid_end, threshold
 
     grid_start = settings%grid%get_grid_start()
     grid_end = settings%grid%get_grid_end()
@@ -281,11 +291,18 @@ contains
     ! first pass to get updated number of gridpoints (no change for constant dx)
     xbar = grid_start
     updated_pts = 1
-    do while (xbar < grid_end)
+    if (settings%grid%symmetric_grid) then
+      threshold = (grid_start + grid_end) / 2
+      increment = 2
+    else
+      threshold = grid_end
+      increment = 1
+    end if
+    do while (xbar < threshold)
       dx = dx_func(xbar)
       if (.not. is_valid_dx(dx)) return
       xbar = xbar + dx
-      updated_pts = updated_pts + 1
+      updated_pts = updated_pts + increment
     end do
     call log_msg_by_gridpoint_change(old_pts=gridpts, new_pts=updated_pts)
   end function get_updated_number_of_gridpoints

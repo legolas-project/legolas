@@ -1,0 +1,76 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "4 - Boundary conditions",
+  "steps": [
+    {
+      "file": "src/boundaries/mod_boundary_manager.f08",
+      "selection": {
+        "start": {
+          "line": 36,
+          "character": 5
+        },
+        "end": {
+          "line": 37,
+          "character": 61
+        }
+      },
+      "description": "# Intro\nBoundary conditions come in two flavours:\n- Natural boundaries: these arise from integrating the matrix elements by parts (weak Galerkin formalism) and arise naturally from the eigenvalue problem. These additional terms should be evaluated in the boundaries and added to the matrix elements. Additionally, they can be used to enforce different types of boundary conditions (e.g. plasma-vacuum, plasma-plasma, etc.). \n- Essential boundaries: these are conditions that _MUST_ be satisfied (and are thus added _after_ the natural conditions)."
+    },
+    {
+      "file": "src/boundaries/mod_natural_boundaries.f08",
+      "selection": {
+        "start": {
+          "line": 106,
+          "character": 1
+        },
+        "end": {
+          "line": 125,
+          "character": 26
+        }
+      },
+      "description": "# Natural boundaries\nThese are added in exactly the same way as regular matrix elements. The main difference here is that the grid interval corresponds to the first (for left) or last (for right) block, and that we do not evaluate in the Gaussian grid but _on the edge_ (so the base grid). No particular weight should be applied, so it's set to unity."
+    },
+    {
+      "file": "src/boundaries/mod_essential_boundaries.f08",
+      "selection": {
+        "start": {
+          "line": 43,
+          "character": 5
+        },
+        "end": {
+          "line": 50,
+          "character": 6
+        }
+      },
+      "description": "# Essential boundaries 1\nEssential boundaries are enforced by \"forcing\" the basis functions that are non-zero at an edge to be actually zero. Matrix-wise this implies zeroing out rows and columns.\nCare must be taken for quadratic basis functions, since the Q2 spline function is exactly zero. This automatically zeroes out rows and columns for quadratic state vector variables on the left edge of both the A and B matrix. For A this doesn't matter, but for B this is problematic since that matrix is implicitly inverted when solving the eigenvalue problem (and thus singular!). \n\nThis block of code retrieves the quadratic components from the state vector, and zeroes out the odd subblock indices (Q2 is zero, so all elements that are calculated with spline(2) should be zero, i.e. the odd rows and columns)."
+    },
+    {
+      "file": "src/boundaries/mod_essential_boundaries.f08",
+      "selection": {
+        "start": {
+          "line": 51,
+          "character": 5
+        },
+        "end": {
+          "line": 67,
+          "character": 77
+        }
+      },
+      "description": "# Essential boundaries 2\nHere we check which additional variables need to be zeroed out. For a fixed wall for example, v1 should be zero, along with a2 and/or a3 depending on whether there is a \"weak\" wall present. For conduction/viscosity we might need additional temperature or no-slip constraints on T1, v2 and v3."
+    },
+    {
+      "file": "src/boundaries/mod_essential_boundaries.f08",
+      "selection": {
+        "start": {
+          "line": 68,
+          "character": 5
+        },
+        "end": {
+          "line": 74,
+          "character": 6
+        }
+      },
+      "description": "# Essential boundaries 3\nFinally the requested components are zeroed out, and odd/even rows/columns depend on the parity of the associated basis function. Note that spline components that are _not_ zero on the left edge should be zeroed out: for quadratic basis functions this is associated with even rows/columns, while for cubic this means odd rows/columns."
+    }
+  ]
+}

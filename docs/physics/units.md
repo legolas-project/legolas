@@ -4,60 +4,57 @@ layout: single
 classes: wide
 sidebar:
   nav: "leftcontents"
-last_modified_at: 2023-04-23
+last_modified_at: 2026-04-21
 ---
 
 All equations in Legolas are in dimensionless form, as is common practice when dealing with (M)HD.
 As usual we have **three** degrees of freedom.
 
-## Mean molecular weight
-Unit normalisations depend on the molecular weight $\bar{\mu}$, and in Legolas we usually distinguish between two cases:
-
-- **Electron-proton plasma**: $\bar{\mu} = 0.5$, this is the default case.
-
-    $$
-    \bar{\mu} = \dfrac{m_e n_e + m_i n_i}{n_e + n_i} \simeq \dfrac{m_i n_i}{n_e + n_i}
-              = \dfrac{1}{2}m_i \rightarrow \bar{\mu} = \dfrac{1}{2}
-    $$
-
-- **Pure proton plasma**: $\bar{\mu} = 1$, in this case the molecular weight should be explicitly set.
-
-    $$
-    \bar{\mu} = \dfrac{m_i n_i}{n_i} = m_i \rightarrow \bar{\mu} = 1
-    $$
-
 ## Normalisations
 Legolas has three options to specify units, all in cgs. In what follows $m_p$ denotes the proton mass,
-$k_B$ the Boltzmann constant, and $\mu_0 = 4\pi$ the magnetic constant.
+$k_B$ the Boltzmann constant, and $\mu_0 = 4\pi$ the magnetic constant. $a$ and $b$ are constants
+determined by the plasma composition. By default they depend only on the He abundance $f_\mathrm{He}$ as
+
+$$
+a = 1 + 4 f_\mathrm{He}, \quad
+b = 2 + 3 f_\mathrm{He},
+$$
+
+such that $f_\mathrm{He} = 0$ corresponds to a fully ionised hydrogen plasma. The He abundance is set to
+$f_\mathrm{He} = 0$ if not specified.
+
+<i class="fas fa-lightbulb" aria-hidden="true"></i>
+**Note:** for alternative plasma compositions, users can define $a$ and $b$ in the user module
+and update the units from there, see e.g. the pre-implemented equilibrium
+`smod_equil_magnetothermal_instabilities.f08`.
+{: .notice--info}
 
 1. Reference unit density, unit magnetic field and unit length $(\rho_u, B_u, L_u)$, then
 
    $$
    p_u = \frac{B_u^2}{\mu_0}, \quad
-   T_u = \frac{\bar{\mu} p_u m_p}{k_B \rho_u}, \quad
-   n_u = \frac{\rho_u}{m_p}, \quad
-   v_u = \frac{B_u}{\sqrt{\mu_0 \rho_u}}.
+   T_u = \frac{p_u}{b n_u k_B}, \quad
+   n_u = \frac{\rho_u}{a m_p}.
    $$
 
 2. Reference unit temperature, unit magnetic field and unit length $(T_u, B_u, L_u)$, then
 
    $$
    p_u = \frac{B_u^2}{\mu_0}, \quad
-   \rho_u = \frac{\bar{\mu} p_u m_p}{k_B T_u}, \quad
-   n_u = \frac{\rho_u}{m_p}, \quad
-   v_u = \frac{B_u}{\sqrt{\mu_0 \rho_u}}.
+   n_u = \frac{p_u}{b k_B T_u}, \quad
+   \rho_u = a m_p n_u.
    $$
 
-3. Reference unit numberdensity, unit temperature and unit length $(n_u, T_u, L_u)$, then
+3. Reference unit number density, unit temperature and unit length $(n_u, T_u, L_u)$, then
 
    $$
-   p_u = \bar{\mu} n_u k_B T_u, \quad
-   \rho_u = m_p n_u, \quad
-   v_u = \sqrt{\frac{p_u}{\rho_u}}, \quad
+   p_u = b n_u k_B T_u, \quad
+   \rho_u = a m_p n_u, \quad
    B_u = \sqrt{\mu_0 p_u}.
    $$
 
 All other normalisations follow from those above and are given by
+- unit velocity: $v_u = \sqrt{\frac{p_u}{\rho_u}}$
 - unit mass: $M_u = \rho_u L_u^3$
 - unit time: $t_u = \dfrac{L_u}{v_u}$
 - unit resistivity: $\eta_u = \dfrac{L_u^2}{t_u}$

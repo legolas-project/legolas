@@ -28,14 +28,16 @@ Note that the matrix elements and equilibria are evaluated in the _Gaussian_ gri
 Setting `force_r0 = .true.` in the gridlist forces the `r = 0` condition, but this is not recommended.
 {: .notice--warning}
 
-| Parameter    | Type     | Description | Default value     |
-| :---         | :---:    |    :----  |          :---:      |
-| geometry     | string   | geometry of the setup   | `"Cartesian"` |
-| gridpoints   | int      | number of gridpoints in the base grid  |  50 |
-| x_start      | real     | starting point of the base grid  | 0 |
-| x_end        | real     | end point of the base grid  | 1 |
-| coaxial      | logical  | use a coaxial inner boundary in cylindrical geometry | `.false.` |
-| force_r0     | logical  | forces `r=0` in cylindrical geometry | `.false.` |
+| Parameter       | Type     | Description | Default value     |
+| :---            | :---:    |    :----  |          :---:      |
+| geometry        | string   | geometry of the setup   | `"Cartesian"` |
+| gridpoints      | int      | number of gridpoints in the base grid  |  50 |
+| x_start         | real     | starting point of the base grid  | 0 |
+| x_end           | real     | end point of the base grid  | 1 |
+| coaxial         | logical  | use a coaxial inner boundary in cylindrical geometry | `.false.` |
+| force_r0        | logical  | forces `r=0` in cylindrical geometry | `.false.` |
+| symmetric_grid  | logical  | enforces grid symmetry around the centre of the interval (for use with a symmetric spacing function) | `.false.` |
+| grid_edge_from_data | logical | sets x_start/x_end based on data imported with `import_equilibrium_data` | `.false.` |
 
 ## equilibriumlist
 This namelist includes all equilibrium-related variables.
@@ -53,12 +55,13 @@ This namelist includes all physics-related variables.
 | Parameter             | Type    | Description      | Default value     |
 | :---                  |  :---:  |  :----        |          :---:      |
 | physics_type          | string  | physics type to use, can be `{"mhd", "hd", "hd-1d"}` | `"mhd"` |
+| basis_functions       | list    | basis functions corresponding to the state vector components, options are `{"quadratic", "cubic"}`. By default ($\rho_1$, $v_2$, $v_3$, $T_1$, $a_1$) are `"quadratic"`, ($v_1$, $a_2$ and $a_3$) are `"cubic"`. | - |
 | mhd_gamma             | real    | ratio of specific heats $\gamma$ | $\frac{5}{3}$ |
 | incompressible | logical | whether to use the incompressible approximation, this sets $\gamma = 10^{12}$ and eliminates some matrix elements | `.false.` |
 | flow  | logical | inclusion of background flow effects | `.false.` |
 | radiative_cooling | logical | whether to include optically thin radiative losses | `.false.` |
 | ncool | int | number of points used when interpolating cooling curves | 4000 |
-| cooling_curve | string | which cooling curve to use, can be `{"nothing", "jc_corona", "dalgarno", "dalgarno2", "ml_solar", "spex", "spex_dalgarno", "rosner", "colgan", "colgan_dm"}`. In the case of `"nothing"` you should define your own $\Lambda(T)$ cooling function and its temperature derivative. | `"nothing"` |
+| cooling_curve | string | which cooling curve to use, can be `{"nothing", "JCcorona", "DM", "DM_2", "MLsolar1", "SPEX", "SPEX_DM", "Rosner", "Colgan", "Colgan_DM"}`. In the case of `"nothing"` you should define your own $\Lambda(T)$ cooling function and its temperature derivative. | `"nothing"` |
 | heating | logical | whether to include background heating | `.false.` |
 | force_thermal_balance | logical | whether to set the heating in such a way to enforce thermal equilibrium | `.true.` |
 | external_gravity | logical | whether to include external gravity | `.false.` |
@@ -107,7 +110,7 @@ set from a unit temperature, unit magnetic field and unit length.
 | unit_temperature  | real | sets the unit temperature in K | $10^6$ |
 | unit_magneticfield |  real | sets the unit magnetic field in Gauss   | $10$    |
 | unit_length   | real | sets the unit length in cm | $ 10^9$ |
-| mean_molecular_weight | real | the mean molecular weight to use | 0.5 |
+| He_abundance | real | the He abundance fraction (between 0 and 1) | 0 |
 
 
 ## savelist

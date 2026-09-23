@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 
 import matplotlib.gridspec as gridspec
@@ -90,6 +91,22 @@ class FigureWindow:
         occurences = sum(figlabel in fig_id for fig_id in self.figure_ids)
         return f"{figlabel}-{1 + occurences}"
 
+    def make_layout_tight(self) -> None:
+        """
+        Calls tight_layout() on a figure and captures the userwarning introduced
+        in matplotlib 3.5.
+        """
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            self.fig.tight_layout()
+            for warning in w:
+                msg = warning.message
+                if not (isinstance(msg, UserWarning) and "tight" in str(msg)):
+                    pylboLogger.warning(
+                        f"{warning.filename}:{warning.lineno}: "
+                        f"{warning.category.__name__}: {msg}"
+                    )
+
     def add_to_stack(self) -> None:
         """
         Adds the figure to the stack.
@@ -164,7 +181,7 @@ class FigureWindow:
             gspec_inner[old_new_position[1]], sharex=sharex, sharey=sharey
         )
         if apply_tight_layout:
-            self.fig.tight_layout()
+            self.make_layout_tight()
         return new_axis
 
     def draw(self) -> None:
@@ -206,6 +223,7 @@ class InteractiveFigureWindow(FigureWindow):
     def redraw(self) -> None:
         self.disconnect_callbacks()
         super().redraw()
+        self.connect_callbacks()
 
     def connect_callbacks(self) -> None:
         """Connects all callbacks to the canvas"""

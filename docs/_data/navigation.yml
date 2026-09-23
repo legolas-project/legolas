@@ -17,6 +17,7 @@ leftcontents:
         url: /getting-started/running/
       - title: "Source code documentation"
         url: /getting-started/source_docs
+
   - title: General
     children:
       - title: "The parfile"
@@ -27,6 +28,9 @@ leftcontents:
         url: /general/own_setup/
       - title: "Pre-implemented setups"
         url: /general/equilibria/
+      - title: "Initial-value solver"
+        url: /general/initial_value/
+
   - title: Physics
     children:
       - title: "Equations"
@@ -36,7 +40,7 @@ leftcontents:
       - title: "Unit normalisations"
         url: /physics/units/
 
-  - title: Data-analysis with Pylbo
+  - title: Data analysis with Pylbo
     children:
       - title: "About Pylbo"
         url: /pylbo/about_pylbo/
@@ -44,6 +48,16 @@ leftcontents:
         url: /pylbo/legolas_interface/
       - title: "Using Pylbo"
         url: /pylbo/using_pylbo/
+
+  - title: Code setup with GIMLI
+    children:
+      - title: "About GIMLI"
+        url: /gimli/about_gimli/
+      - title: "Legolas file generation"
+        url: /gimli/file_generation/
+      - title: "Interfacing with MPI-AMRVAC"
+        url: /gimli/amrvac_interface/
+
   - title: Testing
     children:
       - title: "About the tests"

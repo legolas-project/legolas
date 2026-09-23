@@ -1,9 +1,9 @@
-from copy import copy
 from functools import wraps
 from typing import Any
 
 import matplotlib.axes
-import numpy as np
+from pylbo.utilities.toolbox import get_all_eigenfunction_names
+import pylbo.data_containers as dc  # avoiding cirular import
 
 _BACKGROUND_NAME_MAPPING = {
     "rho0": r"$\rho_0$",
@@ -123,6 +123,7 @@ def ef_name_to_latex(
     ef_name = ef_name.replace("curl", "\\nabla\\times")
     ef_name = ef_name.replace("para", "\\parallel")
     ef_name = ef_name.replace("perp", "\\perp")
+    ef_name = ef_name.replace("dB", "B^\\prime")
     latex_name = rf"${ef_name}$"
     if part != "":
         latex_name = rf"{part}({latex_name})"
@@ -153,8 +154,8 @@ def validate_ef_name(ds, ef_name: str) -> str:
 
     Parameters
     ----------
-    ds : ~pylbo.data_containers.LegolasDataSet
-        The dataset containing the eigenfunctions.
+    ds : ~pylbo.data_containers.LegolasDataContainer
+        The dataset/series containing the eigenfunctions.
     ef_name : str
         The name of the eigenfunction.
 
@@ -169,15 +170,13 @@ def validate_ef_name(ds, ef_name: str) -> str:
         The validated eigenfunction name.
     """
     # copy this or we're editing the property itself
-    names = copy(ds.ef_names)
-    if ds.has_derived_efs:
-        derived_names = np.atleast_1d(copy(ds.derived_ef_names))
-        names = np.concatenate((names, derived_names))
-    if ef_name not in names:
-        raise ValueError(
-            f"The eigenfunction '{ef_name}' is not part of the "
-            f"eigenfunctions {names}."
-        )
+    for dataset in dc.transform_to_dataseries(ds).datasets:
+        names = get_all_eigenfunction_names(dataset)
+        if ef_name not in names:
+            raise ValueError(
+                f"The eigenfunction '{ef_name}' is not part of the "
+                f"eigenfunctions {names}."
+            )
     return ef_name
 
 

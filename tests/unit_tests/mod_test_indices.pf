@@ -2,10 +2,15 @@ module mod_test_indices
   use mod_suite_utils
   use funit
   use mod_get_indices
+  use mod_essential_boundaries, only: get_block_indices
+  use mod_state_vector_component, only: sv_component_t, new_sv_component
+  use mod_state_vector, only: sv_rho1, sv_v1, sv_v2, sv_v3, sv_T1, sv_a1, sv_a2, sv_a3
+  use mod_basis_function_names, only: CUBIC, QUADRATIC
   implicit none
 
   integer, allocatable :: idxs(:)
   type(settings_t) :: settings
+  type(sv_component_t) :: sv_test1, sv_test2, sv_test3
 
   character(len=10) :: test_names(5) = ["name1", "name2", "name3", "name4", "name5"]
 
@@ -15,6 +20,9 @@ contains
   subroutine init_test()
     call reset_globals()
     settings = get_settings()
+    sv_test1 = new_sv_component("test1")
+    sv_test2 = new_sv_component("test2")
+    sv_test3 = new_sv_component("test3")
   end subroutine init_test
 
 
@@ -22,6 +30,9 @@ contains
   subroutine tear_down()
     if (allocated(idxs)) deallocate(idxs)
     call settings%delete()
+    call sv_test1%delete()
+    call sv_test2%delete()
+    call sv_test3%delete()
   end subroutine tear_down
 
 
@@ -90,12 +101,8 @@ contains
       "could not retrieve subblock indices for any variable in [test1, test2] " &
       // "for state vector [rho, v1, v2, v3, T, a1, a2, a3]" &
     )
-    idxs = get_subblock_index( &
-      variables=["test1", "test2"], &
-      state_vector=settings%get_state_vector(), &
-      dim_subblock=settings%dims%get_dim_subblock(), &
-      odd=.true., &
-      edge="left" &
+    idxs = get_block_indices( &
+      sv_components=[sv_test1, sv_test2], settings=settings, edge="left" &
     )
     @assertExceptionRaised(trim(error_msg))
   end subroutine test_subblock_indices_fail
@@ -104,12 +111,11 @@ contains
   @test
   subroutine test_subblock_indices_odd_left_mhd()
     call set_name("get subblock indices (odd, left, MHD)")
-    idxs = get_subblock_index( &
-      variables=["v1", "v2", "a1"], &
-      state_vector=settings%get_state_vector(), &
-      dim_subblock=settings%dims%get_dim_subblock(), &
-      odd=.true., &
-      edge="left" &
+    idxs = get_block_indices( &
+      sv_components=[sv_v1, sv_v2, sv_a1], &
+      settings=settings, &
+      edge="left", &
+      force_parity="odd" &
     )
     @assertEqual([3, 5, 11], idxs)
   end subroutine test_subblock_indices_odd_left_mhd
@@ -118,12 +124,11 @@ contains
   @test
   subroutine test_subblock_indices_even_left_mhd()
     call set_name("get subblock indices (even, left, MHD)")
-    idxs = get_subblock_index( &
-      variables=["v1", "v2", "a1"], &
-      state_vector=settings%get_state_vector(), &
-      dim_subblock=settings%dims%get_dim_subblock(), &
-      odd=.false., &
-      edge="left" &
+    idxs = get_block_indices( &
+      sv_components=[sv_v1, sv_v2, sv_a1], &
+      settings=settings, &
+      edge="left", &
+      force_parity="even" &
     )
     @assertEqual([4, 6, 12], idxs)
   end subroutine test_subblock_indices_even_left_mhd
@@ -132,12 +137,11 @@ contains
   @test
   subroutine test_subblock_indices_odd_right_mhd()
     call set_name("get subblock indices (odd, right, MHD)")
-    idxs = get_subblock_index( &
-      variables=["v1", "v2", "a1"], &
-      state_vector=settings%get_state_vector(), &
-      dim_subblock=settings%dims%get_dim_subblock(), &
-      odd=.true., &
-      edge="right" &
+    idxs = get_block_indices( &
+      sv_components=[sv_v1, sv_v2, sv_a1], &
+      settings=settings, &
+      edge="right", &
+      force_parity="odd" &
     )
     @assertEqual([19, 21, 27], idxs)
   end subroutine test_subblock_indices_odd_right_mhd
@@ -146,12 +150,11 @@ contains
   @test
   subroutine test_subblock_indices_even_right_mhd()
     call set_name("get subblock indices (even, right, MHD)")
-    idxs = get_subblock_index( &
-      variables=["v1", "v2", "a1"], &
-      state_vector=settings%get_state_vector(), &
-      dim_subblock=settings%dims%get_dim_subblock(), &
-      odd=.false., &
-      edge="right" &
+    idxs = get_block_indices( &
+      sv_components=[sv_v1, sv_v2, sv_a1], &
+      settings=settings, &
+      edge="right", &
+      force_parity="even" &
     )
     @assertEqual([20, 22, 28], idxs)
   end subroutine test_subblock_indices_even_right_mhd
@@ -160,12 +163,11 @@ contains
   @test
   subroutine test_subblock_indices_odd_left_mhd_zero()
     call set_name("get subblock indices (odd, left, MHD, with zero)")
-    idxs = get_subblock_index( &
-      variables=["v1", "00", "v2", "va", "T4"], &
-      state_vector=settings%get_state_vector(), &
-      dim_subblock=settings%dims%get_dim_subblock(), &
-      odd=.true., &
-      edge="left" &
+    idxs = get_block_indices( &
+      sv_components=[sv_v1, sv_test1, sv_v2, sv_test3, sv_test2], &
+      settings=settings, &
+      edge="left", &
+      force_parity="odd" &
     )
     @assertEqual([3, 5], idxs)
   end subroutine test_subblock_indices_odd_left_mhd_zero
@@ -174,12 +176,11 @@ contains
   @test
   subroutine test_subblock_indices_even_left_mhd_zero()
     call set_name("get subblock indices (even, left, MHD, with zero)")
-    idxs = get_subblock_index( &
-      variables=["v1", "00", "v7", "v2", "T4"], &
-      state_vector=settings%get_state_vector(), &
-      dim_subblock=settings%dims%get_dim_subblock(), &
-      odd=.false., &
-      edge="left" &
+    idxs = get_block_indices( &
+      sv_components=[sv_v1, sv_test2, sv_test1, sv_v2, sv_test3], &
+      settings=settings, &
+      edge="left", &
+      force_parity="even" &
     )
     @assertEqual([4, 6], idxs)
   end subroutine test_subblock_indices_even_left_mhd_zero
@@ -188,12 +189,11 @@ contains
   @test
   subroutine test_subblock_indices_odd_right_mhd_zero()
     call set_name("get subblock indices (odd, right, MHD, with zero)")
-    idxs = get_subblock_index( &
-      variables=["v1", "00", "v2", "va", "T4"], &
-      state_vector=settings%get_state_vector(), &
-      dim_subblock=settings%dims%get_dim_subblock(), &
-      odd=.true., &
-      edge="right" &
+    idxs = get_block_indices( &
+      sv_components=[sv_v1, sv_test1, sv_v2, sv_test3, sv_test2], &
+      settings=settings, &
+      edge="right", &
+      force_parity="odd" &
     )
     @assertEqual([19, 21], idxs)
   end subroutine test_subblock_indices_odd_right_mhd_zero
@@ -202,14 +202,117 @@ contains
   @test
   subroutine test_subblock_indices_even_right_mhd_zero()
     call set_name("get subblock indices (even, right, MHD, with zero)")
-    idxs = get_subblock_index( &
-      variables=["v1", "00", "v7", "v2", "T4"], &
-      state_vector=settings%get_state_vector(), &
-      dim_subblock=settings%dims%get_dim_subblock(), &
-      odd=.false., &
-      edge="right" &
+    idxs = get_block_indices( &
+      sv_components=[sv_v1, sv_v2, sv_test3, sv_test2, sv_test1], &
+      settings=settings, &
+      edge="right", &
+      force_parity="even" &
     )
     @assertEqual([20, 22], idxs)
   end subroutine test_subblock_indices_even_right_mhd_zero
+
+
+  @test
+  subroutine test_subblock_indices_left_mhd_based_on_default_splines()
+    call set_name("get subblock indices (MHD, left, based on default splines)")
+    idxs = get_block_indices( &
+      sv_components=[sv_v1, sv_T1, sv_a1, sv_a3], settings=settings, edge="left" &
+    )
+    @assertEqual([3, 10, 12, 15], idxs)
+  end subroutine test_subblock_indices_left_mhd_based_on_default_splines
+
+
+  @test
+  subroutine test_subblock_indices_right_mhd_based_on_default_splines()
+    call set_name("get subblock indices (MHD, right, based on default splines)")
+    idxs = get_block_indices( &
+      sv_components=[sv_v1, sv_T1, sv_a1, sv_a3], settings=settings, edge="right" &
+    )
+    @assertEqual([19, 26, 28, 31], idxs)
+  end subroutine test_subblock_indices_right_mhd_based_on_default_splines
+
+
+  @test
+  subroutine test_subblock_indices_left_mhd_based_on_splines()
+    call set_name("get subblock indices (MHD, left, based on splines)")
+    call settings%state_vector%set_basis_functions( &
+      [CUBIC, QUADRATIC, QUADRATIC, QUADRATIC, CUBIC, QUADRATIC, QUADRATIC, CUBIC] &
+    )
+    idxs = get_block_indices( &
+      sv_components=[sv_rho1, sv_v1, sv_v2, sv_T1, sv_a2], &
+      settings=settings, &
+      edge="left" &
+    )
+    @assertEqual([1, 4, 6, 9, 14], idxs)
+  end subroutine test_subblock_indices_left_mhd_based_on_splines
+
+
+  @test
+  subroutine test_subblock_indices_right_mhd_based_on_splines()
+    call set_name("get subblock indices (MHD, right, based on splines)")
+    call settings%state_vector%set_basis_functions( &
+      [CUBIC, QUADRATIC, QUADRATIC, QUADRATIC, CUBIC, QUADRATIC, QUADRATIC, CUBIC] &
+    )
+    idxs = get_block_indices( &
+      sv_components=[sv_rho1, sv_v1, sv_v2, sv_T1, sv_a2], &
+      settings=settings, &
+      edge="right" &
+    )
+    @assertEqual([17, 20, 22, 25, 30], idxs)
+  end subroutine test_subblock_indices_right_mhd_based_on_splines
+
+
+  @test
+  subroutine test_subblock_indices_left_hd_based_on_default_splines()
+    call set_name("get subblock indices (HD, left, based on default splines)")
+    call settings%set_state_vector(physics_type="hd")
+    idxs = get_block_indices( &
+      sv_components=[sv_rho1, sv_v3, sv_v1, sv_v2, sv_T1], &
+      settings=settings, &
+      edge="left" &
+    )
+    @assertEqual([2, 8, 3, 6, 10], idxs)
+  end subroutine test_subblock_indices_left_hd_based_on_default_splines
+
+
+  @test
+  subroutine test_subblock_indices_right_hd_based_on_default_splines()
+    call set_name("get subblock indices (HD, right, based on default splines)")
+    call settings%set_state_vector(physics_type="hd")
+    idxs = get_block_indices( &
+      sv_components=[sv_rho1, sv_v3, sv_v1, sv_v2, sv_T1], &
+      settings=settings, &
+      edge="right" &
+    )
+    @assertEqual([12, 18, 13, 16, 20], idxs)
+  end subroutine test_subblock_indices_right_hd_based_on_default_splines
+
+
+  @test
+  subroutine test_subblock_indices_left_hd_based_on_splines()
+    call set_name("get subblock indices (HD, left, based on splines)")
+    call settings%set_state_vector(physics_type="hd")
+    call settings%state_vector%set_basis_functions( &
+      [CUBIC, QUADRATIC, QUADRATIC, CUBIC, CUBIC] &
+    )
+    idxs = get_block_indices( &
+      sv_components=[sv_rho1, sv_v2, sv_T1], settings=settings, edge="left" &
+    )
+    @assertEqual([1, 6, 9], idxs)
+  end subroutine test_subblock_indices_left_hd_based_on_splines
+
+
+  @test
+  subroutine test_subblock_indices_right_hd_based_on_splines()
+    call set_name("get subblock indices (HD, right, based on splines)")
+    call settings%set_state_vector(physics_type="hd")
+    call settings%state_vector%set_basis_functions( &
+      [CUBIC, QUADRATIC, QUADRATIC, CUBIC, CUBIC] &
+    )
+    idxs = get_block_indices( &
+      sv_components=[sv_rho1, sv_v2, sv_T1], settings=settings, edge="right" &
+    )
+    @assertEqual([11, 16, 19], idxs)
+  end subroutine test_subblock_indices_right_hd_based_on_splines
 
 end module mod_test_indices

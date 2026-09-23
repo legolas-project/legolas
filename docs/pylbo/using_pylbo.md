@@ -6,12 +6,12 @@ sidebar:
   nav: "leftcontents"
 toc: true
 toc_icon: "chevron-circle-down"
-last_modified_at: 2023-04-13
+last_modified_at: 2026-01-28
 ---
 
 Using Pylbo is quite straightforward, for a detailed guide on the API we refer to the
 [Pylbo documentation](../../sphinx/autoapi/pylbo/index.html).
-This page will provide a basic guide on how to use the package . In what follows we assume that Pylbo has been installed
+This page will provide a basic guide on how to use the package. In what follows we assume that Pylbo has been installed
 (see [installing Pylbo](../../getting-started/installation#pylbo)) and has been imported.
 
 ## Loading Legolas datfiles
@@ -76,15 +76,8 @@ This is interactive by default, to toggle the continua on or off you can click o
 
 When you attach the eigenfunctions through `p.add_eigenfunctions()` Pylbo will modify the geometry of the currently supplied
 axis and split it in two. The spectrum will be drawn on the left, the eigenfunctions on the right; simply click on a spectrum point (or multiple)
-for which you want to see eigenfunctions. Selected points will be annotated on the plot, clicking left will deselect them.
-Pressing Enter draws the eigenfunctions for the selected points, you can cycle through the various eigenfunctions as well.
-
-If derived eigenfunction quantities were saved as well, you can create an additional spectrum plot and attach those instead:
-```python
-p2 = pylbo.plot_spectrum(ds)
-p2.add_derived_eigenfunctions()
-```
-Usage and interactivity is exactly the same as for the regular eigenfunctions.
+for which you want to see eigenfunctions. Selected points will be annotated on the plot, right-clicking will deselect them.
+Use the arrow keys to cycle through the various eigenfunctions.
 
 Note that every point you select will have a different color, the colors between the eigenfunctions and the selected spectrum points are consistent.
 The legend on the eigenfunction panel will contain the index of the selected point in the `ds.eigenvalues` array, with the value printed as well.
@@ -115,7 +108,7 @@ eigenfuncs = ds.get_eigenfunctions(ev_idxs=[20, 123, 451, 613])
 eigenfuncs = ds.get_eigenfunctions(ev_guesses=[3.0, 4.5 + 1j, 5 - 3j])
 ```
 Now, `eigenfuncs` will be a Numpy-array of size 3 (since 3 eigenvalue guesses were provided), and every index corresponds
-to the index of your guess. Meaning, `eigenfuncs[1]` corresponds to the eigenfunctions of `4.5 + i`, and so on.
+to the index of your guess, i.e. `eigenfuncs[1]` corresponds to the eigenfunctions of `4.5 + i`, and so on.
 Every element of the `eigenfuncs` array is a dictionary, containing all eigenfunctions as well as the eigenvalues.
 To retrieve what you need, simply do
 ```python
@@ -127,9 +120,8 @@ rho_ef2 = eigenfuncs[1].get("rho")
 print(eigenfuncs[0].keys())
 >> "rho", "v1", "v2", "v3", "T", "a1", "a2", "a3", "eigenvalue"
 ```
-The names of the keys are self-explanatory.
-
-To retrieve derived eigenfunction quantities use `ds.get_derived_eigenfunctions` instead.
+The names of the keys are self-explanatory. If the derived eigenfunctions were saved to the datfile these will automatically
+be contained within the corresponding dictionaries with appropriate keys.
 
 You can also retrieve eigenvalues near guesses, this will return both the indices and corresponding eigenvalues:
 ```python
@@ -176,9 +168,7 @@ p = pylbo.plot_equilibrium_balance(ds)
 p.show()
 ```
 See the API [here](../../sphinx/autoapi/pylbo/index.html#pylbo.plot_equilibrium_balance) for more information.
-The resulting curves should be as close to zero as possible. Note that for the non-adiabatic equilibrium
-equation Pylbo does a crude 2nd order numerical differentation (Numpy's gradient method), so the results
-may be off by about 1e-7 - 1e-8.
+The resulting curves should be as close to zero as possible, though keep in mind that results may be _numerically_ zero (e.g. $\sim10^{-15}$ or similar.)
 
 ## Analysing multiple files
 In what follows we assume that all datfiles have been loaded in `series` as explained above.
@@ -187,7 +177,7 @@ In what follows we assume that all datfiles have been loaded in `series` as expl
 Plotting the spectrum of multiple datfiles is done in a similar way as for a single datfile.
 The main difference here is that we have to provide an additional variable, `xdata`. This should be
 of the same length as the number of datasets in the series, since every point of `xdata` will have a dataset
-associated with it. `
+associated with it.
 
 Say you have loaded 10 datasets and you specify `xdata = "k3"`. This means that you will have 10 columns of datapoints,
 plotting the real or imaginary part of the eigenvalues versus the `k3` value for each dataset. `xdata` can be anything, as long
@@ -240,10 +230,10 @@ If a great many datasets are loaded it may be useful to disable the legend allto
 Furthermore, if you simply want to look at the spectrum in a single color, supply the argument `color="blue"` (or your favourite color),
 which will also disable the legend and plot all points in that color.
 
-The eigenfunctions are interactive in exactly the same way as for the other types of plots, but note that it's possible that points from different datasets may overlap,
+The eigenfunctions are interactive in exactly the same way as for the other types of plots, but note that it is possible that points from different datasets may overlap,
 for example when the same eigenvalue is picked up by multiple datasets. Selecting that point will therefore plot multiple eigenfunctions
 (equal to the amount of overlapping points), however, you can circumvent this by hiding the points of the datasets you're not interesting in by clicking on their legend entries.
-Similar as to the multispectrum case you can highlight datasets that have eigenfunctions present by pressing the "M" key.
+Similar as to the multispectrum case you can highlight datasets that have eigenfunctions present by pressing the M key.
 
 Drawing continua is not supported for this type of figure.
 

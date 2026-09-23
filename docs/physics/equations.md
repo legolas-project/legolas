@@ -6,11 +6,11 @@ sidebar:
   nav: "leftcontents"
 toc: true
 toc_icon: "chevron-circle-down"
-last_modified_at: 2021-07-27
+last_modified_at: 2026-01-28
 ---
 
 On this page we give a small overview of the system of equations solved by Legolas. We use the
-full set of MHD equations, linearised around a dynamic background (that is, including flow).
+full set of MHD equations, linearised around a stationary background.
 Physical effects include flow, (external) gravity, resistivity, optically thin radiative losses,
 anisotropic thermal conduction, viscosity and Hall effects.
 
@@ -22,7 +22,7 @@ $$
 \newcommand{\gbf}{\mathbf{g}}
 \newcommand{\bbf}{\mathbf{B}}
 \newcommand{\HL}{\mathscr{L}}
-\newcommand{\HH}{\mathcal{H}}
+\newcommand{\fancyH}{\mathcal{H}}
 \newcommand{\kappabf}{\boldsymbol{\kappa}}
 \newcommand{\unit}[1]{\mathbf{e}_{#1}}
 
@@ -72,16 +72,16 @@ If the resistivity profile explicitly depends on position as well, providing the
 Radiative cooling is governed by the heat-loss function, specified as the difference between energy gains and energy losses
 
 $$
-\HL = \rho\Lambda(T) - \HH(\rho, T),
+\HL = \rho\Lambda(T) - \fancyH(\rho, T),
 $$
 
 The function $\Lambda(T)$ here is called the _cooling curve_, which is a tabulated set of values resulting from detailed molecular calculations.
 Legolas has multiple cooling curves from existing literature implemented which are interpolated at high resolution and sampled on the given grid.
-We have also included analytical, piecewise prescriptions (e.g. the `rosner` curve). See the [physicslist](../../general/parameter_file/#physicslist) for an overview of the different options.
+We have also included analytical, piecewise prescriptions (e.g. the `Rosner` curve). See the [physicslist](../../general/parameter_file/#physicslist) for an overview of the different options.
 The function $\Lambda(T)$ can be user-specified, in which case its temperature derivative should be provided as well.
 
-The function $\HH(\rho, T)$ specifies the heating function. If thermal balance is forced we assume that this term only depends on the equilibrium background, meaning that it is
-constant in time but possibly varying in space and as such that it balances out the cooling contribution to ensure thermal equilibrium. $\HH(\rho, T)$ can be user-specified, in which case its density and
+The function $\fancyH(\rho, T)$ specifies the heating function. If thermal balance is forced we assume that this term only depends on the equilibrium background, meaning that it is
+constant in time but possibly varying in space and as such that it balances out the cooling contribution to ensure thermal equilibrium. $\fancyH(\rho, T)$ can be user-specified, in which case its density and
 temperature derivatives should be provided as well.
 
 #### Cooling curves
@@ -89,15 +89,15 @@ At the moment 8 tabulated cooling curves are implemented, along with 1 analytica
 
 | Name    		 		| Notes   | Approximate $\log_{10}(T)$ range | Reference     |
 | :---         		| :---    | :---: 		|   :---  		 |
-| `rosner`     		| Analytical cooling curve | $3.891 - 7.605$ | [Rosner et al. (1978)](https://ui.adsabs.harvard.edu/abs/1978ApJ...220..643R/abstract) |
-| `jc_corona` 	  | Cooling curve for coronal conditions | $4.000 - 7.954$ | [Colgan et al. (2008)](https://ui.adsabs.harvard.edu/abs/2008ApJ...689..585C/abstract) |
-| `dalgarno`   	  | Cooling curve for low temperatures | $2.000 - 9.000$ | [Dalgarno & McCray (1972)](https://ui.adsabs.harvard.edu/abs/1972ARA%26A..10..375D/abstract) |
-| `dalgarno2` 		| Cooling curve for very low temperatures | $1.000 - 4.000$ | [Dalgarno & McCray (1972)](https://ui.adsabs.harvard.edu/abs/1972ARA%26A..10..375D/abstract) |
-| `ml_solar`  		| Cooling curve for solar abundances | $2.000 - 9.000$ | [Mellema & Lundqvist (2002)](https://ui.adsabs.harvard.edu/abs/2002A%26A...394..901M/abstract) |
-| `spex`			 		| Cooling curve for solar abundances | $3.800 - 8.160$ | [Schure et al. (2009)](https://ui.adsabs.harvard.edu/abs/2009A%26A...508..751S/abstract) |
-| `spex_dalgarno` | `spex` supplemented with `dalgarno` for lower temperatures | $2.000 - 8.160$ | - |
-| `colgan`     		| The original cooling curve | $4.065 - 9.065$ | [Colgan & Feldman (2008)](https://ui.adsabs.harvard.edu/abs/2008ApJ...689..585C/abstract) |
-| `colgan_dm`  		| `colgan` supplemented with `dalgarno2` for lower temperatures | $1.000 - 9.065$ | - |
+| `Rosner`     		| Analytical cooling curve | $3.891 - 7.605$ | [Rosner et al. (1978)](https://ui.adsabs.harvard.edu/abs/1978ApJ...220..643R/abstract) |
+| `JCcorona` 	  | Cooling curve for coronal conditions | $4.000 - 7.954$ | [Colgan et al. (2008)](https://ui.adsabs.harvard.edu/abs/2008ApJ...689..585C/abstract) |
+| `DM`   	  | Cooling curve for low temperatures | $2.000 - 9.000$ | [Dalgarno & McCray (1972)](https://ui.adsabs.harvard.edu/abs/1972ARA%26A..10..375D/abstract) |
+| `DM_2` 		| Cooling curve for very low temperatures | $1.000 - 4.000$ | [Dalgarno & McCray (1972)](https://ui.adsabs.harvard.edu/abs/1972ARA%26A..10..375D/abstract) |
+| `MLsolar1`  		| Cooling curve for solar abundances | $2.000 - 9.000$ | [Mellema & Lundqvist (2002)](https://ui.adsabs.harvard.edu/abs/2002A%26A...394..901M/abstract) |
+| `SPEX`			 		| Cooling curve for solar abundances | $3.800 - 8.160$ | [Schure et al. (2009)](https://ui.adsabs.harvard.edu/abs/2009A%26A...508..751S/abstract) |
+| `SPEX_DM` | `SPEX` supplemented with `DM` for lower temperatures | $2.000 - 8.160$ | - |
+| `Colgan`     		| The original cooling curve | $4.065 - 9.065$ | [Colgan & Feldman (2008)](https://ui.adsabs.harvard.edu/abs/2008ApJ...689..585C/abstract) |
+| `Colgan_DM`  		| `Colgan` supplemented with `DM_2` for lower temperatures | $1.000 - 9.065$ | - |
 
 All cooling curves are interpolated at high resolution using a local second order polynomial and then sampled on the grid, with the exception of the analytical curves.
 Note that all tabulated cooling curves are extended to higher temperatures (i.e. outside of their tabulated range) by assuming pure Brehmsstrahlung ($\Lambda(T) \sim \sqrt{T}$). For temperatures
@@ -116,7 +116,7 @@ with $\boldsymbol{I}$ the unit tensor and $\unit{B} = \bbf / B$ a unit vector al
 $$
 \begin{align}
 \kappa_\parallel &\approx 8 \times 10^{-7}T^{5/2}~\text{erg cm$^{-1}$s$^{-1}$K$^{-1}$},	\\
-\kappa_\bot &\approx 4 \times 10^{-10} n^2B^{-2}T^{-3}\kappa_\parallel,
+\kappa_\bot &\approx 4 \times 10^{-10} n^2B^{-2}T^{-3}\kappa_\parallel.
 \end{align}
 $$
 

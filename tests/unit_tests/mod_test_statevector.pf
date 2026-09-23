@@ -1,0 +1,136 @@
+module mod_test_statevector
+  use mod_suite_utils
+  use mod_state_vector
+  use mod_state_vector_names
+  use mod_basis_function_names
+  use funit
+  implicit none
+
+  type(state_vector_t) :: sv_test
+  character(len=str_len_arr), allocatable :: HD_splines(:)
+  character(len=str_len_arr), allocatable :: MHD_SPLINES(:)
+
+contains
+
+  @before
+  subroutine init_test()
+    if (allocated(MHD_SPLINES)) deallocate(MHD_SPLINES)
+    allocate(MHD_SPLINES(8))
+    MHD_SPLINES =  [ &
+      QUADRATIC, &
+      CUBIC, &
+      QUADRATIC, &
+      QUADRATIC, &
+      QUADRATIC, &
+      QUADRATIC, &
+      CUBIC, &
+      CUBIC &
+    ]
+    if (allocated(HD_splines)) deallocate(HD_splines)
+    allocate(HD_splines, source=MHD_SPLINES(1:5))
+  end subroutine init_test
+
+
+  @after
+  subroutine teardown_test()
+    call sv_test%delete()
+  end subroutine teardown_test
+
+
+  @test
+  subroutine test_sv_assemble_hd1d()
+    call set_name("state vector: HD 1D assembly")
+    call sv_test%assemble("hd-1d")
+    @assertEqual(3, size(sv_test%components))
+    @assertTrue(sv_test%contains(sv_rho1_name))
+    @assertTrue(sv_test%contains(sv_v1_name))
+    @assertTrue(sv_test%contains(sv_T1_name))
+    @assertFalse(sv_test%contains(sv_v2_name))
+    @assertFalse(sv_test%contains(sv_a1_name))
+  end subroutine test_sv_assemble_hd1d
+
+
+  @test
+  subroutine test_sv_assemble_hd()
+    call set_name("state vector: HD assembly")
+    call sv_test%assemble("hd")
+    @assertEqual(5, size(sv_test%components))
+    @assertTrue(sv_test%contains(sv_rho1_name))
+    @assertTrue(sv_test%contains(sv_v3_name))
+    @assertTrue(sv_test%contains(sv_T1_name))
+    @assertFalse(sv_test%contains(sv_a2_name))
+  end subroutine test_sv_assemble_hd
+
+
+  @test
+  subroutine test_sv_assemble_mhd()
+    integer :: i
+
+    call set_name("state vector: MHD assembly")
+    call sv_test%assemble("mhd")
+    @assertEqual(8, size(sv_test%components))
+    do i = 1, 8
+      @assertTrue(sv_test%contains(KNOWN_SV_NAMES(i)))
+    end do
+  end subroutine test_sv_assemble_mhd
+
+
+  @test
+  subroutine test_sv_default_splines()
+    character(len=str_len_arr), allocatable :: empty(:)
+
+    call set_name("state vector: default basis functions")
+    call sv_test%assemble("mhd")
+    allocate(empty(0))
+    call sv_test%set_basis_functions(splines=empty)
+    @assertTrue(all(sv_test%get_basis_functions() == MHD_SPLINES))
+  end subroutine test_sv_default_splines
+
+
+  @test
+  subroutine test_sv_set_splines_mhd_all_equal()
+    call set_name("state vector: setting equal basis functions (MHD)")
+    call sv_test%assemble("mhd")
+    MHD_SPLINES = QUADRATIC
+    call sv_test%set_basis_functions(splines=MHD_SPLINES)
+    @assertTrue(all(sv_test%get_basis_functions() == QUADRATIC))
+  end subroutine test_sv_set_splines_mhd_all_equal
+
+
+  @test
+  subroutine test_sv_set_splines_hd_all_equal()
+    call set_name("state vector: setting equal basis functions (HD)")
+    call sv_test%assemble("hd")
+    HD_SPLINES = CUBIC
+    call sv_test%set_basis_functions(splines=HD_splines)
+    @assertTrue(all(sv_test%get_basis_functions() == CUBIC))
+  end subroutine test_sv_set_splines_hd_all_equal
+
+
+  @test
+  subroutine test_sv_set_splines_mhd()
+    call set_name("state vector: setting basis functions (MHD)")
+    call sv_test%assemble("mhd")
+    MHD_SPLINES(1) = CUBIC
+    MHD_SPLINES(7) = QUADRATIC
+    call sv_test%set_basis_functions(splines=MHD_SPLINES)
+    @assertTrue(all(sv_test%get_basis_functions() == MHD_SPLINES))
+    @assertEqual(CUBIC, sv_test%components(1)%ptr%get_basis_function_name())
+    @assertEqual(QUADRATIC, sv_test%components(7)%ptr%get_basis_function_name())
+  end subroutine test_sv_set_splines_mhd
+
+
+  @test
+  subroutine test_sv_set_splines_invalid()
+    character(len=:), allocatable :: error_msg
+
+    call set_name("state vector: setting basis functions (MHD, invalid)")
+    call sv_test%assemble("mhd")
+    call sv_test%set_basis_functions(splines=HD_splines)
+    error_msg = ( &
+      "state vector size (8) is not compatible with " &
+      // "given number of basis functions (5)" &
+    )
+    @assertExceptionRaised(error_msg)
+  end subroutine test_sv_set_splines_invalid
+end module mod_test_statevector

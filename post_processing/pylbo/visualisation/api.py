@@ -15,7 +15,7 @@ forbidden_args = ["linestyle", "linewidth", "lw"]
 
 
 def plot_spectrum(
-    data, figsize=None, custom_figure=None, use_residuals=False, **kwargs
+    data, figsize=None, custom_figure=None, use_residuals=False, title=None, **kwargs
 ):
     """
     Plots the spectrum of a single dataset.
@@ -43,7 +43,7 @@ def plot_spectrum(
     for arg in forbidden_args:
         if kwargs.pop(arg, None) is not None:
             pylboLogger.warning(f"plot_spectrum does not accept the '{arg}' argument.")
-    p = SingleSpectrumPlot(data, figsize, custom_figure, use_residuals, **kwargs)
+    p = SingleSpectrumPlot(data, figsize, custom_figure, use_residuals, title, **kwargs)
     return p
 
 

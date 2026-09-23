@@ -5,7 +5,7 @@ classes: wide
 sidebar:
   nav: "leftcontents"
 toc: false
-last_modified_at: 2023-04-13
+last_modified_at: 2026-01-28
 ---
 
 Once you cloned the repository and installed both Legolas and the Pylbo framework you are set to run your first problem.
@@ -22,6 +22,8 @@ Follow the instructions, this script will do and ask you a couple of things:
 2. Ask if you want to copy over `pylbo_wrapper.py`, you need this if you want to plot your results immediately after running.
 3. Ask if you want to copy over a parfile if none was found.
 
+For this first run, select `y` (yes) when prompted, twice.
+
 Next call the build script:
 ```bash
 buildlegolas.sh
@@ -37,7 +39,7 @@ Run the setup scripts in a separate directory and let them take care of linking.
 ## Creating the configuration file
 Configuring Legolas is done through use of a "parfile", where various options are passed in the form of Fortran namelists. For an overview
 of different possibilities you can take a look [here](../../general/parameter_file).
-Create a new file with a `.par` extension (or modify the existing one if it was copied over when setting up), and edit it as follows:
+Open the file with the `.par` extension (or create a new one if it was not copied over when setting up), and change its contents to following:
 ```fortran
 &gridlist
   gridpoints = 50
@@ -54,12 +56,12 @@ Create a new file with a `.par` extension (or modify the existing one if it was 
 ```
 
 ## Running the code
-Finally call `legolas` and supply the parfile you just created as argument:
+Finally call `legolas` and supply the parfile you just set up as argument:
 ```bash
 ./legolas -i my_setup.par
 ```
 This will run a setup which defines Rayleigh-Taylor instabilities in a Cartesian geometry,
-the spectrum itself should correspond to case **a** in Section 13.2, p. 487 of [MHD of Laboratory and Astrophysical Plasmas](http://doi.org/10.1017/9781316403679).
+the spectrum itself should correspond to case **a** in Section 13.2, p. 487 of [Magnetohydrodynamics of Laboratory and Astrophysical Plasmas](http://doi.org/10.1017/9781316403679).
 
 When the run is completed (this should only take a few seconds) the code will immediately fire up the post-processing framework since we set `show_results = .true.` in the parfile.
 A few interactive figures will pop up, including the spectrum. Click on one of the eigenvalues in the figure and press `Enter`, this will draw the corresponding eigenfunctions.

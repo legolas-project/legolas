@@ -1,6 +1,9 @@
 module mod_matrix_elements
   use mod_global_variables, only: dp, NaN
   use mod_matrix_element_node, only: matrix_element_node_t, new_matrix_element_node
+  use mod_basis_functions, only: basis_function
+  use mod_state_vector, only: state_vector_t
+  use mod_state_vector_component, only: sv_component_t
   use mod_get_indices, only: get_index
   use mod_logging, only: logger, str
   implicit none
@@ -9,11 +12,9 @@ module mod_matrix_elements
 
   type, public :: matrix_elements_t
     integer, private :: nb_elements
-    integer, private :: spline1_size
-    integer, private :: spline2_size
     type(matrix_element_node_t), pointer, private :: head
     type(matrix_element_node_t), pointer, private :: tail
-    character(len=:), allocatable, private :: state_vector(:)
+    type(state_vector_t), pointer, private :: state_vector
 
   contains
 
@@ -23,7 +24,6 @@ module mod_matrix_elements
     procedure, public :: get_positions
     procedure, public :: get_nb_elements
     procedure, public :: delete
-    procedure, private :: spline_sizes_are_valid
     procedure, private :: increment_nb_elements
   end type matrix_elements_t
 
@@ -31,38 +31,47 @@ module mod_matrix_elements
 
 contains
 
-  pure function new_matrix_elements(state_vector) result(elements)
-    character(len=*), intent(in) :: state_vector(:)
+  function new_matrix_elements(state_vector) result(elements)
+    type(state_vector_t), target, intent(in) :: state_vector
     type(matrix_elements_t) :: elements
     elements%nb_elements = 0
-    elements%spline1_size = 0
-    elements%spline2_size = 0
     elements%head => null()
     elements%tail => null()
-    allocate(elements%state_vector, source=state_vector)
+    elements%state_vector => state_vector
   end function new_matrix_elements
 
 
-  subroutine add_node(this, element, loc1, loc2, spline1, spline2)
+  subroutine add_node(this, element, sv_comp1, sv_comp2, s1do, s2do)
     class(matrix_elements_t), intent(inout) :: this
     class(*), intent(in) :: element
-    character(len=*), intent(in) :: loc1
-    character(len=*), intent(in) :: loc2
-    real(dp), intent(in) :: spline1(:)
-    real(dp), intent(in) :: spline2(:)
+    !> first state vector component
+    type(sv_component_t), intent(in) :: sv_comp1
+    !> second state vector component
+    type(sv_component_t), intent(in) :: sv_comp2
+    !> spline 1 derivative order, 1 = first derivative, 2 = second derivative, etc.
+    integer, intent(in), optional :: s1do
+    !> spline 2 derivative order, 1 = first derivative, 2 = second derivative, etc.
+    integer, intent(in), optional :: s2do
+
     complex(dp) :: node_element
     integer :: position(2)
+    procedure(basis_function), pointer :: spline1, spline2
 
     ! position checks
-    position(1) = get_index(name=loc1, array=this%state_vector)
-    position(2) = get_index(name=loc2, array=this%state_vector)
+    position(1) = get_index( &
+      name=sv_comp1%get_name(), array=this%state_vector%get_names() &
+    )
+    position(2) = get_index( &
+      name=sv_comp2%get_name(), array=this%state_vector%get_names() &
+    )
     if (.not. is_valid_position(position)) return
-    ! spline checks
-    if (this%spline1_size == 0) this%spline1_size = size(spline1)
-    if (this%spline2_size == 0) this%spline2_size = size(spline2)
-    if (.not. this%spline_sizes_are_valid(spline1, spline2)) return
 
     node_element = cast_node_element_to_complex(element)
+    if (is_NaN_element(node_element, sv_comp1, sv_comp2)) return
+    if (is_inf_element(node_element, sv_comp1, sv_comp2)) return
+
+    call sv_comp1%get_spline_function(spline_order=s1do, spline_func=spline1)
+    call sv_comp2%get_spline_function(spline_order=s2do, spline_func=spline2)
     ! if head is not associated, then the list is empty and we create the first node
     if (.not. associated(this%head)) then
       allocate( &
@@ -161,26 +170,34 @@ contains
   end function is_valid_position
 
 
-  logical function spline_sizes_are_valid(this, spline1, spline2)
-    class(matrix_elements_t), intent(in) :: this
-    real(dp), intent(in) :: spline1(:)
-    real(dp), intent(in) :: spline2(:)
+  logical function is_NaN_element(element, sv_comp1, sv_comp2)
+    use mod_check_values, only: is_NaN
 
-    spline_sizes_are_valid = .true.
-    if (size(spline1) /= this%spline1_size) then
-      spline_sizes_are_valid = .false.
-      call logger%error( &
-        "matrix elements: spline1 size not valid, expected " &
-        // str(this%spline1_size) // " but got " // str(size(spline1)) &
-      )
-    else if (size(spline2) /= this%spline2_size) then
-      spline_sizes_are_valid = .false.
-      call logger%error( &
-        "matrix elements: spline2 size not valid, expected " &
-        // str(this%spline2_size) // " but got " // str(size(spline2)) &
-      )
-    end if
-  end function spline_sizes_are_valid
+    complex(dp), intent(in) :: element
+    type(sv_component_t), intent(in) :: sv_comp1
+    type(sv_component_t), intent(in) :: sv_comp2
+
+    is_NaN_element = is_NaN(element)
+    if (is_NaN_element) call logger%error( &
+      "NaN matrix element encountered for [" &
+      // trim(sv_comp1%get_name()) // ", " // trim(sv_comp2%get_name()) // "]" &
+    )
+  end function is_NaN_element
+
+
+  logical function is_inf_element(element, sv_comp1, sv_comp2)
+    use mod_check_values, only: is_infinite
+
+    complex(dp), intent(in) :: element
+    type(sv_component_t), intent(in) :: sv_comp1
+    type(sv_component_t), intent(in) :: sv_comp2
+
+    is_inf_element = is_infinite(element)
+    if (is_inf_element) call logger%error( &
+      "Infinity encountered in matrix element for [" &
+      // trim(sv_comp1%get_name()) // ", " // trim(sv_comp2%get_name()) // "]" &
+    )
+  end function is_inf_element
 
 
   pure subroutine increment_nb_elements(this)
@@ -207,7 +224,7 @@ contains
     nullify(next_node)
     nullify(this%head)
     nullify(this%tail)
-    deallocate(this%state_vector)
+    nullify(this%state_vector)
     this%nb_elements = 0
   end subroutine delete
 

@@ -1,4 +1,4 @@
-submodule (mod_boundary_manager:smod_natural_boundaries) smod_natural_bounds_hall
+submodule (mod_natural_boundaries) smod_natural_bounds_hall
   implicit none
 
 contains
@@ -7,7 +7,6 @@ contains
     real(dp)  :: eps
     real(dp)  :: rho
     real(dp)  :: eta_e
-    type(matrix_elements_t) :: elements
 
     if (.not. settings%physics%hall%is_enabled()) return
     if (.not. settings%physics%hall%has_electron_inertia()) return
@@ -15,28 +14,19 @@ contains
     eps = grid%get_eps(x)
     rho = background%density%rho0(x)
     eta_e = physics%hall%inertiafactor(x)
-    elements = new_matrix_elements(state_vector=settings%get_state_vector())
 
     ! ==================== Cubic * Quadratic ====================
-    call elements%add(eta_e * k2 / rho, "a2", "a1", spline1=h_cubic, spline2=h_quad)
-    call elements%add( &
-      eta_e * k3 * eps / rho, "a3", "a1", spline1=h_cubic, spline2=h_quad &
-    )
+    call elements%add(eta_e * k2 / rho, sv_a2, sv_a1)
+    call elements%add(eta_e * k3 * eps / rho, sv_a3, sv_a1)
     ! ==================== Cubic * dCubic ====================
-    call elements%add(-eta_e / rho, "a2", "a2", spline1=h_cubic, spline2=dh_cubic)
-    call elements%add( &
-      -eta_e * eps / rho, "a3", "a3", spline1=h_cubic, spline2=dh_cubic &
-    )
-
-    call add_to_quadblock(quadblock, elements, weight, settings%dims)
-    call elements%delete()
+    call elements%add(-eta_e / rho, sv_a2, sv_a2, s2do=1)
+    call elements%add(-eta_e * eps / rho, sv_a3, sv_a3, s2do=1)
   end procedure add_natural_hall_Bterms
 
   module procedure add_natural_hall_terms
     real(dp)  :: eps, deps
     real(dp)  :: rho, T0, B01, B02, B03
     real(dp)  :: eta_H, mu, efrac
-    type(matrix_elements_t) :: elements
 
     if (.not. settings%physics%hall%is_enabled()) return
     ! Hall by substitution of the momentum equation, only contains viscosity terms
@@ -54,42 +44,16 @@ contains
     eta_H = physics%hall%hallfactor(x)
     mu = settings%physics%viscosity%get_viscosity_value()
     efrac = settings%physics%hall%get_electron_fraction()
-    elements = new_matrix_elements(state_vector=settings%get_state_vector())
 
     ! ==================== Quadratic * Cubic ====================
-    call elements%add( &
-      -eta_H * ic * mu * deps / (eps * rho), &
-      "a1", &
-      "v1", &
-      spline1=h_quad, &
-      spline2=h_cubic &
-    )
+    call elements%add(-eta_H * ic * mu * deps / (eps * rho), sv_a1, sv_v1)
     ! ==================== Quadratic * dCubic ====================
-    call elements%add( &
-      4.0d0 * eta_H * ic * mu / (3.0d0 * rho), &
-      "a1", &
-      "v1", &
-      spline1=h_quad, &
-      spline2=dh_cubic &
-    )
+    call elements%add(4.0d0 * eta_H * ic * mu / (3.0d0 * rho), sv_a1, sv_v1, s2do=1)
     ! ==================== Cubic * dQuadratic ====================
-    call elements%add( &
-      eta_H * ic * mu * eps / rho, "a2", "v2", spline1=h_cubic, spline2=dh_quad &
-    )
-    call elements%add( &
-      eta_H * ic * mu / rho, "a3", "v3", spline1=h_cubic, spline2=dh_quad &
-    )
+    call elements%add(eta_H * ic * mu * eps / rho, sv_a2, sv_v2, s2do=1)
+    call elements%add(eta_H * ic * mu / rho, sv_a3, sv_v3, s2do=1)
     ! ==================== Cubic * Quadratic ====================
-    call elements%add( &
-      -eta_H * ic * mu * deps / (eps * rho), &
-      "a3", &
-      "v3", &
-      spline1=h_cubic, &
-      spline2=h_quad &
-    )
-
-    call add_to_quadblock(quadblock, elements, weight, settings%dims)
-    call elements%delete()
+    call elements%add(-eta_H * ic * mu * deps / (eps * rho), sv_a3, sv_v3)
   end procedure add_natural_hall_terms
 
 end submodule

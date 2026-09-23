@@ -1,6 +1,6 @@
 module mod_test_cooling
   use mod_suite_utils
-  use mod_cooling_curves, only: get_rosner_lambdaT, get_rosner_dlambdadT
+  use mod_cooling_curves, only: get_Rosner_lambdaT, get_Rosner_dlambdadT
   use funit
   implicit none
 
@@ -63,39 +63,39 @@ contains
 
 
   @test
-  subroutine test_rosner_curve_lambdaT()
+  subroutine test_Rosner_curve_lambdaT()
     real(dp) :: actual(pts), expected(pts)
     integer   :: i
 
-    call set_name("cooling curve: rosner (lambdaT)")
-    call settings%physics%enable_cooling(cooling_curve="rosner")
+    call set_name("cooling curve: Rosner (lambdaT)")
+    call settings%physics%enable_cooling(cooling_curve="Rosner")
     call physics%heatloss%cooling%initialise()
     do i = 1, pts
       expected(i) = 10.0d0**( &
         logxi_expected(i) + alpha_expected(i) * logT0values(i) &
       ) / unit_lambdaT
-      actual(i) = get_rosner_lambdaT(real(i, kind=dp), settings, background)
+      actual(i) = get_Rosner_lambdaT(real(i, kind=dp), settings, background)
     end do
     @assertEqual(expected, actual, tolerance=1.0d-7)
-  end subroutine test_rosner_curve_lambdaT
+  end subroutine test_Rosner_curve_lambdaT
 
 
   @test
-  subroutine test_rosner_curve_dlambdaT()
+  subroutine test_Rosner_curve_dlambdaT()
     real(dp) :: actual(pts), expected(pts)
     integer :: i
 
-    call set_name("cooling curve: rosner (dlambdadT)")
-    call settings%physics%enable_cooling(cooling_curve="rosner")
+    call set_name("cooling curve: Rosner (dlambdadT)")
+    call settings%physics%enable_cooling(cooling_curve="Rosner")
     call physics%heatloss%cooling%initialise()
 
     do i = 1, pts
       expected(i) = alpha_expected(i) * 10.0_dp**( &
         logxi_expected(i) + (alpha_expected(i) - 1.0_dp) * logT0values(i) &
       ) / unit_dlambdadT
-      actual(i) = get_rosner_dlambdadT(real(i, kind=dp), settings, background)
+      actual(i) = get_Rosner_dlambdadT(real(i, kind=dp), settings, background)
     end do
     @assertEqual(expected, actual, tolerance=1.0d-7)
-  end subroutine test_rosner_curve_dlambdaT
+  end subroutine test_Rosner_curve_dlambdaT
 
 end module mod_test_cooling

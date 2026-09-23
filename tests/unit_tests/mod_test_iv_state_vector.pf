@@ -1,0 +1,273 @@
+! NOTE: ./test_legolas -f mod_test_iv_state_vector
+module mod_test_iv_state_vector
+  use mod_suite_utils
+  use funit
+  use mod_logging, only: str, logger
+  use mod_global_variables, only: dp
+  use mod_state_vector, only: state_vector_t
+  use mod_iv_state_vector_component, only: iv_sv_component_t
+  use mod_iv_state_vector, only: iv_state_vector_t
+  implicit none
+
+  ! Need to extend the component to mock it
+  type, extends(iv_sv_component_t) :: iv_mock_component_t
+  contains
+    procedure, pass(self) :: compute_coeffs => mock_compute_coeffs
+  end type iv_mock_component_t
+
+contains
+  ! --------------------------------------------------------------------
+  ! Mock profile functions for coefficients tests
+  ! --------------------------------------------------------------------
+
+  ! Define the profile function as f(x)=x^2
+  function test_fcn(x) result(res)
+    real(dp), intent(in) :: x(:)
+
+    integer :: i
+    real(dp) :: res(size(x))
+    do i = 1, size(x)
+       res(i) = x(i) ** 2
+    end do
+  end function test_fcn
+
+  ! Define the profile function as f'(x)=2x
+  function test_dfcn(x) result(res)
+    real(dp), intent(in) :: x(:)
+
+    integer :: i
+    real(dp) :: res(size(x))
+    do i = 1, size(x)
+       res(i) = 2.0_dp * x(i)
+    end do
+  end function test_dfcn
+
+
+  ! --------------------------------------------------------------------
+  !  Mock component values for the array assembly test
+  ! --------------------------------------------------------------------
+  subroutine mock_component_values(comp, c1_vals, c2_vals)
+    class(iv_sv_component_t), intent(inout) :: comp
+    real(dp),             intent(in) :: c1_vals(:)
+    real(dp),             intent(in) :: c2_vals(:)
+
+    allocate(comp%c1(size(c1_vals)))
+    allocate(comp%c2(size(c2_vals)))
+    comp%c1 = c1_vals
+    comp%c2 = c2_vals
+  end subroutine mock_component_values
+  
+  ! Mock compute_coeffs to stop it modifying our data
+  subroutine mock_compute_coeffs(self, N, nodes)
+    class(iv_mock_component_t), intent(inout) :: self
+    integer, intent(in) :: N
+    real(dp), intent(in) :: nodes(N)
+    ! Do nothing.
+  end subroutine mock_compute_coeffs
+
+
+  ! --------------------------------------------------------------------
+  !  Test setup
+  ! --------------------------------------------------------------------
+  @before
+  subroutine init_test()
+    ! General test setup
+    call reset_globals()
+    call logger%set_logging_level(3)
+  end subroutine init_test
+
+
+  @after
+  subroutine tear_down()
+    call logger%set_logging_level(TEST_LOG_LVL)
+  end subroutine tear_down
+
+
+  ! --------------------------------------------------------------------
+  !  Main tests
+  ! --------------------------------------------------------------------
+  @test
+  subroutine test_compute_quad_coeffs()
+    type(iv_sv_component_t) :: comp
+    real(dp), allocatable :: nodes(:)
+    integer :: N
+    real(dp), parameter :: tol = 1.0d-12
+
+    call set_name("IV state vector: test computing quadratic coefficients")
+
+    ! Example input nodes
+    N = 4
+    allocate(nodes(N))
+    nodes = [0.0_dp, 1.0_dp, 2.0_dp, 3.0_dp]
+
+    ! Bind the function pointer in comp
+    nullify(comp%base)
+    comp%p_fcn  => test_fcn
+    comp%p_dfcn => null()
+
+    allocate(comp%c1(N))
+    allocate(comp%c2(N))
+
+    ! Compute the coefficients
+    call comp%compute_quad_coeffs(N, nodes)
+
+    ! Expected results:
+    !   midpoints = [0.5, 1.5, 2.5]
+    !   c1 = [0.0, 0.25, 2.25, 6.25]
+    !   c2 = [0.0, 1.0, 4.0, 9.0]
+
+    @assertEqual(comp%c1, [0.0_dp, 0.25_dp, 2.25_dp, 6.25_dp], tolerance=tol)
+    @assertEqual(comp%c2, [0.0_dp, 1.0_dp, 4.0_dp, 9.0_dp],   tolerance=tol)
+
+    deallocate(comp%c1)
+    deallocate(comp%c2)
+    deallocate(nodes)
+  end subroutine test_compute_quad_coeffs
+
+
+  @test
+  subroutine test_compute_cubic_coeffs()
+    type(iv_sv_component_t) :: comp
+    real(dp), allocatable :: nodes(:)
+    integer :: N
+    real(dp), parameter :: tol = 1.0d-12
+
+    call set_name("IV state vector: test computing cubic coefficients")
+
+    ! Example input nodes
+    N = 4
+    allocate(nodes(N))
+    nodes = [-1.0_dp, 0.0_dp, 1.0_dp, 2.0_dp]
+
+    comp%p_fcn  => test_fcn    ! x^2
+    comp%p_dfcn => test_dfcn   ! 2x
+
+    allocate(comp%c1(N))
+    allocate(comp%c2(N))
+
+    call comp%compute_cubic_coeffs(N, nodes)
+
+    ! Expected results:
+    !   c1 = [1.0, 0.0, 1.0, 4.0]
+    !   c2 = [-2.0, 0.0, 2.0, 4.0]
+    @assertEqual(comp%c1, [1.0_dp, 0.0_dp, 1.0_dp, 4.0_dp],  tolerance=tol)
+    @assertEqual(comp%c2, [-2.0_dp, 0.0_dp, 2.0_dp, 4.0_dp], tolerance=tol)
+
+    deallocate(comp%c1)
+    deallocate(comp%c2)
+    deallocate(nodes)
+  end subroutine test_compute_cubic_coeffs
+
+
+  @test
+  subroutine test_assemble_iv_array()
+    type(iv_state_vector_t) :: state_vec
+    type(iv_mock_component_t), target :: comp1, comp2  ! 2 mock components to put in the array
+    real(dp), dimension(16) :: expected
+    integer :: N
+    real(dp), allocatable :: nodes(:)
+    real(dp) :: tol
+
+    tol = 1.0d-13
+
+    call set_name("IV state vector: test assembly of the initial value interleaved array")
+
+    ! We have 2 components, each with N=4 grid points
+    N = 4
+    allocate(nodes(N))
+    nodes = [0.0_dp, 1.0_dp, 2.0_dp, 3.0_dp]  ! not used in the mock c1/c2
+
+    ! Manually set up the state vector
+    state_vec%num_components = 2
+    state_vec%stride = 2 * state_vec%num_components  ! => 4
+
+    ! Allocate the components array
+    allocate(state_vec%components(state_vec%num_components))
+
+    ! Assign dummy values to components
+    call mock_component_values(comp1, [10._dp, 11._dp, 12._dp, 13._dp], &
+                                      [20._dp, 21._dp, 22._dp, 23._dp])
+    call mock_component_values(comp2, [30._dp, 31._dp, 32._dp, 33._dp], &
+                                      [40._dp, 41._dp, 42._dp, 43._dp])
+
+    ! Point the state components
+    state_vec%components(1)%ptr => comp1
+    state_vec%components(2)%ptr => comp2
+
+    ! Call the subroutine to be tested
+    call state_vec%assemble_iv_array(N, nodes)
+
+    ! The expected result
+    expected = [ &
+        10._dp, 20._dp, 30._dp, 40._dp,  &
+        11._dp, 21._dp, 31._dp, 41._dp,  &
+        12._dp, 22._dp, 32._dp, 42._dp,  &
+        13._dp, 23._dp, 33._dp, 43._dp ]
+
+    @assertEqual(16, size(state_vec%x0), "size(x0) mismatch")
+    @assertEqual(real(state_vec%x0), expected, tolerance=tol)
+
+    deallocate(nodes)
+  end subroutine test_assemble_iv_array
+
+
+  !> Check that disassemble_iv_array() correctly reads the block-format array x0
+  !! into the c1 and c2 arrays for each component.
+  @test
+  subroutine test_disassemble_iv_array()
+    integer, parameter :: N = 4
+    integer, parameter :: num_components = 2
+    integer :: stride, i
+
+    type(iv_state_vector_t) :: state_vec
+
+    real(dp), dimension(:), allocatable :: x0
+    real(dp), dimension(:,:), allocatable :: c1_expected, c2_expected
+
+    call set_name("IV state vector: test disassembly of the initial value interleaved array")
+
+    ! Fill hardcoded array x0
+    stride = 2 * num_components  ! 2 coeffs each
+    allocate(x0(stride*N))
+
+    x0 = [ &
+    10._dp, 20._dp, 30._dp, 40._dp,  &
+    11._dp, 21._dp, 31._dp, 41._dp,  &
+    12._dp, 22._dp, 32._dp, 42._dp,  &
+    13._dp, 23._dp, 33._dp, 43._dp ]
+
+    ! Create the state vec
+    state_vec%num_components = num_components
+    state_vec%stride = stride
+
+    allocate(state_vec%components(num_components))
+
+    do i = 1, num_components
+      allocate(state_vec%components(i)%ptr)   ! don't actually need to set up each component
+    end do
+
+    ! Put x0 in the state vec
+    allocate(state_vec%x0(stride*N))
+    state_vec%x0 = x0
+
+    call state_vec%disassemble_iv_array(N)
+
+    ! (i,j) = component i, node j
+    allocate(c1_expected(num_components, N), c2_expected(num_components, N))
+
+    c1_expected(1,:) = [10._dp, 11._dp, 12._dp, 13._dp]
+    c2_expected(1,:) = [20._dp, 21._dp, 22._dp, 23._dp]
+
+    c1_expected(2,:) = [30._dp, 31._dp, 32._dp, 33._dp]
+    c2_expected(2,:) = [40._dp, 41._dp, 42._dp, 43._dp]
+
+    ! Check against hardcoded values. Equality should be exact
+    do i = 1, num_components
+      @assertEqual(state_vec%components(i)%ptr%c1, c1_expected(i,:))
+      @assertEqual(state_vec%components(i)%ptr%c2, c2_expected(i,:))
+    end do
+
+  end subroutine test_disassemble_iv_array
+
+
+end module mod_test_iv_state_vector

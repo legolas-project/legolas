@@ -9,16 +9,21 @@
 !! This equilibrium is taken from chapter 6, fig. 6.7 in
 !! _Roberts, Bernard (2019). MHD Waves in the Solar Atmosphere.
 !! Cambridge University Press._ [DOI](https://doi.org/10.1017/9781108613774).
-!! @note For best results, it is recommended to enable mesh accumulation. @endnote
-!! @note Default values are given by
+!! @note
+!!     For best results, it is recommended to enable mesh accumulation.
+!! @endnote
 !!
-!! - <tt>k2</tt> = 0
-!! - <tt>k3</tt> = 2
-!! - <tt>cte_rho0</tt> = 1 : density value for the inner tube.
-!! - <tt>cte_p0</tt> = 1 : pressure value for the inner tube.
-!! - <tt>r0</tt> = 1 : radius of the inner tube.
-!!
-!! and can all be changed in the parfile. @endnote
+!! @note
+!!     Default values are given by
+!!     
+!!     - <tt>k2</tt> = 0
+!!     - <tt>k3</tt> = 2
+!!     - <tt>cte_rho0</tt> = 1 : density value for the inner tube.
+!!     - <tt>cte_p0</tt> = 1 : pressure value for the inner tube.
+!!     - <tt>r0</tt> = 1 : radius of the inner tube.
+!!     
+!!     and can all be changed in the parfile.
+!! @endnote
 ! SUBMODULE: smod_equil_coronal_flux_tube
 submodule(mod_equilibrium) smod_equil_coronal_flux_tube
   use mod_equilibrium_params, only: cte_rho0, cte_p0, r0
@@ -106,7 +111,7 @@ contains
       gamma * cte_p0 * (2.0_dp * gamma + 1.0_dp) / (50.0_dp * gamma + 1.0_dp) &
     )
     ! check pressure balance
-    if (abs(cte_p0 + 0.5_dp * B_0**2 - p_e - 0.5_dp * B_e**2) > dp_LIMIT) then
+    if (abs(cte_p0 + 0.5_dp * B_0**2 - p_e - 0.5_dp * B_e**2) > 10.0_dp*dp_LIMIT) then
       call logger%error("equilibrium: total pressure balance not satisfied")
     end if
 

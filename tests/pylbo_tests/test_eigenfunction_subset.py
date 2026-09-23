@@ -66,28 +66,25 @@ def test_subset_eigenfunction_retrieval_outside(ds_v114_subset):
 
 def test_subset_derived_efs_present(ds_v114_subset_defs):
     assert ds_v114_subset_defs.has_ef_subset
-    assert ds_v114_subset_defs.derived_ef_names is not None
+    assert ds_v114_subset_defs.has_derived_efs
 
 
 def test_subset_derived_efs_retrieval_inside(ds_v114_subset_defs):
     guess = 10.0 - 0.1j
     _, ev = ds_v114_subset_defs.get_nearest_eigenvalues(ev_guesses=guess)
     (efs,) = ds_v114_subset_defs.get_eigenfunctions(ev_guesses=guess)
-    (defs,) = ds_v114_subset_defs.get_derived_eigenfunctions(ev_guesses=guess)
     assert ev is not None
     assert not np.isnan(ev)
     assert efs is not None
-    assert defs is not None
-    assert isinstance(defs, dict)
+    assert isinstance(efs, dict)
     assert np.isclose(efs["eigenvalue"], ev)
-    assert np.isclose(defs["eigenvalue"], ev)
-    assert set(ds_v114_subset_defs.derived_ef_names).issubset(defs.keys())
+    assert set(ds_v114_subset_defs.derived_ef_names).issubset(efs.keys())
 
 
 def test_subset_derived_efs_retrieval_outside(ds_v114_subset_defs):
     guess = 35.0 - 0.01j
     _, ev = ds_v114_subset_defs.get_nearest_eigenvalues(ev_guesses=guess)
-    (defs,) = ds_v114_subset_defs.get_derived_eigenfunctions(ev_guesses=guess)
+    (efs,) = ds_v114_subset_defs.get_eigenfunctions(ev_guesses=guess)
     assert ev is not None
     assert not np.isnan(ev)
-    assert defs is None
+    assert efs is None

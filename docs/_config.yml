@@ -24,6 +24,7 @@ plugins:
 exclude:
   - Gemfile
   - Gemfile.lock
+  - vendor
 
 # this is needed because Sphinx creates directories with _ prepended, which
 # are not copied by Jekyll. Just the folder name is sufficient, full path doesn't work.

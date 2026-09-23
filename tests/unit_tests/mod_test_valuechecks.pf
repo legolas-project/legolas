@@ -1,13 +1,24 @@
 module mod_test_valuechecks
-  use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan
   use mod_suite_utils
   use funit
   use mod_check_values
   implicit none
 
   real(dp), parameter :: TOL_LOW = 5.0d-15
+  real(dp) :: Inf_tst
+  real(dp) :: NaN_tst
 
 contains
+
+
+  @before
+  subroutine init_test()
+    use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan, &
+      ieee_positive_inf
+
+    Inf_tst = ieee_value(Inf_tst, ieee_positive_inf)
+    NaN_tst = ieee_value(NaN_tst, ieee_quiet_nan)
+  end subroutine init_test
 
 
   @test
@@ -89,39 +100,70 @@ contains
 
   @test
   subroutine test_is_nan_real()
-    real(dp)  :: NaN
     real(dp)  :: array(20)
 
     call set_name("check for NaN (real)")
-    NaN = ieee_value(NaN, ieee_quiet_nan)
     ! single value
-    @assertTrue(is_NaN(NaN))
+    @assertTrue(is_NaN(NaN_tst))
     @assertFalse(is_NaN(1.0d0))
     ! array
     array = linspace(0.0d0, 5.0d0, 20)
     @assertFalse(any(is_NaN(array)))
-    array(3) = NaN
+    array(3) = NaN_tst
     @assertTrue(any(is_NaN(array)))
   end subroutine test_is_nan_real
 
   @test
   subroutine test_is_nan_complex()
-    real(dp)  :: NaN
     complex(dp)  :: array(20)
 
     call set_name("check for NaN (complex)")
-    NaN = ieee_value(NaN, ieee_quiet_nan)
     ! single value
     @assertFalse(is_NaN((1.0d0, 2.0d0)))
-    @assertTrue(is_NaN(cmplx(1.0d0, NaN, kind=dp)))
-    @assertTrue(is_NaN(cmplx(NaN, 1.0d0, kind=dp)))
-    @assertTrue(is_NaN(cmplx(NaN, NaN, kind=dp)))
+    @assertTrue(is_NaN(cmplx(1.0d0, NaN_tst, kind=dp)))
+    @assertTrue(is_NaN(cmplx(NaN_tst, 1.0d0, kind=dp)))
+    @assertTrue(is_NaN(cmplx(NaN_tst, NaN_tst, kind=dp)))
     ! array
     array = linspace(0.0d0, 5.0d0, 20) * (0.5d0, 2.0d0)
     @assertFalse(any(is_NaN(array)))
-    array(3) = cmplx(1.0d0, NaN, kind=dp)
+    array(3) = cmplx(1.0d0, NaN_tst, kind=dp)
     @assertTrue(any(is_NaN(array)))
   end subroutine test_is_nan_complex
+
+
+  @test
+  subroutine test_is_infinite_real()
+    real(dp) :: array(20)
+
+    call set_name("check for Inf (real)")
+    ! single value
+    @assertFalse(is_infinite(1.0d0))
+    @assertTrue(is_infinite(Inf_tst))
+    @assertTrue(is_infinite(-Inf_tst))
+    ! array
+    array = linspace(0.0d0, 5.0d0, 20)
+    @assertFalse(any(is_infinite(array)))
+    array(5) = Inf_tst
+    @assertTrue(any(is_infinite(array)))
+  end subroutine test_is_infinite_real
+
+
+  @test
+  subroutine test_is_infinite_complex()
+    complex(dp) :: array(20)
+
+    call set_name("check for Inf (complex)")
+    ! single value
+    @assertFalse(is_infinite((1.0d0, 2.0d0)))
+  @assertTrue(is_infinite(cmplx(1.0d0, Inf_tst, kind=dp)))
+    @assertTrue(is_infinite(cmplx(Inf_tst, 1.0d0, kind=dp)))
+    @assertTrue(is_infinite(cmplx(Inf_tst, Inf_tst, kind=dp)))
+    ! array
+    array = linspace(0.0d0, 5.0d0, 20) * (0.5d0, 1.2d0)
+    @assertFalse(any(is_infinite(array)))
+    array(5) = cmplx(1.0d0, Inf_tst, kind=dp)
+    @assertTrue(any(is_infinite(array)))
+  end subroutine test_is_infinite_complex
 
 
   @test

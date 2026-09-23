@@ -6,25 +6,26 @@
 !! This equilibrium is taken from
 !! _Nijboer, R. J., Holst, B., Poedts, S., & Goedbloed, J. P. (1997).
 !!  Calculating magnetohydrodynamic flow spectra. Computer physics communications, 106(1-2), 39-52_.
-!! @note Default values are given by
-!!
-!! - <tt>k2</tt> = 1
-!! - <tt>k3</tt> = -1.2
-!! - <tt>cte_rho0</tt> = 1 : used to set the density value.
-!! - <tt>cte_p0</tt> = 0.05 : used to set the background pressure.
-!! - <tt>cte_v02</tt> = 0 : sets a constant flow \(v_\theta\).
-!! - <tt>cte_v03</tt> = 0.14 : prefactor for flow profile \(v_z\).
-!! - <tt>p1</tt> = 0.1 : constant that appears in magnetic field and pressure components.
-!! - <tt>alpha</tt> = 2 : used in the Bessel functions.
-!!
-!! and can all be changed in the parfile. @endnote
+!! @note
+!!     Default values are given by
+!!     
+!!     - <tt>k2</tt> = 1
+!!     - <tt>k3</tt> = -1.2
+!!     - <tt>cte_rho0</tt> = 1 : used to set the density value.
+!!     - <tt>cte_p0</tt> = 0.05 : used to set the background pressure.
+!!     - <tt>cte_v02</tt> = 0 : sets a constant flow \(v_\theta\).
+!!     - <tt>cte_v03</tt> = 0.14 : prefactor for flow profile \(v_z\).
+!!     - <tt>p1</tt> = 0.1 : constant that appears in magnetic field and pressure components.
+!!     - <tt>alpha</tt> = 2 : used in the Bessel functions.
+!!     
+!!     and can all be changed in the parfile.
+!! @endnote
 submodule (mod_equilibrium) smod_equil_suydam_cluster
   use mod_equilibrium_params, only: cte_rho0, cte_v02, cte_v03, cte_p0, p1, alpha
   implicit none
 
 contains
 
-  !> Sets the equilibrium
   module procedure suydam_cluster_eq
     if (settings%equilibrium%use_defaults) then  ! LCOV_EXCL_START
       call settings%grid%set_geometry("cylindrical")

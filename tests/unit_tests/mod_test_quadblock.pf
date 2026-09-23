@@ -3,6 +3,7 @@ module mod_test_quadblock
   use funit
   use mod_settings, only: settings_t
   use mod_matrix_elements, only: matrix_elements_t, new_matrix_elements
+  use mod_state_vector, only: sv_rho1, sv_v1, sv_v2, sv_v3, sv_T1, sv_a1, sv_a2, sv_a3
   implicit none
 
   type(settings_t) :: settings
@@ -21,44 +22,64 @@ contains
     call elements%delete()
   end subroutine tear_down
 
+  pure function custom_spline(x, x0, x1) result(spline)
+    real(dp), intent(in) :: x
+    real(dp), intent(in) :: x0
+    real(dp), intent(in) :: x1
+    real(dp) :: spline(4)
+
+    spline = 1.0_dp
+  end function custom_spline
+
   @test
   subroutine test_quadblock_fill()
     use mod_build_quadblock, only: add_to_quadblock
 
-    complex(dp), allocatable :: quadblock(:, :)
+    complex(dp), allocatable :: quadblock(:, :), expected(:, :)
     complex(dp) :: val1, val2
-    real(dp)    :: spline(4), weight
-    integer     :: i, idx1(16), idx2(16)
+    integer :: i, sv_idx, idx1(16), idx2(16)
+    integer, parameter :: sv_idxs(4) = [3, 4, 5, 7]
     integer :: dim_quadblock
 
-    call set_name("filling quadblock")
+    call set_name("filling quadblock (MHD)")
     call settings%set_state_vector("mhd")
-    elements = new_matrix_elements(state_vector=settings%get_state_vector())
+    elements = new_matrix_elements(state_vector=settings%state_vector)
 
     dim_quadblock = settings%dims%get_dim_quadblock()
     allocate(quadblock(dim_quadblock, dim_quadblock))
     quadblock = (0.0d0, 0.0d0)
+    allocate(expected, source=quadblock)
 
-    ! weight and splines are set to unity for testing purposes
-    weight = 1.0d0
-    spline = 1.0d0
     val1 = (3.0d0, 1.0d0)
     val2 = (-1.0d0, 5.0d0)
-    call elements%add(val1, "v3", "v2", spline, spline)
-    call elements%add(val2, "a2", "T", spline, spline)
-    call add_to_quadblock(quadblock, elements, weight, settings%dims)
+    do i = 1, size(sv_idxs)
+      sv_idx = sv_idxs(i)
+      call settings%state_vector%components(sv_idx)%ptr%set_custom_spline(custom_spline)
+    end do
+    call elements%add(val1, sv_v3, sv_v2)
+    call elements%add(val2, sv_a2, sv_T1)
+    call add_to_quadblock( &
+      quadblock, &
+      elements, &
+      x=0.5_dp, &
+      x0=0.0_dp, &
+      x1=1.0_dp, &
+      weight=1.0_dp, &
+      dims=settings%dims &
+    )
     ! first factor
     idx1 = (/ 7, 7, 8, 8,  7,  7,  8,  8, 23, 23, 24, 24, 23, 23, 24, 24 /)
     idx2 = (/ 5, 6, 5, 6, 21, 22, 21, 22,  5,  6,  5,  6, 21, 22, 21, 22 /)
     do i = 1, size(idx1)
-      @assertEqual(val1, quadblock(idx1(i), idx2(i)), tolerance=TOL)
+      expected(idx1(i), idx2(i)) = val1
     end do
     ! second factor
     idx1 = (/ 13, 13, 14, 14, 13, 13, 14, 14, 29, 29, 30, 30, 29, 29, 30, 30 /)
     idx2 = (/  9, 10,  9, 10, 25, 26, 25, 26,  9, 10,  9, 10, 25, 26, 25, 26 /)
     do i = 1, size(idx1)
-      @assertEqual(val2, quadblock(idx1(i), idx2(i)), tolerance=TOL)
+      expected(idx1(i), idx2(i)) = val2
     end do
+    @assertEqual(expected, quadblock, tolerance=TOL)
   end subroutine test_quadblock_fill
 
 end module mod_test_quadblock

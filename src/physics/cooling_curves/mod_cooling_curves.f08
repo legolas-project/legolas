@@ -6,7 +6,7 @@ module mod_cooling_curves
   use mod_interpolation, only: lookup_table_value, get_numerical_derivative
 
   use mod_cooling_curve_names
-  use mod_data_rosner
+  use mod_radloss_tables
 
   implicit none
 
@@ -20,7 +20,7 @@ module mod_cooling_curves
 
   public :: interpolate_cooling_curves
   public :: is_valid_cooling_curve
-  public :: get_rosner_lambdaT, get_rosner_dlambdadT
+  public :: get_Rosner_lambdaT, get_Rosner_dlambdadT
   public :: get_interpolated_lambdaT, get_interpolated_dlambdadT
   public :: get_cooling_table
   public :: deallocate_cooling_curves
@@ -45,10 +45,12 @@ contains
     unit_lambdaT = settings%units%get_unit_lambdaT()
     unit_dlambdadT = unit_lambdaT / unit_temperature
 
-    !> @note The cooling tables contain dimensionfull values on a logarithmic scale.
-    !! To avoid resampling the table on an unequally spaced temperature grid by doing
-    !! 10**T, we interpolate the logarithmic table values on an equally spaced
-    !! T grid in log scale, so we get log10(lambda(T)) and log10(T) values. @endnote
+    !> @note
+    !!     The cooling tables contain dimensionfull values on a logarithmic scale.
+    !!     To avoid resampling the table on an unequally spaced temperature grid by doing
+    !!     10**T, we interpolate the logarithmic table values on an equally spaced
+    !!     T grid in log scale, so we get log10(lambda(T)) and log10(T) values.
+    !! @endnote
     ncool = settings%physics%cooling%get_interpolation_points()
     allocate(curve_T(ncool), curve_lambda(ncool), curve_dlambdadT(ncool))
     call interpolate_table( &
@@ -100,66 +102,91 @@ contains
   end subroutine interpolate_cooling_curves
 
 
-  pure integer function get_rosner_index(logT0)
+  pure integer function get_Rosner_index(logT0)
     !> dimensionfull log10(T0) value
     real(dp), intent(in) :: logT0
     integer :: j
 
-    get_rosner_index = 1
-    if (logT0 > logT_rosner(8)) then
-      get_rosner_index = 9
+    get_Rosner_index = 1
+    do j = 1, size(logT_Rosner)
+      if (logT0 < logT_Rosner(j)) then
+        get_Rosner_index = j - 1
+        exit
+      end if
+    end do
+  end function get_Rosner_index
+
+
+  real(dp) function get_Rosner_lambdaT(x, settings, background)
+    real(dp), intent(in) :: x
+    type(settings_t), intent(in) :: settings
+    type(background_t), intent(in) :: background
+    real(dp) :: logT0, logxi, alpha, logTmax
+    real(dp) :: unit_temperature, unit_lambdaT
+    integer :: idx
+
+    unit_temperature = settings%units%get_unit_temperature()
+    unit_lambdaT = settings%units%get_unit_lambdaT()
+    logT0 = log10(background%temperature%T0(x) * unit_temperature)
+
+    if (logT0 < logT_Rosner(1)) then
+      get_Rosner_lambdaT = 0.0_dp
+    else if (logT0 > logT_Rosner(n_Rosner+1)) then
+      logxi = logxi_Rosner(n_Rosner)
+      alpha = alpha_Rosner(n_Rosner)
+      logTmax = logT_Rosner(n_Rosner+1)
+      ! lambdaT = xi * T**alpha, so log10(lambdaT) = log10(xi) + alpha * log10(T)
+      get_Rosner_lambdaT = 10.0_dp**(logxi + alpha * logTmax) / unit_lambdaT
+      get_Rosner_lambdaT = get_Rosner_lambdaT * sqrt(10**(logT0-logTmax))
     else
-      do j = 1, size(logT_rosner)
-        if (logT0 < logT_rosner(j)) then
-          get_rosner_index = j
-          exit
-        end if
-      end do
+      idx = get_Rosner_index(logT0)
+
+      logxi = logxi_Rosner(idx)
+      alpha = alpha_Rosner(idx)
+      ! lambdaT = xi * T**alpha, so log10(lambdaT) = log10(xi) + alpha * log10(T)
+      get_Rosner_lambdaT = 10.0_dp**(logxi + alpha * logT0) / unit_lambdaT
     end if
-  end function get_rosner_index
+  end function get_Rosner_lambdaT
 
 
-  real(dp) function get_rosner_lambdaT(x, settings, background)
+  real(dp) function get_Rosner_dlambdadT(x, settings, background)
     real(dp), intent(in) :: x
     type(settings_t), intent(in) :: settings
     type(background_t), intent(in) :: background
-    real(dp) :: logT0, logxi, alpha
+    real(dp) :: logT0, logxi, alpha, logTmax
     real(dp) :: unit_temperature, unit_lambdaT
     integer :: idx
 
     unit_temperature = settings%units%get_unit_temperature()
     unit_lambdaT = settings%units%get_unit_lambdaT()
     logT0 = log10(background%temperature%T0(x) * unit_temperature)
-    idx = get_rosner_index(logT0)
 
-    logxi = logxi_rosner(idx)
-    alpha = alpha_rosner(idx)
-    ! lambdaT = xi * T**alpha, so log10(lambdaT) = log10(xi) + alpha * log10(T)
-    get_rosner_lambdaT = 10.0_dp**(logxi + alpha * logT0) / unit_lambdaT
-  end function get_rosner_lambdaT
+    if (logT0 < logT_Rosner(1)) then
+      get_Rosner_dlambdadT = 0.0_dp
+    else if (logT0 > logT_Rosner(n_Rosner)) then
+      logxi = logxi_Rosner(n_Rosner)
+      alpha = alpha_Rosner(n_Rosner)
+      logTmax = logT_Rosner(n_Rosner+1)
+      ! dlambdadT = alpha * xi * T**(alpha - 1), and so
+      !           = alpha * 10**(logxi + (alpha - 1) * logT0)
+      get_Rosner_dlambdadT = ( &
+        10.0_dp**(logxi + alpha * logTmax) &
+      ) / (unit_lambdaT / unit_temperature)
+      get_Rosner_dlambdadT = ( &
+        0.5_dp * get_Rosner_dlambdadT &
+      ) / sqrt(10**(logT0+logTmax))
+    else
+      idx = get_Rosner_index(logT0)
 
-
-  real(dp) function get_rosner_dlambdadT(x, settings, background)
-    real(dp), intent(in) :: x
-    type(settings_t), intent(in) :: settings
-    type(background_t), intent(in) :: background
-    real(dp) :: logT0, logxi, alpha
-    real(dp) :: unit_temperature, unit_lambdaT
-    integer :: idx
-
-    unit_temperature = settings%units%get_unit_temperature()
-    unit_lambdaT = settings%units%get_unit_lambdaT()
-    logT0 = log10(background%temperature%T0(x) * unit_temperature)
-    idx = get_rosner_index(logT0)
-
-    logxi = logxi_rosner(idx)
-    alpha = alpha_rosner(idx)
-    ! dlambdadT = alpha * xi * T**(alpha - 1), and so
-    !           = alpha * 10**(logxi + (alpha - 1) * logT0)
-    get_rosner_dlambdadT = ( &
-      alpha * 10.0_dp**(logxi + (alpha - 1.0_dp) * logT0) &
-    ) / (unit_lambdaT / unit_temperature)
-  end function get_rosner_dlambdadT
+      logxi = logxi_Rosner(idx)
+      alpha = alpha_Rosner(idx)
+      ! dlambdadT = alpha * xi * T**(alpha - 1), and so
+      !           = alpha * 10**(logxi + (alpha - 1) * logT0)
+      get_Rosner_dlambdadT = ( &
+        alpha * 10.0_dp**(logxi + (alpha - 1.0_dp) * logT0) &
+      ) / (unit_lambdaT / unit_temperature)
+    end if
+  end function get_Rosner_dlambdadT
 
 
   real(dp) function get_interpolated_lambdaT(x, settings, background)
@@ -214,14 +241,7 @@ contains
 
   subroutine get_cooling_table(name, table_T, table_lambda)
     use mod_cooling_curve_names
-    use mod_data_dalgarno
-    use mod_data_dalgarno2
-    use mod_data_jccorona
-    use mod_data_mlsolar
-    use mod_data_rosner
-    use mod_data_spex
-    use mod_data_spex_enh
-    use mod_data_colgan
+    use mod_radloss_tables
 
     character(len=*), intent(in) :: name
     real(dp), intent(out), allocatable :: table_T(:)
@@ -230,51 +250,51 @@ contains
 
     select case(name)
     case(JC_CORONA)
-      table_n = n_jccorona
-      table_T = logT_jccorona
-      table_lambda = logL_jccorona
+      table_n = n_JCcorona
+      table_T = logT_JCcorona
+      table_lambda = logL_JCcorona
     case(DALGARNO)
-      table_n = n_dalgarno
-      table_T = logT_dalgarno
-      table_lambda = logL_dalgarno
+      table_n = n_DM
+      table_T = logT_DM
+      table_lambda = logL_DM
     case(DALGARNO2)
-      table_n = n_dalgarno2
-      table_T = logT_dalgarno2
-      table_lambda = logL_dalgarno2
+      table_n = n_DM_2
+      table_T = logT_DM_2
+      table_lambda = logL_DM_2
     case(ML_SOLAR)
-      table_n = n_mlsolar
-      table_T = logT_mlsolar
-      table_lambda = logL_mlsolar
+      table_n = n_MLsolar1
+      table_T = logT_MLsolar1
+      table_lambda = logL_MLsolar1
     case(SPEX)
-      table_n = n_spex
-      table_T = logT_spex
-      table_lambda = logL_spex
+      table_n = n_SPEX
+      table_T = logT_SPEX
+      table_lambda = logL_SPEX + log10(L_SPEX_enh)
     case(SPEX_DALGARNO)
-      table_n = n_spex + n_spex_enh_dalgarno - 6
+      table_n = n_SPEX + n_SPEX_enh_DM - 6
       allocate(table_T(table_n))
       allocate(table_lambda(table_n))
-      table_T(1:n_spex_enh_dalgarno - 1) = logT_spex_enh_dalgarno( &
-        1:n_spex_enh_dalgarno - 1 &
+      table_T(1:n_SPEX_enh_DM - 1) = logT_SPEX_enh_DM( &
+        1:n_SPEX_enh_DM - 1 &
       )
-      table_T(n_spex_enh_dalgarno:) = logT_spex(6:n_spex)
-      table_lambda(1:n_spex_enh_dalgarno - 1) = logL_spex_enh_dalgarno( &
-        1:n_spex_enh_dalgarno - 1 &
+      table_T(n_SPEX_enh_DM:) = logT_SPEX(6:n_SPEX)
+      table_lambda(1:n_SPEX_enh_DM - 1) = logL_SPEX_enh_DM( &
+        1:n_SPEX_enh_DM - 1 &
       )
-      table_lambda(n_spex_enh_dalgarno:) = ( &
-        logL_spex(6:n_spex) + log10(L_spex_enh(6:n_spex)) &
+      table_lambda(n_SPEX_enh_DM:) = ( &
+        logL_SPEX(6:n_SPEX) + log10(L_SPEX_enh(6:n_SPEX)) &
       )
     case(COLGAN)
-      table_n = n_colgan
-      table_T = logT_colgan
-      table_lambda = logL_colgan
+      table_n = n_Colgan
+      table_T = logT_Colgan
+      table_lambda = logL_Colgan
     case(COLGAN_DM)
-      table_n = n_colgan + n_dalgarno2
+      table_n = n_Colgan + n_DM_2
       allocate(table_T(table_n))
       allocate(table_lambda(table_n))
-      table_T(1:n_dalgarno2) = logT_dalgarno2(1:n_dalgarno2)
-      table_T(n_dalgarno2+1:) = logT_colgan(1:n_colgan)
-      table_lambda(1:n_dalgarno2) = logL_dalgarno2(1:n_dalgarno2)
-      table_lambda(n_dalgarno2+1:) = logL_colgan(1:n_colgan)
+      table_T(1:n_DM_2) = logT_DM_2(1:n_DM_2)
+      table_T(n_DM_2+1:) = logT_Colgan(1:n_Colgan)
+      table_lambda(1:n_DM_2) = logL_DM_2(1:n_DM_2)
+      table_lambda(n_DM_2+1:) = logL_Colgan(1:n_Colgan)
     end select
   end subroutine get_cooling_table
 

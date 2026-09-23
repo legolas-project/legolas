@@ -1,0 +1,94 @@
+module mod_test_iv_solver
+  use mod_suite_utils
+  use funit
+  use mod_global_variables, only: ic
+  use mod_matrix_structure, only: matrix_t, new_matrix
+  use mod_iv_solver, only: solve
+  use mod_iv_settings, only: iv_settings_t, new_iv_settings
+  use mod_settings, only: settings_t
+  implicit none
+
+  ! Matrices
+  type(matrix_t) :: matrix_A, matrix_B
+
+  ! Initial condition
+  complex(dp) :: x0(2)
+
+  ! Other
+  integer :: i, j, num_steps
+  type(settings_t) :: settings
+
+contains
+
+  @before
+  subroutine init_test()
+    call reset_globals()
+    call logger%set_logging_level(3)
+
+    ! The solver internally multiplies A by -ic (to convert from eigenvalue form
+    ! wBX=AX to the time-evolution equation B*dx/dt = -iAx). To test the real
+    ! decaying system B*dx/dt = diag(-2,-3)*x we therefore pass A = ic*diag(-2,-3),
+    ! so that the solver's -ic transform recovers diag(-2,-3).
+    matrix_A = new_matrix(2, label="A")
+    call matrix_A%add_element(row=1, column=1, element=ic * (-2.0_dp))
+    call matrix_A%add_element(row=2, column=2, element=ic * (-3.0_dp))
+
+    matrix_B = new_matrix(2, label="B")
+    call matrix_B%add_element(row=1, column=1, element=1)
+    call matrix_B%add_element(row=2, column=2, element=1)
+
+    settings%iv = new_iv_settings()
+    settings%iv%alpha = 0.5  ! 2nd order
+
+  end subroutine init_test
+
+
+  @after
+  subroutine tear_down()
+    call logger%set_logging_level(TEST_LOG_LVL)
+  end subroutine tear_down
+
+
+  !> 2x2 uncoupled exponential decay system.
+  !! Run the method for one step. Compare with analytically computed theta-method solution after a single step.
+  @test
+  subroutine test_exp_decay_onestep()
+    complex(dp), dimension(2) :: actual = [0.9/1.1, (2-0.3)/(1+0.15)]  ! this is the theta solution after 1 step
+    call set_name("IV solver: theta method exponential decay one step")
+
+    x0 = [1.0, 2.0]
+    settings%iv%n_steps = 1
+    settings%iv%t_end = 0.1
+
+    call solve(matrix_A, matrix_B, x0, settings)
+    @assertEqual(actual, x0, tolerance = 1e-4)
+  end subroutine test_exp_decay_onestep
+
+  
+  !> Test the convergence rate of the 2x2 system.
+  @test
+  subroutine test_exp_decay_convergence()
+    complex(dp) :: err(4, 2)  ! save errors
+    complex(dp) :: p(3, 2)    ! compute order for each change in stepsize
+    complex(dp), dimension(2) :: actual = [exp(-2.0), 2*exp(-3.0)]  ! actual solution at t=1
+    integer, dimension(4) :: n_steps = [5, 10, 20, 40]
+    call set_name("IV solver: theta method convergence test")
+
+    settings%iv%t_end = 1.0
+    ! Run with 4 different stepsizes
+    do i = 1,4
+      x0 = [1.0, 2.0]
+      settings%iv%n_steps = n_steps(i)
+      call solve(matrix_A, matrix_B, x0, settings)
+      err(i, :) = abs(x0 - actual)
+    end do
+
+    ! Compute the order p
+    do i = 1,3
+      p(i,:) = log(err(i+1,:)/err(i,:))/log(0.5)
+    end do
+
+    @assertEqual(reshape([(cmplx(2.0_dp, 0.0_dp, kind=dp), i=1,6)], shape=[3,2]), p, tolerance = 1e-1)
+  end subroutine test_exp_decay_convergence
+
+end module mod_test_iv_solver

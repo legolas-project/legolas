@@ -1,4 +1,4 @@
-submodule (mod_boundary_manager:smod_natural_boundaries) smod_natural_bounds_resistive
+submodule (mod_natural_boundaries) smod_natural_bounds_resistive
   implicit none
 
 contains
@@ -9,7 +9,6 @@ contains
     real(dp)  :: B02, dB02, drB02
     real(dp)  :: B03, dB03
     real(dp) :: gamma_1
-    type(matrix_elements_t) :: elements
 
     if (.not. settings%physics%resistivity%is_enabled()) return
 
@@ -24,32 +23,20 @@ contains
     dB03 = background%magnetic%dB03(x)
 
     drB02 = deps * B02 + eps * dB02
-    elements = new_matrix_elements(state_vector=settings%get_state_vector())
 
     ! ==================== Quadratic * Quadratic ====================
     call elements%add( &
-      2.0d0 * ic * gamma_1 * eta * (k3 * drB02 - k2 * dB03), &
-      "T", &
-      "a1", &
-      spline1=h_quad, &
-      spline2=h_quad &
+      2.0d0 * ic * gamma_1 * eta * (k3 * drB02 - k2 * dB03), sv_T1, sv_a1 &
     )
     ! ==================== Quadratic * dCubic ====================
-    call elements%add( &
-      2.0d0 * ic * gamma_1 * eta * dB03, "T", "a2", spline1=h_quad, spline2=dh_cubic &
-    )
-    call elements%add( &
-      -2.0d0 * ic * gamma_1 * eta * drB02, "T", "a3", spline1=h_quad, spline2=dh_cubic &
-    )
+    call elements%add(2.0d0 * ic * gamma_1 * eta * dB03, sv_T1, sv_a2, s2do=1)
+    call elements%add(-2.0d0 * ic * gamma_1 * eta * drB02, sv_T1, sv_a3, s2do=1)
     ! ==================== Cubic * Quadratic ====================
-    call elements%add(-ic * eta * k2, "a2", "a1", spline1=h_cubic, spline2=h_quad)
-    call elements%add(-ic * eta * eps * k3, "a3", "a1", spline1=h_cubic, spline2=h_quad)
+    call elements%add(-ic * eta * k2, sv_a2, sv_a1)
+    call elements%add(-ic * eta * eps * k3, sv_a3, sv_a1)
     ! ==================== Cubic * dCubic ====================
-    call elements%add(ic * eta, "a2", "a2", spline1=h_cubic, spline2=dh_cubic)
-    call elements%add(ic * eta * eps, "a3", "a3", spline1=h_cubic, spline2=dh_cubic)
-
-    call add_to_quadblock(quadblock, elements, weight, settings%dims)
-    call elements%delete()
+    call elements%add(ic * eta, sv_a2, sv_a2, s2do=1)
+    call elements%add(ic * eta * eps, sv_a3, sv_a3, s2do=1)
   end procedure add_natural_resistive_terms
 
 end submodule smod_natural_bounds_resistive

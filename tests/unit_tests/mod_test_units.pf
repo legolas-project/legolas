@@ -7,7 +7,7 @@ module mod_test_units
   type(settings_t) :: settings
   real(dp) :: unit_magneticfield, unit_length, unit_pressure, unit_temperature, &
     unit_density, unit_numberdensity, unit_velocity, unit_time, unit_lambdaT, &
-    unit_dlambdaT_dT, unit_conduction, unit_resistivity, mean_molecular_weight
+    unit_dlambdaT_dT, unit_conduction, unit_resistivity, He_abundance
 
 contains
 
@@ -37,18 +37,18 @@ contains
     unit_dlambdaT_dT = unit_lambdaT / unit_temperature
     unit_conduction = settings%units%get_unit_conduction()
     unit_resistivity = settings%units%get_unit_resistivity()
-    mean_molecular_weight = settings%units%get_mean_molecular_weight()
+    He_abundance = settings%units%get_He_abundance()
   end subroutine retrieve_units
 
 
   @test
   subroutine test_units()
-    call set_name("setting units (mean molecular weight = 1)")
+    call set_name("setting units (He abundance = 0)")
     call settings%units%set_units_from_temperature( &
       unit_temperature=1.0d6, &
       unit_magneticfield=5.0d0, &
       unit_length=1.0d10, &
-      mean_molecular_weight=1.0d0 &
+      He_abundance=0.0d0 &
     )
     call retrieve_units()
     @assertTrue(settings%units%are_set())
@@ -56,56 +56,56 @@ contains
     @assertEqual(1.0d10, unit_length, tolerance=TOL)
     @assertEqual(1.9894367886486917d0, unit_pressure, tolerance=TOL)
     @assertEqual(1.0d6, unit_temperature, tolerance=TOL)
-    @assertEqual(2.4101533254935998d0, unit_density * 1.0d14, tolerance=TOL)
-    @assertEqual(14409434091.049740d0, unit_numberdensity, tolerance=TOL)
-    @assertEqual(9085372.4661753811d0, unit_velocity, tolerance=TOL)
-    @assertEqual(1100.6703398489997d0, unit_time, tolerance=TOL)
-    @assertEqual(8.7052055713759540d0, unit_lambdaT * 1.0d24, tolerance=TOL)
-    @assertEqual(8.7052055713759540d0, unit_dlambdaT_dT * 1.0d30, tolerance=TOL)
-    @assertEqual(180747742227.85196d0, unit_conduction, tolerance=TOL)
-    @assertEqual(90853724661753808.0d0, unit_resistivity, tolerance=TOL)
+    @assertEqual(1.2050766627467998d0, unit_density * 1.0d14, tolerance=TOL)
+    @assertEqual(7204717045.52487d0, unit_numberdensity, tolerance=TOL)
+    @assertEqual(12848656.960876316d0, unit_velocity, tolerance=TOL)
+    @assertEqual(778.2914611581296d0, unit_time, tolerance=TOL)
+    @assertEqual(4.924407912914281d0, unit_lambdaT * 1.0d23, tolerance=TOL)
+    @assertEqual(4.924407912914281d0, unit_dlambdaT_dT * 1.0d29, tolerance=TOL)
+    @assertEqual(255615908426.94437d0, unit_conduction, tolerance=TOL)
+    @assertEqual(1.2848656960876315d17, unit_resistivity, tolerance=TOL)
   end subroutine test_units
 
 
   @test
-  subroutine test_units_molecular_weight_half()
-    call set_name("setting units (mean molecular weight = 0.5)")
+  subroutine test_units_He_abundance()
+    call set_name("setting units (He abundance = 0.1)")
     call settings%units%set_units_from_temperature( &
       unit_temperature=1.0d6, &
       unit_magneticfield=5.0d0, &
       unit_length=1.0d10, &
-      mean_molecular_weight=0.5d0 &
+      He_abundance=0.1d0 &
     )
     call retrieve_units()
     @assertTrue(settings%units%are_set())
-    @assertEqual(0.5d0, mean_molecular_weight, tolerance=TOL)
+    @assertEqual(0.1d0, He_abundance, tolerance=TOL)
     @assertEqual(5.0d0, unit_magneticfield, tolerance=TOL)
     @assertEqual(1.0d10, unit_length, tolerance=TOL)
     @assertEqual(1.9894367886486917d0, unit_pressure, tolerance=TOL)
     @assertEqual(1.0d6, unit_temperature, tolerance=TOL)
-    @assertEqual(2.4101533254935998d0 / 2.0d0, unit_density * 1.0d14, tolerance=TOL)
-    @assertEqual(14409434091.049740d0 / 2.0d0, unit_numberdensity, tolerance=TOL)
-    @assertEqual(12848656.960876318d0, unit_velocity, tolerance=TOL)
-    @assertEqual(778.29146115812944d0, unit_time, tolerance=TOL)
-    @assertEqual(49.244079129142825d0, unit_lambdaT * 1.0d24, tolerance=TOL)
-    @assertEqual(49.244079129142825d0, unit_dlambdaT_dT * 1.0d30, tolerance=TOL)
-    @assertEqual(255615908426.94446d0, unit_conduction, tolerance=TOL)
-    @assertEqual(1.2848656960876318d17, unit_resistivity, tolerance=TOL)
-  end subroutine test_units_molecular_weight_half
+    @assertEqual(1.467049850300452d0, unit_density * 1.0d14, tolerance=TOL)
+    @assertEqual(6264971343.93467d0, unit_numberdensity, tolerance=TOL)
+    @assertEqual(11645084.295622544d0, unit_velocity, tolerance=TOL)
+    @assertEqual(858.7314394760593d0, unit_time, tolerance=TOL)
+    @assertEqual(5.902481078496193d0, unit_lambdaT * 1.0d23, tolerance=TOL)
+    @assertEqual(5.902481078496193d0, unit_dlambdaT_dT * 1.0d29, tolerance=TOL)
+    @assertEqual(231671591046.26627d0, unit_conduction, tolerance=TOL)
+    @assertEqual(1.1645084295622544d17, unit_resistivity, tolerance=TOL)
+  end subroutine test_units_He_abundance
 
 
   @test
   subroutine test_units_from_numberdensity()
-    call set_name("setting units from nH (mean molecular weight = 2)")
+    call set_name("setting units from nH (He abundance = 0)")
     call settings%units%set_units_from_numberdensity( &
       unit_temperature=1.0e6_dp, &
       unit_numberdensity=1.0e9_dp, &
       unit_length=1.0e9_dp, &
-      mean_molecular_weight=2.0_dp &
+      He_abundance=0.0_dp &
     )
     call retrieve_units()
     @assertTrue(settings%units%are_set())
-    @assertEqual(2.0_dp, mean_molecular_weight, tolerance=TOL)
+    @assertEqual(0.0_dp, He_abundance, tolerance=TOL)
     @assertEqual(1.0e9_dp, unit_numberdensity, tolerance=TOL)
     @assertEqual(1.0e9_dp, unit_length, tolerance=TOL)
     @assertEqual(1.0e6_dp, unit_temperature, tolerance=TOL)

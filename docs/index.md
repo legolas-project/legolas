@@ -1,12 +1,12 @@
 ---
 title: Legolas
 layout: splash
-last_modified_at: 2021-07-27
+last_modified_at: 2025-01-27
 intro:
   - image_path: /assets/images/logo_legolas_1280x640.png
     excerpt:
       Legolas, short for **L**arge **E**igensystem **G**enerator for **O**ne-dimensional p**LAS**mas, is a novel
-      finite element code tailored to (M)HD spectroscopy of 3D Cartesian/cylindrical equilibria with nontrivial 1D variation.
+      finite element code tailored to (M)HD spectroscopy of 3D Cartesian and cylindrical equilibria with nontrivial 1D variation.
       The code includes a myriad of physical effects, most of which are fully user-customisable.
 
 feature_row:
@@ -24,14 +24,14 @@ feature_row:
       We are happy to answer any questions you may have in using Legolas and/or Pylbo. Feel free to open an issue
       in the [GitHub repository](https://github.com/legolas-project/legolas) or start a [Discussion thread](https://github.com/legolas-project/legolas/discussions)
       there. We also have a dedicated Slack workspace, which you can also use to ask questions or have a nice chat with the developers.
-      You can also just send us an e-mail.
+      Email addresses can be found on the About page.
     title: Contact
-    url: https://join.slack.com/t/the-legolas-code/shared_invite/zt-tsb5yaht-LtLWHzVu8Zux~Yt3PBx32Q
+    url: https://join.slack.com/t/the-legolas-code/shared_invite/zt-3ouzfyn74-~lyDKVuUGExNZrMWKMsY_A
     btn_label: Join legolas @ Slack!
     btn_class: btn--primary
   - image_path: /assets/images/prominent_logo.png
     excerpt:
-      Legolas is supported by funding from the European Research Council (ERC) under the European
+      Legolas was developed thanks to funding from the European Research Council (ERC) under the European
       Unions Horizon 2020 research and innovation programme,
       Grant agreement No. 833251 PROMINENT ERC-ADG 2018; from the VSC (Flemish Supercomputer Center),
       funded by the Research Foundation – Flanders (FWO) and the Flemish Government – department EWI;

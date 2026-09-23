@@ -15,13 +15,17 @@ program legolas
   use mod_solvers, only: solve_evp
   use mod_output, only: datfile_path, create_datfile
   use mod_logging, only: logger, str
-  use mod_console, only: print_console_info, print_whitespace
+  use mod_console, only: print_logo, print_startup_info, print_console_info, &
+    print_whitespace
   use mod_timing, only: timer_t, new_timer
   use mod_settings, only: settings_t, new_settings
   use mod_background, only: background_t, new_background
   use mod_grid, only: grid_t, new_grid
   use mod_eigenfunctions, only: eigenfunctions_t, new_eigenfunctions
   use mod_physics, only: physics_t, new_physics
+  use mod_iv_module, only: iv_module_t, new_iv_module
+  use mod_iv_initial_conditions, only: initial_conditions_t, new_initial_conditions
+  use mod_arrays, only: deallocate_input
   implicit none
 
   !> A matrix in eigenvalue problem wBX = AX
@@ -36,6 +40,8 @@ program legolas
   type(background_t) :: background
   type(eigenfunctions_t) :: eigenfunctions
   type(physics_t) :: physics
+  type(iv_module_t) :: iv_module
+  type(initial_conditions_t) :: iv_initial_conditions
   !> array with eigenvalues
   complex(dp), allocatable  :: omega(:)
   !> matrix with right eigenvectors, column indices correspond to omega indices
@@ -50,13 +56,15 @@ program legolas
   call timer%start_timer()
 
   call read_user_parfile()
-  call print_startup_info()
+  call print_logo()
+  call print_startup_info(settings)
 
   grid = new_grid(settings)
   background = new_background()
   physics = new_physics(settings, background)
+  iv_initial_conditions = new_initial_conditions()
 
-  call set_equilibrium(settings, grid, background, physics)
+  call set_equilibrium(settings, grid, background, physics, iv_initial_conditions)
   timer%init_time = timer%end_timer()
 
   call print_console_info(settings)
@@ -68,12 +76,29 @@ program legolas
   call build_matrices(matrix_B, matrix_A, settings, grid, background, physics)
   timer%matrix_time = timer%end_timer()
 
-  call logger%info("solving eigenvalue problem...")
-  call timer%start_timer()
-  call do_eigenvalue_problem_allocations()
-  call solve_evp(matrix_A, matrix_B, settings, omega, right_eigenvectors)
-  timer%evp_time = timer%end_timer()
-  call logger%info("done.")
+  iv_module = new_iv_module(settings, grid)
+
+  if (settings%iv%enabled) then
+    call logger%info("solving initial value problem...")
+    call timer%start_timer()
+    call iv_module%initialise(iv_initial_conditions)
+    call iv_module%solve_ivp(matrix_A, matrix_B)
+    timer%ivp_time = timer%end_timer()
+    call logger%info("done.")
+  end if
+
+  if (settings%solvers%get_solver() == "none") then
+    call logger%info("skipping eigenvalue problem (solver = 'none')")
+    allocate(omega(0))
+    allocate(right_eigenvectors(2, 2))
+  else
+    call logger%info("solving eigenvalue problem...")
+    call timer%start_timer()
+    call do_eigenvalue_problem_allocations()
+    call solve_evp(matrix_A, matrix_B, settings, omega, right_eigenvectors)
+    timer%evp_time = timer%end_timer()
+    call logger%info("done.")
+  end if
 
   call timer%start_timer()
   eigenfunctions = new_eigenfunctions(settings, grid, background)
@@ -90,7 +115,8 @@ program legolas
     matrix_A, &
     matrix_B, &
     right_eigenvectors, &
-    eigenfunctions &
+    eigenfunctions, &
+    iv_module &
   )
   timer%datfile_time = timer%end_timer()
 
@@ -111,14 +137,6 @@ contains
     call get_parfile(parfile)
     call read_parfile(parfile, settings)
   end subroutine read_user_parfile
-
-
-  subroutine print_startup_info()
-    use mod_console, only: print_logo
-    call print_logo()
-    call logger%info("the physics type is " // settings%get_physics_type())
-    call logger%info("the state vector is " // str(settings%get_state_vector()))
-  end subroutine print_startup_info
 
 
   subroutine do_eigenvalue_problem_allocations()
@@ -144,7 +162,7 @@ contains
       ! we need #rows = matrix dimension, #cols = #eigenvalues
       allocate(right_eigenvectors(settings%dims%get_dim_matrix(), nb_evs))
     else
-      ! @note: this is needed to prevent segfaults, since it seems that in some
+      ! note: this is needed to prevent segfaults, since it seems that in some
       ! cases for macOS the routine zgeev references the right eigenvectors even
       ! if they are not requested.
       call logger%debug("allocating eigenvector arrays as dummy")
@@ -174,6 +192,7 @@ contains
     call grid%delete()
     call background%delete()
     call settings%delete()
+    call deallocate_input()
   end subroutine cleanup
 
 
@@ -189,6 +208,9 @@ contains
     call logger%info("Legolas finished in " // str(total_time) // " seconds")
     call logger%info("   initialisation: " // str(timer%init_time) // " sec")
     call logger%info("   matrix construction: " // str(timer%matrix_time) // " sec")
+    if (settings%iv%enabled) then
+      call logger%info("   initial value problem: " // str(timer%ivp_time) // " sec")
+    end if
     call logger%info("   eigenvalue problem: " // str(timer%evp_time) // " sec")
     call logger%info("   eigenfunctions: " // str(timer%eigenfunction_time) // " sec")
     call logger%info("   datfile creation: " // str(timer%datfile_time) // " sec")

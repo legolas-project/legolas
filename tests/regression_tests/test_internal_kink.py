@@ -1,5 +1,6 @@
-from .regression import RegressionTest
 import pytest
+
+from .regression import RegressionTest
 
 
 class TestInternalKinkModesQR(RegressionTest):
@@ -7,6 +8,7 @@ class TestInternalKinkModesQR(RegressionTest):
     filename = "internal_kink_QR_k2_1_k3_0.8"
     equilibrium = "internal_kink"
     geometry = "cylindrical"
+    x_end = 0.999999  # due to the implemented equilibrium 1 yields 0 for density
 
     parameters = {
         "k2": 1.0,

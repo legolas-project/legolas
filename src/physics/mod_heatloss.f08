@@ -101,7 +101,7 @@ contains
     if (.not. associated(this%heating%H, zero_func)) call log_usr_H_func_warning()
 
     call set_module_pointers(conduction_tgt, grid_tgt, this%cooling)
-    call logger%info("enforcing thermal balance by setting a constant heating term")
+    call logger%info("enforcing thermal balance by setting a steady heating term")
     this%heating%H => H_for_thermal_balance
   end subroutine check_if_thermal_balance_needs_enforcing
 

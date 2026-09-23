@@ -134,7 +134,7 @@ contains
 
   !> Returns the complex element associated with the linked-list node at position
   !! (row, column) in the matrix datastructure. Non-existing nodes correspond to zero
-  !! values, so when a node at (row, column) is not foudn this function returns
+  !! values, so when a node at (row, column) is not found this function returns
   !! (complex) zero.
   function get_complex_element(this, row, column) result(element)
     !> type instance
@@ -208,8 +208,10 @@ contains
   !> Dedicated function to copy a matrix structure into a new matrix structure.
   !! The datastructure contains pointers, such that simply setting
   !! matrix1 = matrix2 may result in pointer target losses (and wrong results).
-  !! @note We should not overload the generic assignment(=) with this function,
-  !! as it may clash with the constructor. @endnote
+  !! @note
+  !!     We should not overload the generic assignment(=) with this function,
+  !!     as it may clash with the constructor.
+  !! @endnote
   function copy(matrix_in) result(matrix_out)
     !> the original matrix
     class(matrix_t), intent(in) :: matrix_in

@@ -9,65 +9,44 @@ contains
     real(dp) :: WVop
     real(dp) :: kappa_perp, dkappa_perp_drho, dkappa_perp_dT
     real(dp) :: gamma_1
-    type(matrix_elements_t) :: elements
 
     if (settings%physics%is_incompressible) return
 
     gamma_1 = settings%physics%get_gamma_1()
-    eps = grid%get_eps(x_gauss)
+    eps = grid%get_eps(x)
     deps = grid%get_deps()
-    dT0 = background%temperature%dT0(x_gauss)
-    kappa_perp = physics%conduction%tcperp(x_gauss)
-    dkappa_perp_drho = physics%conduction%dtcperpdrho(x_gauss)
-    dkappa_perp_dT = physics%conduction%dtcperpdT(x_gauss)
+    dT0 = background%temperature%dT0(x)
+    kappa_perp = physics%conduction%tcperp(x)
+    dkappa_perp_drho = physics%conduction%dtcperpdrho(x)
+    dkappa_perp_dT = physics%conduction%dtcperpdT(x)
     ! operators
     WVop = k2**2 / eps + eps * k3**2
 
-    elements = new_matrix_elements(state_vector=settings%get_state_vector())
-
     ! ==================== Quadratic * Quadratic ====================
-    call elements%add( &
-      -gamma_1 * ic * WVop * kappa_perp / eps, &
-      "T", &
-      "T", &
-      spline1=h_quad, &
-      spline2=h_quad &
-    )
+    call elements%add(-gamma_1 * ic * WVop * kappa_perp / eps, sv_T1, sv_T1)
     ! ==================== dQuadratic * Quadratic ====================
-    call elements%add( &
-      -ic * gamma_1 * dT0 * dkappa_perp_drho, &
-      "T", &
-      "rho", &
-      spline1=dh_quad, &
-      spline2=h_quad &
-    )
+    call elements%add(-ic * gamma_1 * dT0 * dkappa_perp_drho, sv_T1, sv_rho1, s1do=1)
     call elements%add( &
       gamma_1 * (ic * deps * kappa_perp / eps - ic * dT0 * dkappa_perp_dT), &
-      "T", &
-      "T", &
-      spline1=dh_quad, &
-      spline2=h_quad &
+      sv_T1, &
+      sv_T1, &
+      s1do=1 &
     )
     ! ==================== dQuadratic * dQuadratic ====================
-    call elements%add( &
-      -ic * gamma_1 * kappa_perp, "T", "T", spline1=dh_quad, spline2=dh_quad &
-    )
+    call elements%add(-ic * gamma_1 * kappa_perp, sv_T1, sv_T1, s1do=1, s2do=1)
 
     if (settings%has_bfield()) then
       call add_conduction_matrix_terms_bfield( &
-        x_gauss, settings, grid, background, physics, elements &
+        x, settings, grid, background, physics, elements &
       )
     end if
-
-    call add_to_quadblock(quadblock, elements, weight, settings%dims)
-    call elements%delete()
   end procedure add_conduction_matrix_terms
 
 
   subroutine add_conduction_matrix_terms_bfield( &
-    x_gauss, settings, grid, background, physics, elements &
+    x, settings, grid, background, physics, elements &
   )
-    real(dp), intent(in) :: x_gauss
+    real(dp), intent(in) :: x
     type(settings_t), intent(in) :: settings
     type(grid_t), intent(in) :: grid
     type(background_t), intent(in) :: background
@@ -86,29 +65,29 @@ contains
 
     gamma_1 = settings%physics%get_gamma_1()
     ! grid variables
-    eps = grid%get_eps(x_gauss)
+    eps = grid%get_eps(x)
     deps = grid%get_deps()
     ! temperature variables
-    dT0 = background%temperature%dT0(x_gauss)
-    ddT0 = background%temperature%ddT0(x_gauss)
+    dT0 = background%temperature%dT0(x)
+    ddT0 = background%temperature%ddT0(x)
     ! magnetic field variables
-    B0 = background%magnetic%get_B0(x_gauss)
-    B01 = background%magnetic%B01(x_gauss)
-    B02 = background%magnetic%B02(x_gauss)
-    dB02 = background%magnetic%dB02(x_gauss)
-    B03 = background%magnetic%B03(x_gauss)
-    dB03 = background%magnetic%dB03(x_gauss)
+    B0 = background%magnetic%get_B0(x)
+    B01 = background%magnetic%B01(x)
+    B02 = background%magnetic%B02(x)
+    dB02 = background%magnetic%dB02(x)
+    B03 = background%magnetic%B03(x)
+    dB03 = background%magnetic%dB03(x)
     ! parallel thermal conduction variables
-    kappa_para = physics%conduction%tcpara(x_gauss)
-    dkappa_para_dT = physics%conduction%dtcparadT(x_gauss)
+    kappa_para = physics%conduction%tcpara(x)
+    dkappa_para_dT = physics%conduction%dtcparadT(x)
     ! perpendicular thermal conduction variables
-    kappa_perp = physics%conduction%tcperp(x_gauss)
-    dkappa_perp_drho = physics%conduction%dtcperpdrho(x_gauss)
-    dkappa_perp_dT = physics%conduction%dtcperpdT(x_gauss)
-    dkappa_perp_dB2 = physics%conduction%dtcperpdB2(x_gauss)
+    kappa_perp = physics%conduction%tcperp(x)
+    dkappa_perp_drho = physics%conduction%dtcperpdrho(x)
+    dkappa_perp_dT = physics%conduction%dtcperpdT(x)
+    dkappa_perp_dB2 = physics%conduction%dtcperpdB2(x)
     ! prefactors
-    Kp = physics%conduction%get_tcprefactor(x_gauss)
-    diffKp = physics%conduction%get_dtcprefactordr(x_gauss)
+    Kp = physics%conduction%get_tcprefactor(x)
+    diffKp = physics%conduction%get_dtcprefactordr(x)
     Kp_plus = Kp + dkappa_perp_dB2
     Kp_plusplus = dkappa_perp_dB2 - (B01**2 * Kp_plus / B0**2)
     ! operators
@@ -121,11 +100,7 @@ contains
 
     ! ==================== Quadratic * Quadratic ====================
     call elements%add( &
-      gamma_1 * dT0 * (B01 / B0**2) * dkappa_perp_drho * Fop_B01, &
-      "T", &
-      "rho", &
-      spline1=h_quad, &
-      spline2=h_quad &
+      gamma_1 * dT0 * (B01 / B0**2) * dkappa_perp_drho * Fop_B01, sv_T1, sv_rho1 &
     )
     call elements%add( &
       gamma_1 * ( &
@@ -137,25 +112,17 @@ contains
           - ic * Fop_plus**2 &
         ) &
       ), &
-      "T", &
-      "T", &
-      spline1=h_quad, &
-      spline2=h_quad &
+      sv_T1, &
+      sv_T1 &
     )
     call elements%add( &
       2.0d0 * gamma_1 * eps * dT0 * Gop_min * Kp_plus * B01 * Fop_B01 / B0**2, &
-      "T", &
-      "a1", &
-      spline1=h_quad, &
-      spline2=h_quad &
+      sv_T1, &
+      sv_a1 &
     )
     ! ==================== dQuadratic * Quadratic ====================
     call elements%add( &
-      ic * gamma_1 * dT0 * dkappa_perp_drho * B01**2 / B0**2, &
-      "T", &
-      "rho", &
-      spline1=dh_quad, &
-      spline2=h_quad &
+      ic * gamma_1 * dT0 * dkappa_perp_drho * B01**2 / B0**2, sv_T1, sv_rho1, s1do=1 &
     )
     call elements%add( &
       gamma_1 * ( &
@@ -164,33 +131,20 @@ contains
           B01**2 * dkappa_para_dT / B0**2 - dkappa_perp_dT * B01**2 / B0**2 &
         ) &
       ), &
-      "T", &
-      "T", &
-      spline1=dh_quad, &
-      spline2=h_quad &
+      sv_T1, &
+      sv_T1, &
+      s1do=1 &
     )
     call elements%add( &
-      -2.0d0 * ic * gamma_1 * eps * dT0 * Gop_min * Kp_plusplus, &
-      "T", &
-      "a1", &
-      spline1=dh_quad, &
-      spline2=h_quad &
+      -2.0d0 * ic * gamma_1 * eps * dT0 * Gop_min * Kp_plusplus, sv_T1, sv_a1, s1do=1 &
     )
     ! ==================== Quadratic * dQuadratic ====================
     call elements%add( &
-      -2.0d0 * ic * gamma_1 * deps * B01**2 * Kp / eps, &
-      "T", &
-      "T", &
-      spline1=h_quad, &
-      spline2=dh_quad &
+      -2.0d0 * ic * gamma_1 * deps * B01**2 * Kp / eps, sv_T1, sv_T1, s2do=1 &
     )
     ! ==================== dQuadratic * dQuadratic ====================
     call elements%add( &
-      -ic * gamma_1 * 2.0d0 * B01**2 * Kp, &
-      "T", &
-      "T", &
-      spline1=dh_quad, &
-      spline2=dh_quad &
+      -ic * gamma_1 * 2.0d0 * B01**2 * Kp, sv_T1, sv_T1, s1do=1, s2do=1 &
     )
     ! ==================== Quadratic * Cubic ====================
     call elements%add( &
@@ -198,67 +152,49 @@ contains
         Kp * (B01 * ddT0 + ic * dT0 * Fop_plus) &
         + B01 * dT0 * (diffKp - 2.0d0 * ic * B01 * Kp_plus * Fop_B01 / B0**2) &
       ), &
-      "T", &
-      "a2", &
-      spline1=h_quad, &
-      spline2=h_cubic &
+      sv_T1, &
+      sv_a2 &
     )
     call elements%add( &
       -gamma_1 * k2 * ( &
         Kp * (B01 * ddT0 + ic * dT0 * Fop_plus) &
         + B01 * dT0 * (diffKp - 2.0d0 * ic * B01 * Kp_plus * Fop_B01 / B0**2) &
       ), &
-      "T", &
-      "a3", &
-      spline1=h_quad, &
-      spline2=h_cubic &
+      sv_T1, &
+      sv_a3 &
     )
     ! ==================== Quadratic * dCubic ====================
     call elements%add( &
       gamma_1 * dT0 * B01 * (2.0d0 * B03 * Kp_plus * Fop_B01 / B0**2 - k3 * Kp), &
-      "T", &
-      "a2", &
-      spline1=h_quad, &
-      spline2=dh_cubic &
+      sv_T1, &
+      sv_a2, &
+      s2do=1 &
     )
     call elements%add( &
       gamma_1 * dT0 * B01 * ( &
         -2.0d0 * eps * B02 * Kp_plus * Fop_B01 / B0**2 + k2 * Kp &
       ), &
-      "T", &
-      "a3", &
-      spline1=h_quad, &
-      spline2=dh_cubic &
+      sv_T1, &
+      sv_a3, &
+      s2do=1 &
     )
     ! ==================== dQuadratic * Cubic ====================
     call elements%add( &
-      -2.0d0 * gamma_1 * dT0 * B01 * k3 * Kp_plusplus, &
-      "T", &
-      "a2", &
-      spline1=dh_quad, &
-      spline2=h_cubic &
+      -2.0d0 * gamma_1 * dT0 * B01 * k3 * Kp_plusplus, sv_T1, sv_a2, s1do=1 &
     )
     call elements%add( &
-      2.0d0 * gamma_1 * dT0 * B01 * k2 * Kp_plusplus, &
-      "T", &
-      "a3", &
-      spline1=dh_quad, &
-      spline2=h_cubic &
+      2.0d0 * gamma_1 * dT0 * B01 * k2 * Kp_plusplus, sv_T1, sv_a3, s1do=1 &
     )
     ! ==================== dQuadratic * dCubic ====================
     call elements%add( &
-      -2.0d0 * ic * gamma_1 * dT0 * B03 * Kp_plusplus, &
-      "T", &
-      "a2", &
-      spline1=dh_quad, &
-      spline2=dh_cubic &
+      -2.0d0 * ic * gamma_1 * dT0 * B03 * Kp_plusplus, sv_T1, sv_a2, s1do=1, s2do=1 &
     )
     call elements%add( &
       2.0d0 * ic * gamma_1 * dT0 * eps * B02 * Kp_plusplus, &
-      "T", &
-      "a3", &
-      spline1=dh_quad, &
-      spline2=dh_cubic &
+      sv_T1, &
+      sv_a3, &
+      s1do=1, &
+      s2do=1 &
     )
   end subroutine add_conduction_matrix_terms_bfield
 

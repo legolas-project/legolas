@@ -9,19 +9,21 @@
 !! _Van Doorsselaere, T., & Poedts, S. (2007).
 !!  Modifications to the resistive MHD spectrum due to changes in the equilibrium.
 !!  Plasma Physics and Controlled Fusion, 49(3), 261_.
-!! @note Default values are given by
-!!
-!! - <tt>k2</tt> = 1
-!! - <tt>k3</tt> = 0.05
-!! - <tt>p1</tt> = 0.9 : used to set the left density value.
-!! - <tt>p2</tt> = 0.1 : used to set the right density value.
-!! - <tt>r0</tt> = 0.2 : used to set the width of the interface.
-!! - <tt>cte_B02</tt> = 0 : used to set the By value.
-!! - <tt>cte_B03</tt> = 1 : used to set the Bz value.
-!! - <tt>cte_T0</tt> = 0 : used to set the temperature. Zero by default.
-!! - fixed eta value of \(10^{-3.2}\)
-!!
-!! and can all be changed in the parfile. @endnote
+!! @note
+!!     Default values are given by
+!!     
+!!     - <tt>k2</tt> = 1
+!!     - <tt>k3</tt> = 0.05
+!!     - <tt>p1</tt> = 0.9 : used to set the left density value.
+!!     - <tt>p2</tt> = 0.1 : used to set the right density value.
+!!     - <tt>r0</tt> = 0.2 : used to set the width of the interface.
+!!     - <tt>cte_B02</tt> = 0 : used to set the By value.
+!!     - <tt>cte_B03</tt> = 1 : used to set the Bz value.
+!!     - <tt>cte_T0</tt> = 0 : used to set the temperature. Zero by default.
+!!     - fixed eta value of \(10^{-3.2}\)
+!!     
+!!     and can all be changed in the parfile.
+!! @endnote
 submodule (mod_equilibrium) smod_equil_resonant_absorption
   use mod_equilibrium_params, only: p1, p2, r0, cte_T0, cte_B02, cte_B03
   implicit none

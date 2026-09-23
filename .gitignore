@@ -1,5 +1,6 @@
 docs/content/src-docs/ford
 docs/content/src-docs/sphinx
+docs/.bundle
 output/
 build/
 legolas

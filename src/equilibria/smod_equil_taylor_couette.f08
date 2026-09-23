@@ -8,15 +8,17 @@
 !! "The Taylor-Couette eigenvalue problem with independently rotating cylinders.",
 !! Z. Phys. B 90, 475--490 (1993)_.
 !!
-!! @note Default values are given by
-!!
-!! - <tt>k2</tt> = 0
-!! - <tt>k3</tt> = 1
-!! - <tt>cte_rho0</tt> = 1 : density (constant)
-!! - <tt>alpha</tt> = 1 : rotational speed of the inner cylinder
-!! - <tt>beta</tt> = 2 : rotational speed of the outer cylinder
-
-!! and can all be changed in the parfile. @endnote
+!! @note
+!!     Default values are given by
+!!     
+!!     - <tt>k2</tt> = 0
+!!     - <tt>k3</tt> = 1
+!!     - <tt>cte_rho0</tt> = 1 : density (constant)
+!!     - <tt>alpha</tt> = 1 : rotational speed of the inner cylinder
+!!     - <tt>beta</tt> = 2 : rotational speed of the outer cylinder
+!!     
+!!     and can all be changed in the parfile.
+!! @endnote
 ! SUBMODULE: smod_equil_taylor_couette
 submodule (mod_equilibrium) smod_equil_taylor_couette
   use mod_equilibrium_params, only: cte_rho0, alpha, beta

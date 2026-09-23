@@ -110,8 +110,6 @@ class SpectrumFigure(InteractiveFigureWindow):
         self.color = plot_props.pop("color", "blue")
         self.markersize = plot_props.pop("markersize", 6)
         self.alpha = plot_props.pop("alpha", 0.8)
-        self.color_dict = plot_props.pop("color_dict", None)
-        self.color_parameter = plot_props.pop("color_parameter", None)
         self.plot_props = plot_props
 
     def add_spectrum(self):
@@ -123,14 +121,23 @@ class SpectrumFigure(InteractiveFigureWindow):
     def add_eigenfunctions(self):
         raise NotImplementedError()
 
-    def add_derived_eigenfunctions(self):
-        raise NotImplementedError()
-
     def has_valid_continua(self, data):
         continua = getattr(data, "continua", None)
         if isinstance(continua, (list, np.ndarray)):
             return all([c is not None for c in continua])
         return continua is not None
+
+    def has_zero_continua(self, data):
+        if isinstance(data.continua, (list, np.ndarray)):
+            return all([self._zero_continua(c) for c in data.continua])
+        else:
+            return self._zero_continua(data.continua)
+
+    def _zero_continua(self, continua):
+        for key in continua.keys():
+            if not np.all(np.isclose(continua[key], 0, atol=1e-12)):
+                return False
+        return True
 
     @property
     def c_handler(self):

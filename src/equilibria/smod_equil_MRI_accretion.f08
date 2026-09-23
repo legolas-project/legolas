@@ -15,16 +15,18 @@
 !! _Goedbloed, H., Keppens, R., & Poedts, S. (2019). Magnetohydrodynamics of Laboratory
 !! and Astrophysical Plasmas. Cambridge University Press._
 !! [DOI](http://doi.org/10.1017/9781316403679).
-!! @note Default values are given by
-!!
-!! - <tt>k2</tt> = 0
-!! - <tt>k3</tt> = 70
-!! - <tt>beta</tt> = 100 : parameter \(\beta = 2p_1/B_1^2\).
-!! - <tt>tau</tt> = 1 : represents parameter \(\tau = \mu_1 = B_{\theta 1}/B_{z1}\)
-!! - <tt>nu</tt> = 0.1 : represents parameter \(\nu = \epsilon = \sqrt{p_1}\)
-!! - <tt>x_end</tt> = 2 : fixes the parameter \(\delta = x_{end}/x_{start}\)
-!!
-!! and can all be changed in the parfile. @endnote
+!! @note
+!!     Default values are given by
+!!     
+!!     - <tt>k2</tt> = 0
+!!     - <tt>k3</tt> = 70
+!!     - <tt>beta</tt> = 100 : parameter \(\beta = 2p_1/B_1^2\).
+!!     - <tt>tau</tt> = 1 : represents parameter \(\tau = \mu_1 = B_{\theta 1}/B_{z1}\)
+!!     - <tt>nu</tt> = 0.1 : represents parameter \(\nu = \epsilon = \sqrt{p_1}\)
+!!     - <tt>x_end</tt> = 2 : fixes the parameter \(\delta = x_{end}/x_{start}\)
+!!     
+!!     and can all be changed in the parfile.
+!! @endnote
 submodule (mod_equilibrium) smod_equil_MRI
   use mod_equilibrium_params, only: beta, tau, nu
   implicit none

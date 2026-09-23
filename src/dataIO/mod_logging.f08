@@ -18,6 +18,8 @@ module mod_logging
     module procedure real_tostring
     module procedure complex_tostring
     module procedure character_array_tostring
+    module procedure integer_array_tostring
+    module procedure real_array_tostring
   end interface str
 
   type, private :: logger_t
@@ -206,5 +208,45 @@ contains
     end do
     string = string(:len(string) - 2) // "]"
   end function character_array_tostring
+
+
+  pure function integer_array_tostring(array) result(string)
+    !> the array to convert
+    integer, intent(in)  :: array(:)
+    !> returned result, trimmed
+    character(:), allocatable :: string
+    integer :: i
+
+    string = "["
+    do i = 1, size(array)
+      string = string // integer_tostring(array(i)) // ", "
+    end do
+    string = string(:len(string) - 2) // "]"
+  end function integer_array_tostring
+
+
+  pure function real_array_tostring(array, fmt) result(string)
+  !> The input array of real numbers
+  real(dp), intent(in) :: array(:)         
+  !> Optional format for real numbers
+  character(len=*), intent(in), optional :: fmt
+
+  character(:), allocatable :: string
+  integer :: i
+
+  string = "["
+  do i = 1, size(array)
+    string = string // real_tostring(array(i), fmt) // ", "
+  end do
+
+  ! Remove the trailing ", " and close the array with "]"
+  if (len(string) > 1) then
+    string = string(:len(string) - 2) // "]"
+  else
+    string = "[]"
+  end if
+
+end function real_array_tostring
+
 
 end module mod_logging

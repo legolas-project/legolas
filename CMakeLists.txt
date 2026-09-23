@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.12)
 project(Legolas)
 set(VERSION 2.0)
 enable_language(Fortran)

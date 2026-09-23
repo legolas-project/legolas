@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 import functools
 import time
+from typing import TYPE_CHECKING, Tuple
 
 import matplotlib.lines as mpl_lines
 import numpy as np
-from pylbo._version import _mpl_version
 from pylbo.utilities.logger import pylboLogger
+
+if TYPE_CHECKING:
+    from pylbo.data_containers import LegolasDataContainer
 
 
 def timethis(func):
@@ -35,15 +40,7 @@ def get_axis_geometry(ax):
     tuple
         The geometry of the given matplotlib axis.
     """
-    if _mpl_version >= "3.4":
-        axis_geometry = ax.get_subplotspec().get_geometry()[0:3]
-    else:
-        # this is 1-based indexing by default, use 0-based here for consistency
-        # with subplotspec in matplotlib 3.4+
-        axis_geometry = transform_to_numpy(ax.get_geometry())
-        axis_geometry[-1] -= 1
-        axis_geometry = tuple(axis_geometry)
-    return axis_geometry
+    return ax.get_subplotspec().get_geometry()[0:3]
 
 
 def get_values(array, which_values):
@@ -94,7 +91,7 @@ def add_pickradius_to_item(item, pickradius):
         Sets the pickradius, which determines if something is "on" the picked point.
     """
     # set_picker is deprecated for line2D from matplotlib 3.3 onwards
-    if isinstance(item, mpl_lines.Line2D) and _mpl_version >= "3.3":
+    if isinstance(item, mpl_lines.Line2D):
         item.set_picker(True)
         item.pickradius = pickradius
     else:
@@ -170,8 +167,85 @@ def transform_to_numpy(obj: any) -> np.ndarray:
     elif isinstance(obj, (tuple, list)):
         return np.asarray(obj)
     elif isinstance(obj, np.ndarray):
-        return obj
+        return np.atleast_1d(obj) if obj.shape == () else obj
     return np.asarray([obj])
+
+
+def reduce_to_unique_array(array: np.ndarray) -> np.ndarray:
+    """
+    Reduces a given array to its unique values, preserving the order.
+
+    Parameters
+    ----------
+    array : numpy.ndarray
+        The array to reduce.
+
+    Returns
+    -------
+    numpy.ndarray
+        The array with unique values.
+    """
+    objs, idxs = np.unique(array, return_index=True)
+    return objs[np.argsort(idxs)]
+
+
+def get_all_eigenfunction_names(data: LegolasDataContainer) -> np.ndarray[str]:
+    """
+    Merges the regular and derived eigenfunction names into a unique array,
+    preserving order.
+
+    Parameters
+    ----------
+    data : LegolasDataContainer
+        The data container containing the eigenfunction names.
+
+    Returns
+    -------
+    numpy.ndarray
+        The array with unique eigenfunction names.
+    """
+    names = reduce_to_unique_array(data.ef_names)
+    if any(transform_to_numpy(data.has_derived_efs)):
+        names = np.concatenate((names, reduce_to_unique_array(data.derived_ef_names)))
+    return names
+
+
+def get_maximum_eigenvalue(
+    eigenvalues: np.ndarray[complex],
+    real: bool = True,
+    re_range: Tuple[float, float] = None,
+) -> complex:
+    """
+    Calculates the maximum eigenvalue of a given array of eigenvalues.
+    The real or imaginary part is used, depending on the `real` argument.
+    If a range is specified, the maximum eigenvalue is calculated within
+    that range on the real axis.
+
+    Parameters
+    ----------
+    eigenvalues : numpy.ndarray(dtype=complex)
+        The array of eigenvalues.
+    real : bool
+        If `True`, the real part of the eigenvalues is used. Imaginary part otherwise.
+    re_range : tuple(float, float)
+        The range on the real axis to calculate the maximum eigenvalue.
+        Defaults to None, which means all eigenvalues are considered.
+
+    Returns
+    -------
+    complex
+        The maximum eigenvalue.
+    """
+    func = np.real if real else np.imag
+    evs = eigenvalues.copy()
+    if re_range is not None:
+        # set eigenvalues outside of range to NaN
+        evs[np.logical_or(np.real(evs) < re_range[0], np.real(evs) > re_range[1])] = (
+            np.nan
+        )
+    if np.all(np.isnan(func(evs))):
+        raise ValueError("get_maximum_eigenvalue: no eigenvalues found within range")
+    return eigenvalues[np.nanargmax(func(evs))]
 
 
 def solve_cubic_exact(a, b, c, d):
@@ -221,91 +295,87 @@ def solve_cubic_exact(a, b, c, d):
     return np.array([x1, x2, x3], dtype=complex)
 
 
-def count_zeroes(eigfuncs):
+def count_zeroes(eigfuncs, real=True):
     """
     Counts the number of zeroes of an array of complex eigenfunctions by looking at
-    sign changes of the real and imaginary part of the eigenfunctions.
-    Doesn't include the grid endpoints in the count, since the boundary conditions are
-    automatically satisfied. This only becomes accurate for eigenfunctions with enough
-    oscillations and is resolution dependent. Therefore, we take the minimum
-    of the number of zeroes of the real and imaginary part.
+    sign changes of the real and imaginary part of the eigenfunctions. Excludes
+    the eigenfunction boundaries.
 
     Parameters
     ----------
-    eigfuncs : numpy.ndarray
+    eigfuncs : numpy.ndarray(dtype=complex)
         Array of eigenfunction arrays of complex numbers.
+    real : bool
+        If `True`, counts the number of zeroes of the real part of the eigenfunctions.
+        If `False`, counts the number of zeroes of the imaginary part.
 
     Returns
     -------
-    nzeroes : np.ndarray(dtype=int)
-        Counter array containing the number of zeroes of the real or imaginary part
-        of each input eigenfunction array.
+    np.ndarray(dtype=int)
+        The number of zeroes of each eigenfunction.
     """
-
-    nzeroes = np.array([], dtype=int)
-
-    for eigfunc in eigfuncs:
-        counter_real = 0
-        counter_imag = 0
-        sign_real_eigfunc = np.sign(np.real(eigfunc))
-        sign_imag_eigfunc = np.sign(np.imag(eigfunc))
-
-        for i in range(1, len(sign_real_eigfunc) - 1):
-            if sign_real_eigfunc[i - 1] * sign_real_eigfunc[i] == -1:
-                counter_real += 1
-            if sign_real_eigfunc[i - 1] * sign_real_eigfunc[i] == 0:
-                if sign_real_eigfunc[i - 2] * sign_real_eigfunc[i - 1] == 0:
-                    counter_real += 1
-
-            if sign_imag_eigfunc[i - 1] * sign_imag_eigfunc[i] == -1:
-                counter_imag += 1
-            if sign_imag_eigfunc[i - 1] * sign_imag_eigfunc[i] == 0:
-                if sign_imag_eigfunc[i - 2] * sign_imag_eigfunc[i - 1] == 0:
-                    counter_imag += 1
-
-        counter = min(counter_real, counter_imag)
-        nzeroes = np.append(nzeroes, counter)
-
-    return nzeroes
+    eigfuncs = np.array([ef[1:-1] for ef in eigfuncs], dtype=complex)
+    func = np.real if real else np.imag
+    return np.sum(np.diff(np.sign(func(eigfuncs)), axis=1) != 0, axis=1)
 
 
-def invert_continuum_array(cont, r_gauss, sigma):
+def find_resonance_location(continuum, grid, omega):
     """
-    Finds the location of resonance for eigenmode solutions having a real part that
-    might overlap with a continuum range.
+    Finds the resonance location between omega and the continuum. For example, if
+    the continuum is given by [5, 6, 7, 8, 9, 10] and the grid is equal to
+    [0, 1, 2, 3, 4, 5], then for an omega = 9 the resonance location is 4. For an omega
+    equal to 8.5 the resonance location is 3.5. For an omega outside of the continuum
+    the resonance location is None. If the continuum array is not monotone, then
+    the resonance location is interpolated between the first matched interval.
 
     Parameters
     ----------
-    cont : numpy.ndarray
-        Array containing the range of a specific continuum. Automatically has the same
-        length as r_gauss, since it has the same shape as the equilibrium fields used
-        to calculate the continua. Can be complex, but only the resonance with the real
-        part is calculated.
-    r_gauss : numpy.ndarray
-        Array containing the grid on which equilibrium fields are defined.
-    sigma : complex
-        An eigenvalue solution of the generalized eigenvalue problem.
+    continuum : numpy.ndarray(dtype=complex)
+        Array containing the range of a specific continuum. Can be complex, but only
+        the resonance with the real part is calculated.
+    grid : numpy.ndarray
+        The grid on which the continuum is defined.
+    omega : complex
+        A given eigenvalue.
 
     Returns
     -------
-    r_inv : None, float
-        The location where there is resonance between the eigenmode and the continuum.
+    None, np.ndarray(float)
+        The position where there is resonance between the eigenmode and the continuum.
         Returns None if there is no resonance with the specified continuum.
     """
-
-    diff = np.sign(np.real(cont) - np.real(sigma))
-
-    if len(np.unique(diff)) < 2:
-        # There is no sign change, value is not contained in array.
+    if np.min(continuum.real) > omega.real or np.max(continuum.real) < omega.real:
         return None
+    # if continuum is monotone then do simple interpolation
+    if np.all(np.diff(continuum.real) > 0):
+        return np.array([np.interp(omega.real, continuum.real, grid)], dtype=float)
+    # otherwise find intervals and handle multiple matches
+    locs = []
+    c = continuum.real
+    for idx in range(len(continuum) - 1):
+        if c[idx] <= omega.real <= c[idx + 1]:
+            locs.append(
+                np.interp(omega.real, [c[idx], c[idx + 1]], [grid[idx], grid[idx + 1]])
+            )
+        elif c[idx + 1] <= omega.real <= c[idx]:
+            locs.append(
+                np.interp(omega.real, [c[idx + 1], c[idx]], [grid[idx + 1], grid[idx]])
+            )
+    return np.array(list(set(locs)), dtype=float)
 
-    for i in range(1, len(diff) - 1):
-        if diff[i] * diff[i - 1] < 0:
-            # Linear interpolation between the points where the sign change occurs.
-            r_inv = (np.real(sigma) - np.real(cont[i - 1])) / (
-                np.real(cont[i]) - np.real(cont[i - 1])
-            ) * (r_gauss[i] - r_gauss[i - 1]) + r_gauss[i - 1]
-            return r_inv
-        elif diff[i] * diff[i - 1] == 0:
-            # The exact same value is in the continuum array, return it.
-            return r_gauss[i]
+
+def is_custom_grid(grid):
+    """
+    Checks if a given grid is a custom grid, i.e. not equidistant.
+
+    Parameters
+    ----------
+    grid : numpy.ndarray
+        The grid to test.
+
+    Returns
+    -------
+    bool
+        `True` if the grid is a custom grid, `False` otherwise.
+    """
+    return not np.allclose(np.diff(grid), np.diff(grid)[0])

@@ -67,7 +67,7 @@ contains
 
 
   real(dp) function get_lambdaT(x)
-    use mod_cooling_curves, only: get_rosner_lambdaT, get_interpolated_lambdaT
+    use mod_cooling_curves, only: get_Rosner_lambdaT, get_interpolated_lambdaT
     real(dp), intent(in) :: x
 
     get_lambdaT = 0.0_dp
@@ -77,7 +77,7 @@ contains
     case(NOTHING)
       return
     case(ROSNER)
-      get_lambdaT = get_rosner_lambdaT(x, settings, background)
+      get_lambdaT = get_Rosner_lambdaT(x, settings, background)
     case default
       get_lambdaT = get_interpolated_lambdaT(x, settings, background)
     end select
@@ -85,7 +85,7 @@ contains
 
 
   real(dp) function get_dlambdadT(x)
-    use mod_cooling_curves, only: get_rosner_dlambdadT, get_interpolated_dlambdadT
+    use mod_cooling_curves, only: get_Rosner_dlambdadT, get_interpolated_dlambdadT
     real(dp), intent(in) :: x
 
     get_dlambdadT = 0.0_dp
@@ -95,7 +95,7 @@ contains
     case(NOTHING)
       return
     case(ROSNER)
-      get_dlambdadT = get_rosner_dlambdadT(x, settings, background)
+      get_dlambdadT = get_Rosner_dlambdadT(x, settings, background)
     case default
       get_dlambdadT = get_interpolated_dlambdadT(x, settings, background)
     end select

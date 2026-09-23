@@ -5,20 +5,22 @@
 !! This equilibrium is taken from
 !! _Nijboer, R. J., Holst, B., Poedts, S., & Goedbloed, J. P. (1997).
 !!  Calculating magnetohydrodynamic flow spectra. Computer physics communications, 106(1-2), 39-52_.
-!! @note Default values are given by
-!!
-!! - <tt>k2</tt> = 1
-!! - <tt>k3</tt> = 0
-!! - <tt>cte_rho0</tt> = 1 : used to set the density value.
-!! - <tt>cte_p0</tt> = 0.1 : used to set the pressure.
-!! - <tt>p1</tt> = 8 : sets the constant a21.
-!! - <tt>p2</tt> = 0 : sets the constant a22.
-!! - <tt>p3</tt> = 0 : sets the constant a3.
-!! - <tt>p4</tt> = 1 : sets the constant b21.
-!! - <tt>p5</tt> = 0 : sets the constant b22.
-!! - <tt>p6</tt> = 0 : sets the constant b3.
-!!
-!! and can all be changed in the parfile. @endnote
+!! @note
+!!     Default values are given by
+!!     
+!!     - <tt>k2</tt> = 1
+!!     - <tt>k3</tt> = 0
+!!     - <tt>cte_rho0</tt> = 1 : used to set the density value.
+!!     - <tt>cte_p0</tt> = 0.1 : used to set the pressure.
+!!     - <tt>p1</tt> = 8 : sets the constant a21.
+!!     - <tt>p2</tt> = 0 : sets the constant a22.
+!!     - <tt>p3</tt> = 0 : sets the constant a3.
+!!     - <tt>p4</tt> = 1 : sets the constant b21.
+!!     - <tt>p5</tt> = 0 : sets the constant b22.
+!!     - <tt>p6</tt> = 0 : sets the constant b3.
+!!     
+!!     and can all be changed in the parfile.
+!! @endnote
 submodule (mod_equilibrium) smod_equil_rotating_plasma_cylinder
   use mod_equilibrium_params, only: cte_rho0, cte_p0, p1, p2, p3, p4, p5, p6
   implicit none

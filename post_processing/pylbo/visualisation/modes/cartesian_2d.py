@@ -3,11 +3,13 @@ from __future__ import annotations
 from typing import Union
 
 import numpy as np
+import pylbo
 from matplotlib import animation
 from matplotlib.cm import ScalarMappable
-from pylbo.utilities.toolbox import transform_to_list
+from pylbo.utilities.toolbox import transform_to_list, is_custom_grid
 from pylbo.visualisation.modes.mode_data import ModeVisualisationData
 from pylbo.visualisation.modes.mode_figure import ModeFigure
+from pylbo.visualisation.modes.vectorplot_handler import VectorplotHandler
 from pylbo.visualisation.utils import add_axis_label
 from tqdm import tqdm
 
@@ -48,13 +50,13 @@ class CartesianSlicePlot2D(ModeFigure):
         **kwargs,
     ) -> None:
         for i in "123":
-            _axis = getattr(data.ds, f"u{i}_str")
+            _axis = getattr(data.ds_bg, f"u{i}_str")
             setattr(self, f"_u{i}axis", _axis.replace("$", "").replace("\\", ""))
         self.slicing_axis = self._validate_slicing_axis(
             slicing_axis, allowed_axes=[self._u2axis, self._u3axis]
         )
         self.update_colorbar = True
-        self._u1 = data.ds.ef_grid
+        self._u1 = data.ds_bg.ef_grid
         self._u2 = self._validate_u2(u2, slicing_axis, axis=self._u2axis)
         self._u3 = self._validate_u3(u3, slicing_axis, axis=self._u3axis)
         self._time = self._check_if_number(time, "time")
@@ -63,10 +65,21 @@ class CartesianSlicePlot2D(ModeFigure):
         self._use_contour_plot = False
         self._contour_levels = None
         self._contour_recipe = None
+        self._view_dot = None
+        self._has_streamlines = False
+        self._has_quivers = False
         super().__init__(figsize, data, show_ef_panel)
 
         self.vmin = np.min(self._solutions)
         self.vmax = np.max(self._solutions)
+        self.xmin = np.min(self.data.ds.ef_grid) if self.ax.name != "polar" else 0.0
+        self.xmax = np.max(self.data.ds.ef_grid)
+        self.coordmin = (
+            np.min(self._u2) if self.slicing_axis == self._u3axis else np.min(self._u3)
+        )
+        self.coordmax = (
+            np.max(self._u2) if self.slicing_axis == self._u3axis else np.max(self._u3)
+        )
 
     def _validate_slicing_axis(self, slicing_axis: str, allowed_axes: list[str]) -> str:
         """
@@ -136,10 +149,21 @@ class CartesianSlicePlot2D(ModeFigure):
         axis = self.slicing_axis
         coord = self._u2 if axis == self._u3axis else self._u3
         self.solution_shape = (len(self._u1), len(coord))
-        for ef, omega in zip(self.data.eigenfunction, self.data.omega):
-            data = np.broadcast_to(ef, shape=reversed(self.solution_shape)).transpose()
-            self.ef_data.append({"ef": data, "omega": omega})
-        x_2d, coord_2d = np.meshgrid(self.data.ds.ef_grid, coord, indexing="ij")
+        for efs, omegas, factors, k2, k3 in zip(
+            self.data.eigenfunction,
+            self.data.omega,
+            self.data.complex_factor,
+            self.data.k2,
+            self.data.k3,
+        ):
+            for ef, omega, factor in zip(efs, omegas, factors):
+                data = np.broadcast_to(
+                    ef, shape=reversed(self.solution_shape)
+                ).transpose()
+                self.ef_data.append(
+                    {"ef": data, "omega": omega, "factor": factor, "k2": k2, "k3": k3}
+                )
+        x_2d, coord_2d = np.meshgrid(self.data.ds_bg.ef_grid, coord, indexing="ij")
 
         self.u1_data = x_2d
         self.u2_data = coord_2d if axis == self._u3axis else self._u2
@@ -148,9 +172,9 @@ class CartesianSlicePlot2D(ModeFigure):
 
     def add_u2u3_txt(self, ax, **kwargs) -> None:
         if self.slicing_axis == self._u3axis:
-            txt = rf"{self.data.ds.u3_str} = {self._u3}"
+            txt = rf"{self.data.ds_bg.u3_str} = {self._u3}"
         else:
-            txt = rf"{self.data.ds.u2_str} = {self._u2}"
+            txt = rf"{self.data.ds_bg.u2_str} = {self._u2}"
         txt = rf"{txt} | t = {self._time:.2f}"
         self.u2u3_txt = add_axis_label(ax, txt, **kwargs)
 
@@ -207,13 +231,19 @@ class CartesianSlicePlot2D(ModeFigure):
 
     def get_view_ylabel(self) -> str:
         return (
-            self.data.ds.u2_str
+            self.data.ds_bg.u2_str
             if self.slicing_axis == self._u3axis
-            else self.data.ds.u3_str
+            else self.data.ds_bg.u3_str
         )
 
     def create_animation(
-        self, times: np.ndarray, filename: str, fps: float = 10, dpi: int = 200
+        self,
+        times: np.ndarray,
+        filename: str,
+        fps: float = 10,
+        dpi: int = 200,
+        draw_dots: bool = False,
+        ndots: int = 20,
     ) -> None:
         writer = animation.FFMpegWriter(fps=fps)
         pbar = tqdm(total=len(times), unit="frames", desc=f"Creating '{filename}'")
@@ -229,16 +259,21 @@ class CartesianSlicePlot2D(ModeFigure):
                     )
                 if self.data.add_background:
                     solution += self.data.get_background(shape=self._solutions.shape)
+                self._time = t
                 self._update_view(updated_solution=solution)
                 if self.update_colorbar:
                     self._update_view_clims(solution)
                 else:
                     self._update_view_clims(initial_solution)
+                if draw_dots:
+                    self._draw_comoving_dot(t, ndots)
                 self._set_t_txt(t)
                 writer.grab_frame()
 
                 pbar.update()
         self._solutions = initial_solution
+        self._time = self.time_data
+        self.data._print_bg_info = True
 
     def _ensure_first_frame_is_drawn(self) -> None:
         if None in transform_to_list(self._view):
@@ -249,6 +284,59 @@ class CartesianSlicePlot2D(ModeFigure):
             return
         txt = self.u2u3_txt.get_text().split("|")[0]
         self.u2u3_txt.set_text(f"{txt}| t = {t:.2f}")
+
+    def _draw_comoving_dot(self, t, ndots):
+        """
+        Overplots the data in an animation with dots that
+        are comoving with the flow.
+
+        Parameters
+        ----------
+        t : float
+            The current time.
+
+        """
+        dotcolor = "red"
+
+        if self.slicing_axis == self._u3axis:
+            bg = self.data.ds_bg.equilibria["v02"]
+            edge_max = np.max(self.u2_data)
+            edge_min = np.min(self.u2_data)
+        else:
+            bg = self.data.ds_bg.equilibria["v03"]
+            edge_max = np.max(self.u3_data)
+            edge_min = np.min(self.u3_data)
+        if np.allclose(bg, 0.0):
+            pylbo.logger.warning("Projected velocity is zero.")
+
+        x0 = edge_min
+
+        if not self.ax.name == "polar":
+            lims = self.ax.get_xlim()
+        else:
+            lims = self.ax.get_ylim()
+        ymin = max(self.data.ds_bg.x_start, min(lims))
+        ymax = min(self.data.ds_bg.x_end, max(lims))
+        scaling = 1.0
+        yloc = np.linspace(ymin, ymax, ndots + 2)[1:-1]
+        if self.data.ds.geometry == "cylindrical":
+            ymin = max(self.data.ds_bg.x_start, min(self.ax.get_ylim()))
+            ymax = min(self.data.ds_bg.x_end, max(self.ax.get_ylim()))
+            yloc = np.linspace(ymin, ymax, ndots + 2)[1:-1]
+            scaling = yloc
+
+        xloc = x0 + t * np.interp(yloc, self.data.ds_bg.grid_gauss, bg) / scaling
+        for i in range(len(xloc)):  # for periodic reappearance
+            if xloc[i] > edge_max:
+                xloc[i] = edge_min + xloc[i] - edge_max
+            if xloc[i] < edge_min:
+                xloc[i] = edge_max - (edge_min - xloc[i])
+        if self._view_dot is not None:
+            self._view_dot.remove()
+        if self.ax.name == "polar":
+            self._view_dot = self.ax.scatter(xloc, yloc, marker="o", c=dotcolor)
+        else:
+            self._view_dot = self.ax.scatter(yloc, xloc, marker="o", c=dotcolor)
 
     def _update_view(self, updated_solution: np.ndarray) -> None:
         """
@@ -265,6 +353,10 @@ class CartesianSlicePlot2D(ModeFigure):
             self._update_contour_plot(updated_solution)
         else:
             self._view.set_array(updated_solution.ravel())
+        if self._has_streamlines:
+            self._update_streamplot()
+        if self._has_quivers:
+            self._update_quiverplot()
 
     def _update_view_clims(self, solution: np.ndarray) -> None:
         self.vmin, self.vmax = np.min(solution), np.max(solution)
@@ -284,3 +376,124 @@ class CartesianSlicePlot2D(ModeFigure):
         self._solutions = updated_solution
         self.draw_solution()
         self.add_axes_labels()
+
+    def add_streamlines(
+        self, xgrid=None, coordgrid=None, field="v", add_background=True, **kwargs
+    ) -> None:
+        if is_custom_grid(self.data.ds_bg.ef_grid):
+            raise ValueError("Streamlines are not supported for non-equidistant grids.")
+        self._has_streamlines = True
+        self._add_streamplot(
+            xgrid=xgrid,
+            coordgrid=coordgrid,
+            field=field,
+            add_background=add_background,
+            **kwargs,
+        )
+
+    def add_quivers(
+        self, xgrid=None, coordgrid=None, field="v", add_background=True, **kwargs
+    ) -> None:
+        self._has_quivers = True
+        self._add_quiverplot(
+            xgrid=xgrid,
+            coordgrid=coordgrid,
+            field=field,
+            add_background=add_background,
+            **kwargs,
+        )
+
+    def _add_streamplot(
+        self, xgrid=None, coordgrid=None, field="v", add_background=True, **kwargs
+    ) -> None:
+        self.stream_handler = self._create_vectorplot(
+            xgrid=xgrid,
+            coordgrid=coordgrid,
+            field=field,
+            add_background=add_background,
+            **kwargs,
+        )
+        self._draw_vectorplot()
+
+    def _add_quiverplot(
+        self, xgrid=None, coordgrid=None, field="v", add_background=True, **kwargs
+    ) -> None:
+        self.quiver_handler = self._create_vectorplot(
+            xgrid=xgrid,
+            coordgrid=coordgrid,
+            field=field,
+            add_background=add_background,
+            **kwargs,
+        )
+        self._draw_vectorplot()
+
+    def _create_vectorplot(
+        self, xgrid=None, coordgrid=None, field="v", add_background=True, **kwargs
+    ) -> VectorplotHandler:
+
+        if xgrid is None:
+            xgrid = self.data.ds_bg.ef_grid
+        if coordgrid is None:
+            coordgrid = self._u2 if self.slicing_axis == self._u3axis else self._u3
+        xgrid = np.asarray(xgrid)
+        coordgrid = np.asarray(coordgrid)
+
+        streamline_data = ModeVisualisationData(
+            self.data.ds,
+            self.data.omega,
+            None,
+            self.data.use_real_part,
+            self.data.complex_factor,
+            self.data.add_background,
+        )
+
+        if field not in ["v", "B"]:
+            raise ValueError("Field must be either 'v' or 'B'.")
+        if field == "B" and not self.data.ds_bg.has_derived_efs:
+            raise ValueError("No derived B eigenfunctions included.")
+        vector_handler = VectorplotHandler(
+            xgrid=xgrid,
+            coordgrid=coordgrid,
+            field=field,
+            data=streamline_data,
+            axes=self.ax,
+            add_background=add_background,
+            **kwargs,
+        )
+        vector_handler._set_slicing_axis(self.slicing_axis, self._u2axis, self._u3axis)
+        vector_handler._set_streamplot_arrays(u2=self.u2_data, u3=self.u3_data)
+        return vector_handler
+
+    def _draw_vectorplot(self) -> None:
+        self._ensure_first_frame_is_drawn()
+        if self._has_streamlines:
+            self.stream_handler._set_time(self._time)
+            self.stream_handler._set_solutions()
+            self.stream_handler._draw_streamlines()
+        if self._has_quivers:
+            self.quiver_handler._set_time(self._time)
+            self.quiver_handler._set_solutions()
+            self.quiver_handler._draw_quivers()
+
+        xlims = (
+            (self.xmin, self.xmax)
+            if not self.ax.name == "polar"
+            else (self.coordmin, self.coordmax)
+        )
+        ylims = (
+            (self.coordmin, self.coordmax)
+            if not self.ax.name == "polar"
+            else (self.xmin, self.xmax)
+        )
+        self.ax.set_xlim(xlims)
+        self.ax.set_ylim(ylims)
+
+    def _update_streamplot(self) -> None:
+        self.stream_handler._set_time(self._time)
+        self.stream_handler._set_solutions()
+        self.stream_handler._draw_streamlines()  # sadly, streamlines can't be updated
+
+    def _update_quiverplot(self) -> None:
+        self.quiver_handler._set_time(self._time)
+        self.quiver_handler._set_solutions()
+        self.quiver_handler._update_quivers()

@@ -6,7 +6,7 @@ sidebar:
   nav: "leftcontents"
 toc: true
 toc_icon: "chevron-circle-down"
-last_modified_at: 2023-04-13
+last_modified_at: 2025-01-28
 ---
 
 This page gives a detailed overview on the various Legolas testing suites, how to run them and what they are testing.
@@ -17,7 +17,7 @@ in pieces of code that previously worked.
 
 Legolas has two levels of testing suites: unit tests and regression tests, all of which run on both the `master` and
 `develop` branches for every commit or pull request. The Pylbo framework has its own dedicated testing suite.
-All of these test suites are decouples from each other and test distinctly different things: the unit tests are low-level
+All of these test suites are decoupled from each other and test distinctly different things: the unit tests are low-level
 and test individual subroutines and functions in the Legolas source code using [pFUnit](https://github.com/Goddard-Fortran-Ecosystem/pFUnit).
 The regression tests on the other hand are high-level and compare code output from a recent commit to previously known results, while
 the Pylbo tests check data loading and management, interfacing with Legolas and visualisations.
@@ -44,8 +44,9 @@ formatting standards, which automatically take care of trailing whitespaces, imp
 We also run [flake8](https://flake8.pycqa.org/en/latest/) as style enforcement.
 
 We explicitly check for both Black and flake8 formatting and style during the automated tests and strictly enforce this.
-Many IDE's support Black/flake8 plugins which can automatically format the file on save, so it may be useful to set this up
+Many IDEs support Black/flake8 plugins which can automatically format the file on save, so it may be useful to set this up
 if you are making edits to the source code.
+
 ## The Legolas unit tests
 ### Running the tests
 To run the unit tests you will need to have pFUnit installed, which has some
@@ -125,6 +126,14 @@ You can add as many filenames as you want, separated by a whitespace.
 **Note**: tests that are passing will clean up after themselves by deleting the generated datfile and images.
 You can ask the test suite to keep the images instead (for visual inspections, for example) by simply adding the `--keep-files` flag when running the tests.
 {: .notice--info}
+
+{% capture note %}
+<i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+**Note:** since some tests rely on data saved with `pickle`, tight control of the environment is necessary for these tests to pass. Before running the regression tests, it is recommended to set up the testing environment specified in the repository in `.github/workflows/regression.yml`.
+{% endcapture %}
+<div class="notice--warning">
+  {{ note | markdownify }}
+</div>
 
 
 ### Adding new tests

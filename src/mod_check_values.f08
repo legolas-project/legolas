@@ -21,6 +21,12 @@ module mod_check_values
     module procedure contains_NaN_complex
   end interface is_NaN
 
+  !> interface to check for inf values
+  interface is_infinite
+    module procedure contains_inf_real
+    module procedure contains_inf_complex
+  end interface is_infinite
+
   !> interface to check equality between values/arrays
   interface is_equal
     module procedure real_is_equal
@@ -45,6 +51,7 @@ module mod_check_values
 
   public :: set_small_values_to_zero
   public :: is_NaN
+  public :: is_infinite
   public :: is_equal
   public :: is_zero
   public :: is_negative
@@ -118,6 +125,27 @@ contains
 
     contains_NaN_complex = (ieee_is_nan(real(var)) .or. ieee_is_nan(aimag(var)))
   end function contains_NaN_complex
+
+
+  !> checks a given real value/array/matrix for infinity.
+  elemental logical function contains_inf_real(var)
+    !> the real variable/array/matrix to check
+    real(dp), intent(in)  :: var
+
+    contains_inf_real = (.not. ieee_is_finite(var))
+  end function contains_inf_real
+
+
+  !> checks a given complex value/array/matrix for infinity.
+  elemental logical function contains_inf_complex(var)
+    !> the complex variable/array/matrix to check
+    complex(dp), intent(in) :: var
+
+    contains_inf_complex = ( &
+      .not. ieee_is_finite(real(var)) &
+      .or. .not. ieee_is_finite(aimag(var)) &
+    )
+  end function contains_inf_complex
 
 
   !> Equality check between real values

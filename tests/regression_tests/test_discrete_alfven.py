@@ -10,18 +10,17 @@ class TestDiscreteAlfvenQR(RegressionTest):
     equilibrium = "discrete_alfven"
     geometry = "cylindrical"
 
-    parameters = {"k2": 1.0, "k3": 0.05, "j0": 0.125, "delta": 0.2}
+    parameters = {"k2": 1.0, "k3": 0.05, "j0": 0.125, "delta": 0.2, "eq_bool": True}
     physics_settings = {
         "radiative_cooling": True,
         "heating": True,
         "force_thermal_balance": True,
-        "cooling_curve": "rosner",
+        "cooling_curve": "Rosner",
         "parallel_conduction": True,
         "perpendicular_conduction": False,
         "unit_density": 1.5e-15,
         "unit_magneticfield": 50.0,
         "unit_length": 1.0e10,
-        "mean_molecular_weight": 1.0,
     }
 
     spectrum_limits = [

@@ -1,37 +1,43 @@
 module mod_test_matrix_elements
   use mod_suite_utils
   use funit
+  use mod_state_vector, only: state_vector_t, sv_rho1, sv_v1, sv_v2, sv_v3, sv_T1, sv_a1
   use mod_matrix_elements, only: matrix_elements_t, new_matrix_elements
   use mod_matrix_element_node, only: matrix_element_node_t
+  use mod_basis_functions, only: basis_function, hquad, hcubic, dhquad, dhcubic, &
+    ddhcubic
   implicit none
 
+  type(state_vector_t) :: state_vector
   type(matrix_elements_t) :: elements
   type(matrix_element_node_t), pointer :: node
-  character(len=2), parameter :: state_vector(4) = ["t1", "t2", "t3", "t4"]
-  real(dp), parameter :: spline1(4) = [1.0d0, 2.0d0, 3.0d0, 4.0d0]
-  real(dp), parameter :: spline2(4) = [5.0d0, 6.0d0, 7.0d0, 8.0d0]
 
 contains
 
   @before
   subroutine init_test()
     call reset_globals()
+    call state_vector%assemble(physics_type="hd")
+    call state_vector%set_basis_functions( &
+      [character(10) :: "quadratic", "cubic", "quadratic", "quadratic", "cubic"] &
+    )
     elements = new_matrix_elements(state_vector=state_vector)
   end subroutine init_test
 
 
   @after
   subroutine tear_down()
+    call state_vector%delete()
     call elements%delete()
     nullify(node)
   end subroutine tear_down
 
 
   subroutine add_to_elements()
-    call elements%add(3.0d0, loc1="t1", loc2="t1", spline1=spline1, spline2=spline2)
-    call elements%add(4.0d0, loc1="t3", loc2="t2", spline1=spline1, spline2=spline2)
-    call elements%add(5.0d0, loc1="t4", loc2="t4", spline1=spline1, spline2=spline2)
-    call elements%add(6.0d0, loc1="t2", loc2="t2", spline1=spline1, spline2=spline2)
+    call elements%add(3.0d0, sv_rho1, sv_rho1)
+    call elements%add(4.0d0, sv_T1, sv_v1)
+    call elements%add(5.0d0, sv_v3, sv_v1)
+    call elements%add(6.0d0, sv_v2, sv_v3)
   end subroutine add_to_elements
 
 
@@ -39,9 +45,8 @@ contains
   subroutine test_add_invalid_element()
     use mod_check_values, only: is_NaN
     call set_name("elements: add invalid element")
-    call elements%add("5", loc1="t1", loc2="t1", spline1=spline1, spline2=spline2)
-    @assertEqual(1, elements%get_nb_elements())
-    @assertTrue(is_NaN(elements%get_elements()))
+    call elements%add("5", sv_rho1, sv_rho1)
+    @assertExceptionRaised("NaN matrix element encountered for [rho, rho]")
   end subroutine test_add_invalid_element
 
 
@@ -49,7 +54,7 @@ contains
   subroutine test_add_integer_element()
     integer :: expected(1, 2)
     call set_name("elements: add single integer element")
-    call elements%add(2, loc1="t1", loc2="t1", spline1=spline1, spline2=spline2)
+    call elements%add(2, sv_rho1, sv_rho1)
     @assertEqual(1, elements%get_nb_elements())
     @assertEqual((2.0d0, 0.0d0), elements%get_elements(), tolerance=TOL)
     expected(1, :) = [1, 1]
@@ -61,7 +66,7 @@ contains
   subroutine test_add_real_element()
     integer :: expected(1, 2)
     call set_name("elements: add single real element")
-    call elements%add(3.0d0, loc1="t2", loc2="t1", spline1=spline1, spline2=spline2)
+    call elements%add(3.0d0, sv_v1, sv_rho1)
     @assertEqual(1, elements%get_nb_elements())
     @assertEqual((3.0d0, 0.0d0), elements%get_elements(), tolerance=TOL)
     expected(1, :) = [2, 1]
@@ -73,9 +78,7 @@ contains
   subroutine test_add_complex_element()
     integer :: expected(1, 2)
     call set_name("elements: add single complex element")
-    call elements%add( &
-      (1.0d0, 2.5d0), loc1="t3", loc2="t2", spline1=spline1, spline2=spline2 &
-    )
+    call elements%add((1.0d0, 2.5d0), sv_v2, sv_v1)
     @assertEqual(1, elements%get_nb_elements())
     @assertEqual((1.0d0, 2.5d0), elements%get_elements(), tolerance=TOL)
     expected(1, :) = [3, 2]
@@ -88,13 +91,11 @@ contains
     integer :: expected_positions(3, 2)
     complex(dp) :: expected_elements(3)
     call set_name("elements: add multiple elements")
-    call elements%add(1.0d0, loc1="t2", loc2="t1", spline1=spline1, spline2=spline2)
-    call elements%add(2.5d0, loc1="t3", loc2="t2", spline1=spline1, spline2=spline2)
-    call elements%add( &
-      (2.0d0, 3.5d0), loc1="t4", loc2="t4", spline1=spline1, spline2=spline2 &
-    )
+    call elements%add(1.0d0, sv_v1, sv_rho1)
+    call elements%add(2.5d0, sv_v2, sv_v1)
+    call elements%add((2.0d0, 3.5d0), sv_T1, sv_T1)
     @assertEqual(3, elements%get_nb_elements())
-    expected_positions = reshape([2, 3, 4, 1, 2, 4], shape(expected_positions))
+    expected_positions = reshape([2, 3, 5, 1, 2, 5], shape(expected_positions))
     @assertEqual(expected_positions, elements%get_positions())
     expected_elements = [(1.0d0, 0.0d0), (2.5d0, 0.0d0), (2.0d0, 3.5d0)]
     @assertEqual(expected_elements, elements%get_elements(), tolerance=TOL)
@@ -104,11 +105,11 @@ contains
   @test
   subroutine test_add_element_invalid_position()
     call set_name("elements: add element with invalid position")
-    call elements%add(1.0d0, loc1="t1", loc2="t5", spline1=spline1, spline2=spline2)
+    call elements%add(1.0d0, sv_rho1, sv_a1)
     @assertEqual(0, elements%get_nb_elements())
-    call elements%add(1.0d0, loc1="t5", loc2="t1", spline1=spline1, spline2=spline2)
+    call elements%add(1.0d0, sv_a1, sv_v1)
     @assertEqual(0, elements%get_nb_elements())
-    call elements%add(1.0d0, loc1="t5", loc2="t5", spline1=spline1, spline2=spline2)
+    call elements%add(1.0d0, sv_a1, sv_a1)
     @assertEqual(0, elements%get_nb_elements())
   end subroutine test_add_element_invalid_position
 
@@ -159,39 +160,58 @@ contains
 
   @test
   subroutine test_add_element_get_splines()
+    procedure(basis_function), pointer :: spline1
     call set_name("elements: add element and retrieve splines")
-    call elements%add(1.0d0, loc1="t1", loc2="t1", spline1=spline1, spline2=spline2)
+    call elements%add(1.0d0, sv_rho1, sv_rho1)
     node => elements%get_node(1)
-    @assertEqual(spline1, node%get_spline1())
-    @assertEqual(spline2, node%get_spline2())
+    spline1 => hquad
+    ! Need intermediate variable + swapped target order to prevent an
+    ! ICE (internal compiler error) using `associate` in GCC-9 through GCC-11.
+    ! GCC-12 is fine, see also https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98565
+    @assertTrue(associated(spline1, target=node%spline1))
+    @assertTrue(associated(spline1, target=node%spline2))
   end subroutine test_add_element_get_splines
 
 
   @test
+  subroutine test_add_element_get_dsplines()
+    procedure(basis_function), pointer :: spline1, spline2
+    call set_name("elements: add element and retrieve dsplines")
+    call elements%add(2.0_dp, sv_rho1, sv_v1, s1do=1)
+    node => elements%get_node(1)
+    spline1 => dhquad
+    spline2 => hcubic
+    @assertTrue(associated(spline1, target=node%spline1))
+    @assertTrue(associated(spline2, target=node%spline2))
+  end subroutine test_add_element_get_dsplines
+
+
+  @test
+  subroutine test_add_element_get_ddsplines()
+    procedure(basis_function), pointer :: spline1, spline2
+    call set_name("elements: add element and retrieve ddsplines")
+    call elements%add(2.0_dp, sv_rho1, sv_v1, s1do=1, s2do=2)
+    node => elements%get_node(1)
+    spline1 => dhquad
+    spline2 => ddhcubic
+    @assertTrue(associated(spline1, target=node%spline1))
+    @assertTrue(associated(spline2, target=node%spline2))
+  end subroutine test_add_element_get_ddsplines
+
+
+  @test
   subroutine test_add_element_invalid_spline1()
-    character(len=:), allocatable :: msg
-    call set_name("elements: add element with invalid spline1")
-    call elements%add(1.0d0, loc1="t1", loc2="t1", spline1=spline1, spline2=spline2)
-    call elements%add( &
-      1.0d0, loc1="t1", loc2="t2", spline1=[1.0d0, 2.0d0], spline2=spline2 &
-    )
-    msg = "matrix elements: spline1 size not valid, expected 4 but got 2"
-    @assertExceptionRaised(msg)
+    call set_name("elements: add element (order too high)")
+    call elements%add(1.0_dp, sv_rho1, sv_rho1, s1do=3)
+    @assertExceptionRaised("spline order = 3 not implemented for spline quadratic")
   end subroutine test_add_element_invalid_spline1
 
 
   @test
   subroutine test_add_element_invalid_spline2()
-    character(len=:), allocatable :: msg
-    call set_name("elements: add element with invalid spline2")
-    call elements%add( &
-      1.0d0, loc1="t1", loc2="t1", spline1=spline1, spline2=[1.0d0, 2.0d0] &
-    )
-    call elements%add( &
-      1.0d0, loc1="t3", loc2="t1", spline1=spline1, spline2=[1.0d0, 2.0d0, 1.0d0] &
-    )
-    msg = "matrix elements: spline2 size not valid, expected 2 but got 3"
-    @assertExceptionRaised(msg)
+    call set_name("elements: add element (no ddquadratic)")
+    call elements%add(1.0_dp, sv_rho1, sv_rho1, s1do=2)
+    @assertExceptionRaised("quadratic basis function has no defined second derivative")
   end subroutine test_add_element_invalid_spline2
 
 end module mod_test_matrix_elements

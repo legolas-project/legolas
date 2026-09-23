@@ -1,3 +1,5 @@
+import warnings
+
 from pylbo._version import __version__
 from pylbo.automation.api import generate_parfiles, run_legolas
 from pylbo.utilities import logger
@@ -20,5 +22,9 @@ from pylbo.visualisation.modes.api import (
     plot_3d_slice,
     prepare_vtk_export,
 )
+import pylbo.gimli
+
+# allow deprecation warnings to be shown
+warnings.filterwarnings("default", category=DeprecationWarning)
 
 logger.init_logger()

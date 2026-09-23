@@ -19,7 +19,7 @@ $$
 \newcommand{\gbf}{\mathbf{g}}
 \newcommand{\bbf}{\mathbf{B}}
 \newcommand{\HL}{\mathscr{L}}
-\newcommand{\HH}{\mathcal{H}}
+\newcommand{\fancyH}{\mathcal{H}}
 \newcommand{\kappabf}{\boldsymbol{\kappa}}
 \newcommand{\unit}[1]{\mathbf{e}_{#1}}
 \newcommand{\eps}{\varepsilon}

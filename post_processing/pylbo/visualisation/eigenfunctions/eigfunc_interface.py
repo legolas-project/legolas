@@ -1,17 +1,25 @@
 from __future__ import annotations
 
 import abc
+from pathlib import Path
 
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import PathCollection
-from pylbo.data_containers import LegolasDataSeries, LegolasDataSet
+from pylbo.data_containers import (
+    LegolasDataContainer,
+    LegolasDataSeries,
+    LegolasDataSet,
+)
+from pylbo.exceptions import EigenfunctionsNotPresent
 from pylbo.utilities.logger import pylboLogger
 from pylbo.utilities.toolbox import (
     add_pickradius_to_item,
     count_zeroes,
-    invert_continuum_array,
+    find_resonance_location,
+    get_all_eigenfunction_names,
+    transform_to_numpy,
 )
 
 
@@ -49,11 +57,11 @@ class EigenfunctionInterface:
         self.spec_axis = spec_axis
         self._check_data_is_present()
         # holds the points that are currently selected in the form of a "double" dict:
-        # {"ds instance" : {"index" : line2D instance}}
+        # {ds instance : {index : line2D instance}}
         self._selected_idxs = {}
         self._use_real_part = True
         self._selected_name_idx = 0
-        self._function_names = None
+        self._function_names = get_all_eigenfunction_names(self.data)
         self._retransform = False
 
         self._condition_to_make_transparent = None
@@ -64,13 +72,17 @@ class EigenfunctionInterface:
         self._display_tooltip()
 
         self._draw_resonances = False
+        self.savedir = None
 
     def _check_data_is_present(self):
         """
         Checks if the required data is present to draw for example
         eigenfunctions, is overloaded in subclasses.
         """
-        pass
+        if not any(transform_to_numpy(self.data.has_efs)):
+            raise EigenfunctionsNotPresent(
+                "None of the given datfiles has eigenfunctions written to it."
+            )
 
     def _artist_has_valid_attributes(self, event):
         """
@@ -144,10 +156,10 @@ class EigenfunctionInterface:
         """
         if not self._selected_idxs:
             return
-        print("Currently selected eigenvalues:")
+        pylboLogger.info("Currently selected eigenvalues:")
         for ds, points in self._selected_idxs.items():
-            idxs = np.array([int(idx) for idx in points.keys()])
-            print(f"{ds.datfile.stem} | {ds.eigenvalues[idxs]}")
+            idxs = np.array([idx for idx in points.keys()], dtype=int)
+            pylboLogger.info(f"{ds.datfile.stem} | {ds.eigenvalues[idxs]}")
 
     def _save_eigenvalue_selection(self):
         """
@@ -158,15 +170,19 @@ class EigenfunctionInterface:
             return
         count = 1
         for ds in self._selected_idxs:
-            print(f"Saving selected eigenvalues for dataset {count}...")
+            pylboLogger.info(f"Saving selected eigenvalues for dataset {count}...")
             to_store = [ds.ef_grid]
             for point in self._selected_idxs[ds]:
                 point_to_store = ds.get_eigenfunctions(ev_idxs=int(point))[0]
                 to_store.append(point_to_store)
-            filename = ds.datfile.name
-            filename = filename.replace(".dat", "")
+            to_store = np.asarray(to_store, dtype=object)
+            filename = ds.datfile.name.replace(".dat", "")
+            if self.savedir is not None:
+                filename = Path(self.savedir) / filename
             np.save(filename, to_store)
-            print(f"{len(to_store)-1} mode(s) saved to " + filename + ".npy")
+            pylboLogger.info(
+                f"{len(to_store)-1} mode(s) saved to " + str(filename) + ".npy"
+            )
             count += 1
 
     def _save_selection_indices(self):
@@ -178,15 +194,21 @@ class EigenfunctionInterface:
             return
         count = 1
         for ds in self._selected_idxs:
-            print(f"Saving indices of selected eigenvalues for dataset {count}...")
+            pylboLogger.info(
+                f"Saving indices of selected eigenvalues for dataset {count}..."
+            )
             to_store = []
             for point in self._selected_idxs[ds]:
                 to_store.append(int(point))
-            filename = ds.datfile.name
-            filename = filename.replace(".dat", "")
+            to_store = np.asarray(to_store, dtype=int)
+            filename = ds.datfile.name.replace(".dat", "")
+            if self.savedir is not None:
+                filename = Path(self.savedir) / filename
             np.save(filename, to_store)
-            print(
-                f"{len(self._selected_idxs[ds])} indices saved to " + filename + ".npy"
+            pylboLogger.info(
+                f"{len(self._selected_idxs[ds])} indices saved to "
+                + str(filename)
+                + ".npy"
             )
             count += 1
 
@@ -247,6 +269,12 @@ class EigenfunctionInterface:
         Creates the title of a given plot, has to be overridden in a subclass.
         """
         pass
+
+    def get_selected_idxs(self) -> dict[LegolasDataContainer, dict[int, plt.Artist]]:
+        return self._selected_idxs
+
+    def get_name_of_drawn_eigenfunction(self) -> str:
+        return self._function_names[self._selected_name_idx]
 
     @abc.abstractmethod
     def update_plot(self):
@@ -326,8 +354,9 @@ class EigenfunctionInterface:
         """
         idx, xdata, ydata = self._get_clicked_point_data(event)
         associated_ds = event.artist.dataset
+        items = self._selected_idxs.get(associated_ds, {})
         # skip if point index is already in list
-        if str(idx) in self._selected_idxs.get(associated_ds, {}).keys():
+        if idx in items.keys():
             return
         # skip if point has no eigenfunction due to e.g. subset
         if not self._selected_point_has_eigenfunctions(associated_ds, idx):
@@ -342,9 +371,7 @@ class EigenfunctionInterface:
             markeredgewidth=3,
         )
         add_pickradius_to_item(item=marked_point, pickradius=1)
-        # get items corresponding to this ds
-        items = self._selected_idxs.get(associated_ds, {})
-        items.update({f"{idx}": marked_point})
+        items.update({idx: marked_point})
         self._selected_idxs.update({associated_ds: items})
         self.update_plot()
 
@@ -360,7 +387,7 @@ class EigenfunctionInterface:
         idx, _, _ = self._get_clicked_point_data(event)
         # remove selected index from list
         associated_ds = event.artist.dataset
-        selected_artist = self._selected_idxs.get(associated_ds, {}).pop(str(idx), None)
+        selected_artist = self._selected_idxs.get(associated_ds, {}).pop(idx, None)
         if selected_artist is not None:
             selected_artist.remove()
             # if no items remaining for this ds, remove key
@@ -400,7 +427,12 @@ class EigenfunctionInterface:
             mouse_y = event.mouseevent.ydata
             distances = (mouse_x - xdata[idxs]) ** 2 + (mouse_y - ydata[idxs]) ** 2
             idx = idxs[distances.argmin()]
-        return idx, xdata[idx], ydata[idx]
+
+        # turn the artist index into the real dataset index
+        associated_ds = event.artist.dataset
+        sigma_clicked = xdata[idx] + 1j * ydata[idx]
+        ev_idx = np.nanargmin(np.abs(associated_ds.eigenvalues - sigma_clicked))
+        return ev_idx, np.real(sigma_clicked), np.imag(sigma_clicked)
 
     def _selected_point_has_eigenfunctions(self, ds, idx):
         """
@@ -463,9 +495,7 @@ class EigenfunctionInterface:
         in the opacity value for datapoints with no functions, so they are
         clearly distinguishable from those who do have them.
         """
-        if not isinstance(self.data, LegolasDataSeries):
-            return
-        if all(getattr(self.data, self._condition_to_make_transparent)):
+        if not isinstance(self.data, LegolasDataSeries) or all(self.data.has_efs):
             return
         self._transparent_data = not self._transparent_data
         for ax in self.axis.figure.get_axes():
@@ -474,7 +504,7 @@ class EigenfunctionInterface:
                 if hasattr(child, "dataset"):
                     if self._unmarked_alpha is None:
                         self._unmarked_alpha = child.get_alpha()
-                    if not getattr(child.dataset, self._condition_to_make_transparent):
+                    if not child.dataset.has_efs:
                         child.set_alpha(0)
                     else:
                         child.set_alpha(self._unmarked_alpha)
@@ -567,7 +597,7 @@ class EigenfunctionInterface:
             # removes duplicates
             continuum = np.array(continuum, dtype=complex)
 
-            r_inv_temp = invert_continuum_array(continuum, ds.grid_gauss, sigma)
+            r_inv_temp = find_resonance_location(continuum, ds.grid_gauss, sigma)
 
             r_inv[continuum_key] = r_inv_temp
             labels[continuum_key] = CONTINUUM_LABELS[continuum_key]

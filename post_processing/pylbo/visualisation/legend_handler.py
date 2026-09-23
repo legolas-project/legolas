@@ -2,7 +2,27 @@ import matplotlib.collections as mpl_collections
 import matplotlib.lines as mpl_lines
 import matplotlib.patches as mpl_patches
 import numpy as np
+from pylbo._version import _mpl_version
 from pylbo.utilities.toolbox import add_pickradius_to_item
+
+
+def _get_legend_handles(legend):
+    """
+    Returns the legend handles.
+
+    Parameters
+    ----------
+    legend : ~matplotlib.legend.Legend
+        The matplotlib legend to use.
+
+    Returns
+    -------
+    handles : list
+        A list of handles.
+    """
+    if _mpl_version >= "3.7":
+        return legend.legend_handles
+    return legend.legendHandles
 
 
 class LegendHandler:
@@ -76,35 +96,23 @@ class LegendHandler:
         else:
             artist.set_alpha(self.alpha_hidden)
         self._check_autoscaling()
-        artist.figure.tight_layout()
         artist.figure.canvas.draw()
 
     def make_legend_pickable(self):
-        """
-        Makes the legend pickable, only used if interactive.
-        """
-        legend_handles = self.legend.legendHandles
+        """Makes the legend pickable, only used if interactive."""
+        legend_handles = _get_legend_handles(self.legend)
         handle_labels = [handle.get_label() for handle in legend_handles]
         # we need a mapping of the legend item to the actual item that was drawn
         for i, drawn_item in enumerate(self._drawn_items):
-            # TODO: for some reason fill_between returns empty handles such that
-            #       the code below errors out. The try-except clause is an attempt
-            #       to fix it and _should_ work. This relies on the ordening of the
-            #       legend items when they are drawn, but should be thorougly tested.
+            # try-except needed for fill_between, which returns empty handles
             try:
                 idx = handle_labels.index(drawn_item.get_label())
-                legend_item = self.legend.legendHandles[idx]
+                legend_item = _get_legend_handles(self.legend)[idx]
             except ValueError:
                 idx = i
-                legend_item = self.legend.legendHandles[idx]
+                legend_item = _get_legend_handles(self.legend)[idx]
                 # fix empty label
                 legend_item.set_label(drawn_item.get_label())
-            if not drawn_item.get_label() == legend_item.get_label():
-                raise ValueError(
-                    f"something went wrong in mapping legend items to drawn items. \n"
-                    f"Tried to map {legend_item} (label '{legend_item.get_label()}')"
-                    f" to {drawn_item} (label '{drawn_item.get_label()}') \n"
-                )
             add_pickradius_to_item(item=legend_item, pickradius=self.pickradius)
             # add an attribute to this artist to tell it's from a legend
             setattr(legend_item, "is_legend_item", True)
@@ -145,20 +153,12 @@ class LegendHandler:
         # check scaling for visible items. This explicitly implements the equilibria,
         # but works for general cases as well. If needed we can simply subclass
         # and override.
-        ymin1, ymax1 = None, None
-        ymin2, ymax2 = None, None
+        if len(visible_items) == 0:
+            return
+        ydata = visible_items[0].get_ydata()
+        ymin1 = np.min(ydata)
+        ymax1 = np.max(ydata)
         for item in visible_items:
-            if not item.get_label().startswith("d"):
-                if ymin1 is None or ymax1 is None:
-                    ymin1, ymax1 = np.min(item.get_ydata()), np.max(item.get_ydata())
-                else:
-                    ymin1 = min(ymin1, np.min(item.get_ydata()))
-                    ymax1 = max(ymax1, np.max(item.get_ydata()))
-                item.axes.set_ylim(ymin1 - abs(0.1 * ymin1), ymax1 + abs(0.1 * ymax1))
-            else:
-                if ymin2 is None or ymax2 is None:
-                    ymin2, ymax2 = np.min(item.get_ydata()), np.max(item.get_ydata())
-                else:
-                    ymin2 = min(ymin2, np.min(item.get_ydata()))
-                    ymax2 = max(ymax2, np.max(item.get_ydata()))
-                item.axes.set_ylim(ymin2 - abs(0.2 * ymin2), ymax2 + abs(0.2 * ymax2))
+            ymin1 = min(ymin1, np.min(item.get_ydata()))
+            ymax1 = max(ymax1, np.max(item.get_ydata()))
+        item.axes.set_ylim(ymin1 - abs(0.1 * ymin1), ymax1 + abs(0.1 * ymax1))

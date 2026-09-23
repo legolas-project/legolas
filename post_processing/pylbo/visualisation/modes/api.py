@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Union
 
 import numpy as np
-from pylbo.data_containers import LegolasDataSet, ensure_dataset
-from pylbo.utilities.toolbox import transform_to_list, transform_to_numpy
+from pylbo.data_containers import LegolasDataSet, LegolasDataSeries
+from pylbo.utilities.toolbox import transform_to_numpy
 from pylbo.visualisation.modes.cartesian_2d import CartesianSlicePlot2D
 from pylbo.visualisation.modes.cartesian_3d import CartesianSlicePlot3D
 from pylbo.visualisation.modes.cylindrical_2d import CylindricalSlicePlot2D
@@ -15,8 +15,10 @@ from pylbo.visualisation.modes.vtk_export import VTKCartesianData, VTKCylindrica
 
 
 def plot_1d_temporal_evolution(
-    ds: LegolasDataSet,
-    omega: Union[complex, list[complex], np.ndarray],
+    ds: Union[LegolasDataSet, LegolasDataSeries],
+    omega: Union[
+        complex, list[complex], np.ndarray, list[list[complex]], list[np.ndarray]
+    ],
     ef_name: str,
     u2: float,
     u3: float,
@@ -24,7 +26,9 @@ def plot_1d_temporal_evolution(
     figsize: tuple[int, int] = None,
     add_background: bool = False,
     use_real_part: bool = True,
-    complex_factor: complex = None,
+    complex_factor: Union[
+        complex, list[complex], np.ndarray, list[list[complex]], list[np.ndarray]
+    ] = None,
     show_ef_panel: bool = True,
     **kwargs,
 ) -> TemporalEvolutionPlot1D:
@@ -38,10 +42,11 @@ def plot_1d_temporal_evolution(
 
     Parameters
     ----------
-    ds : LegolasDataSet
-        The data set containing the eigenfunction.
-    omega : complex, list[complex], np.ndarray
-        The (approximate) eigenvalue of the mode(s) to visualise.
+    ds : LegolasDataSet, LegolasDataSeries
+        The data set/series containing the eigenfunctions, having the same equilibria.
+    omega : complex, list[complex], np.ndarray, list[list[complex]], list[np.ndarray]
+        The (approximate) eigenvalue of the mode(s) to visualise. For multiple data
+        series, length of omega and ds should match.
     ef_name : str
         The name of the eigenfunction to visualise.
     u2 : float
@@ -56,8 +61,10 @@ def plot_1d_temporal_evolution(
         Whether to add the equilibrium background to the plot.
     use_real_part : bool
         Whether to use the real part of the eigenmode solution.
-    complex_factor : complex
-        A complex factor to multiply the eigenmode solution with.
+    complex_factor : complex, list[complex], np.ndarray, list[list[complex]],
+        list[np.ndarray]
+        A complex factor to multiply the eigenmode solution with. For multiple data
+        series, length of omega and ds should match.
     show_ef_panel : bool
         Whether to show the eigenfunction panel.
     kwargs : dict
@@ -68,8 +75,7 @@ def plot_1d_temporal_evolution(
     TemporalEvolutionPlot1D
         The plot object.
     """
-    ensure_dataset(ds)
-    omega = transform_to_list(omega)
+
     data = ModeVisualisationData(
         ds, omega, ef_name, use_real_part, complex_factor, add_background
     )
@@ -80,8 +86,10 @@ def plot_1d_temporal_evolution(
 
 
 def plot_2d_slice(
-    ds: LegolasDataSet,
-    omega: Union[complex, list[complex], np.ndarray],
+    ds: Union[LegolasDataSet, LegolasDataSeries],
+    omega: Union[
+        complex, list[complex], np.ndarray, list[list[complex]], list[np.ndarray]
+    ],
     ef_name: str,
     u2: Union[float, np.ndarray],
     u3: Union[float, np.ndarray],
@@ -90,7 +98,9 @@ def plot_2d_slice(
     figsize: tuple[int, int] = None,
     add_background: bool = False,
     use_real_part: bool = True,
-    complex_factor: complex = None,
+    complex_factor: Union[
+        complex, list[complex], np.ndarray, list[list[complex]], list[np.ndarray]
+    ] = None,
     show_ef_panel: bool = True,
     polar: bool = False,
     **kwargs,
@@ -109,10 +119,11 @@ def plot_2d_slice(
 
     Parameters
     ----------
-    ds : LegolasDataSet
-        The data set containing the eigenfunction.
-    omega : complex, list[complex], np.ndarray
-        The (approximate) eigenvalue of the mode(s) to visualise.
+    ds : LegolasDataSet, LegolasDataSeries
+        The data set/series containing the eigenfunctions, having the same equilibria.
+    omega : complex, list[complex], np.ndarray, list[list[complex]], list[np.ndarray]
+        The (approximate) eigenvalue of the mode(s) to visualise. For multiple
+        data series, length of omega and ds should match.
     ef_name : str
         The name of the eigenfunction to visualise.
     u2 : float, np.ndarray
@@ -129,8 +140,10 @@ def plot_2d_slice(
         Whether to add the equilibrium background to the plot.
     use_real_part : bool
         Whether to use the real part of the eigenmode solution.
-    complex_factor : complex
-        A complex factor to multiply the eigenmode solution with.
+    complex_factor : complex, list[complex], np.ndarray, list[list[complex]],
+        list[np.ndarray]
+        A complex factor to multiply the eigenmode solution with. For multiple data
+        series, length of omega and ds should match.
     show_ef_panel : bool
         Whether to show the eigenfunction panel.
     polar : bool
@@ -144,12 +157,11 @@ def plot_2d_slice(
     p : CartesianSlicePlot2D or CylindricalSlicePlot2D
         The plot object.
     """
-    ensure_dataset(ds)
-    omega = transform_to_list(omega)
+
     data = ModeVisualisationData(
         ds, omega, ef_name, use_real_part, complex_factor, add_background
     )
-    if ds.geometry == "Cartesian":
+    if not polar or ds.geometry == "Cartesian":
         p = CartesianSlicePlot2D(
             data, u2, u3, time, slicing_axis, figsize, show_ef_panel, **kwargs
         )
@@ -161,8 +173,10 @@ def plot_2d_slice(
 
 
 def plot_3d_slice(
-    ds: LegolasDataSet,
-    omega: Union[complex, list[complex], np.ndarray],
+    ds: Union[LegolasDataSet, LegolasDataSeries],
+    omega: Union[
+        complex, list[complex], np.ndarray, list[list[complex]], list[np.ndarray]
+    ],
     ef_name: str,
     u2: Union[float, np.ndarray],
     u3: Union[float, np.ndarray],
@@ -171,7 +185,9 @@ def plot_3d_slice(
     figsize: tuple[int, int] = None,
     add_background: bool = False,
     use_real_part: bool = True,
-    complex_factor: complex = None,
+    complex_factor: Union[
+        complex, list[complex], np.ndarray, list[list[complex]], list[np.ndarray]
+    ] = None,
     **kwargs,
 ) -> CartesianSlicePlot3D:
     """
@@ -185,10 +201,11 @@ def plot_3d_slice(
 
     Parameters
     ----------
-    ds : LegolasDataSet
-        The data set containing the eigenfunction.
-    omega : complex, list[complex], np.ndarray
-        The (approximate) eigenvalue of the mode(s) to visualise.
+    ds : LegolasDataSet, LegolasDataSeries
+        The data set/series containing the eigenfunctions, having the same equilibria.
+    omega : complex, list[complex], np.ndarray, list[list[complex]], list[np.ndarray]
+        The (approximate) eigenvalue of the mode(s) to visualise. For multiple data
+        series, length of omega and ds should match.
     ef_name : str
         The name of the eigenfunction to visualise.
     u2 : float, np.ndarray
@@ -205,8 +222,10 @@ def plot_3d_slice(
         Whether to add the equilibrium background to the plot.
     use_real_part : bool
         Whether to use the real part of the eigenmode solution.
-    complex_factor : complex
-        A complex factor to multiply the eigenmode solution with.
+    complex_factor : complex, list[complex], np.ndarray, list[list[complex]],
+        list[np.ndarray]
+        A complex factor to multiply the eigenmode solution with. For multiple data
+        series, length of omega and ds should match.
     kwargs : dict
         Additional keyword arguments to pass to the plotting function.
 
@@ -215,8 +234,7 @@ def plot_3d_slice(
     p : CartesianSlicePlot3D or CylindricalSlicePlot3D
         The plot object.
     """
-    ensure_dataset(ds)
-    omega = transform_to_list(omega)
+
     u3 = transform_to_numpy(u3)
     data = ModeVisualisationData(
         ds, omega, ef_name, use_real_part, complex_factor, add_background
@@ -229,12 +247,16 @@ def plot_3d_slice(
 
 
 def prepare_vtk_export(
-    ds: LegolasDataSet,
-    omega: Union[complex, list[complex], np.ndarray],
+    ds: Union[LegolasDataSet, LegolasDataSeries],
+    omega: Union[
+        complex, list[complex], np.ndarray, list[list[complex]], list[np.ndarray]
+    ],
     u2: np.ndarray,
     u3: np.ndarray,
     use_real_part: bool = True,
-    complex_factor: complex = None,
+    complex_factor: Union[
+        complex, list[complex], np.ndarray, list[list[complex]], list[np.ndarray]
+    ] = None,
 ) -> Union[VTKCartesianData, VTKCylindricalData]:
     """
     Prepares for a VTK file export of the eigenmode solution in three dimensions.
@@ -242,24 +264,28 @@ def prepare_vtk_export(
 
     Parameters
     ----------
-    ds : LegolasDataSet
-        The data set containing the eigenfunction.
-    omega : complex, list[complex], np.ndarray
-        The (approximate) eigenvalue of the mode(s) to visualise.
+    ds : LegolasDataSet, LegolasDataSeries
+        The data set/series containing the eigenfunctions, having the same equilibria.
+    omega : complex, list[complex], np.ndarray, list[list[complex]], list[np.ndarray]
+        The (approximate) eigenvalue of the mode(s) to visualise. For multiple data
+        series, length of omega and ds should match.
     u2 : np.ndarray
         The y or :math:`\\theta` coordinates of the eigenmode solution.
     u3 : np.ndarray
         The z coordinates of the eigenmode solution.
     use_real_part : bool
         Whether to use the real part of the eigenmode solution.
+    complex_factor : complex, list[complex], np.ndarray, list[list[complex]],
+        list[np.ndarray]
+        A complex factor to multiply the eigenmode solution with. For multiple data
+        series, length of omega and ds should match.
 
     Returns
     -------
     VTKCartesianData or VTKCylindricalData
         Object that can be used to generate VTK files.
     """
-    ensure_dataset(ds)
-    omega = transform_to_list(omega)
+
     data = ModeVisualisationData(
         ds, omega, None, use_real_part, complex_factor, add_background=False
     )

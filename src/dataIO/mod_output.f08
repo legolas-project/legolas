@@ -5,8 +5,9 @@ module mod_output
   use mod_background, only: background_t
   use mod_physics, only: physics_t
   use mod_matrix_structure, only: matrix_t
-  use mod_logging, only: logger
+  use mod_logging, only: logger, str
   use mod_eigenfunctions, only: eigenfunctions_t
+  use mod_iv_module, only: iv_module_t
   implicit none
 
   private
@@ -62,7 +63,8 @@ contains
     matrix_A, &
     matrix_B, &
     eigenvectors, &
-    eigenfunctions &
+    eigenfunctions, &
+    iv_module &
   )
     use mod_version, only: LEGOLAS_VERSION
 
@@ -75,6 +77,7 @@ contains
     type(matrix_t), intent(in) :: matrix_B
     complex(dp), intent(in) :: eigenvectors(:, :)
     type(eigenfunctions_t), intent(in) :: eigenfunctions
+    type(iv_module_t), intent(inout) :: iv_module
 
     datfile_path = get_datfile_path(settings=settings, extension=".dat")
     call open_file(file_unit=dat_fh, filename=datfile_path)
@@ -100,6 +103,9 @@ contains
       call write_residual_data(eigenvalues, matrix_A, matrix_B, eigenvectors)
     end if
     if (settings%io%write_matrices) call write_matrix_data(matrix_A, matrix_B)
+    if (settings%io%write_iv_snapshots .and. settings%iv%enabled) then
+      call write_iv_snapshots(settings, iv_module)
+    end if
 
     close(dat_fh)
   end subroutine create_datfile
@@ -123,18 +129,22 @@ contains
   subroutine write_physics_type_info(settings)
     type(settings_t), intent(in) :: settings
     character(len=:), allocatable :: state_vector(:)
+    character(len=:), allocatable :: basis_functions(:)
 
     allocate(state_vector, source=settings%get_state_vector())
+    allocate(basis_functions, source=settings%state_vector%get_basis_functions())
 
     write(dat_fh) settings%get_nb_eqs()
     write(dat_fh) len(settings%get_physics_type()), settings%get_physics_type()
     write(dat_fh) len(state_vector(1)), size(state_vector), state_vector
+    write(dat_fh) len(basis_functions(1)), size(basis_functions), basis_functions
     write(dat_fh) settings%dims%get_dim_integralblock()
     write(dat_fh) settings%dims%get_dim_subblock()
     write(dat_fh) settings%dims%get_dim_quadblock()
     write(dat_fh) settings%dims%get_dim_matrix()
 
     if (allocated(state_vector)) deallocate(state_vector)
+    if (allocated(basis_functions)) deallocate(basis_functions)
   end subroutine write_physics_type_info
 
 
@@ -168,6 +178,7 @@ contains
     write(dat_fh) settings%io%write_ef_subset
     write(dat_fh) settings%io%ef_subset_radius
     write(dat_fh) settings%io%ef_subset_center
+    write(dat_fh) settings%io%write_iv_snapshots .and. settings%iv%enabled
   end subroutine write_io_info
 
 
@@ -210,7 +221,7 @@ contains
   subroutine write_units_info(settings)
     type(settings_t), intent(in) :: settings
     ! number of units written to the datfile
-    integer, parameter :: n_units = 13
+    integer, parameter :: n_units = 15
 
     write(dat_fh) n_units
     write(dat_fh) settings%units%in_cgs()
@@ -228,8 +239,12 @@ contains
     write(dat_fh) len("unit_numberdensity"), "unit_numberdensity", &
       settings%units%get_unit_numberdensity()
     write(dat_fh) len("unit_mass"), "unit_mass", settings%units%get_unit_mass()
-    write(dat_fh) len("mean_molecular_weight"), "mean_molecular_weight", &
-      settings%units%get_mean_molecular_weight()
+    write(dat_fh) len("He_abundance"), "He_abundance", &
+      settings%units%get_He_abundance()
+    write(dat_fh) len("units_a"), "units_a", &
+      settings%units%get_units_parameter_a()
+    write(dat_fh) len("units_b"), "units_b", &
+      settings%units%get_units_parameter_b()
     write(dat_fh) len("unit_resistivity"), "unit_resistivity", &
       settings%units%get_unit_resistivity()
     write(dat_fh) len("unit_lambdaT"), "unit_lambdaT", &
@@ -543,5 +558,36 @@ contains
       / dznrm2(N, eigenvalue * eigenvector, 1) &
     )
   end function get_residual
+
+
+  subroutine write_iv_snapshots(settings, iv_module)
+    type(settings_t), intent(in) :: settings
+    type(iv_module_t), intent(inout) :: iv_module
+    integer :: i_snap, i_comp
+    integer :: n_snap, n_points
+    
+    call logger%info("writing IV snapshots")
+    n_snap   = settings%iv%get_n_snapshots()
+    n_points = settings%grid%get_ef_gridpts()
+
+    ! Metadata
+    write(dat_fh) n_snap
+    write(dat_fh) n_points
+    write(dat_fh) iv_module%state_vec%num_components
+  
+    ! Write snapshot times
+    write(dat_fh) iv_module%snap_times
+
+    ! Reassemble on the fly
+    do i_snap = 1, n_snap
+      call iv_module%postprocess_snapshot(i_snap)
+
+      do i_comp = 1, iv_module%state_vec%num_components
+        write(dat_fh) real(iv_module%state_vec%components(i_comp)%ptr%profile, kind = dp)
+      end do
+    end do
+
+  end subroutine write_iv_snapshots
+  
 
 end module mod_output

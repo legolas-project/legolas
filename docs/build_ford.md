@@ -23,9 +23,10 @@ extra_mods: json_module: http://jacobwilliams.github.io/json-fortran/
 
 ### Source code documentation
 Welcome to the main page of the Legolas source code documentation.
-Here you can browse all the different source files, modules and call graphs.
-These pages are automatically generated from in-line source code documentation
-on the `master` branch of the [GitHub repository](https://github.com/legolas-project/legolas),
+Here you can browse all the different source files, modules and call graphs
+(a limited list is shown below). These pages are automatically generated
+from in-line source code documentation on the `master` branch of the 
+[GitHub repository](https://github.com/legolas-project/legolas),
 and are built after every commit.
 
 You can return to the main site [here](../../../index.html).

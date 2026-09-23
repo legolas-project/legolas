@@ -47,6 +47,7 @@ contains
 
 
   subroutine set_resistivity_funcs(this, eta_func, detadT_func, detadr_func)
+    use mod_logging, only: logger
     class(physics_t), intent(inout) :: this
     procedure(real(dp)) :: eta_func
     procedure(real(dp)), optional :: detadT_func
@@ -56,6 +57,13 @@ contains
       call log_function_warning(name="resistivity")
       return
     end if
+
+    if (this%settings%physics%resistivity%has_fixed_resistivity()) then
+      call logger%warning( &
+        "User-defined resistivity functions override the fixed_resistivity_value." &
+      )
+    end if
+
     this%resistivity%eta => eta_func
     if (present(detadT_func)) this%resistivity%detadT => detadT_func
     if (present(detadr_func)) this%resistivity%detadr => detadr_func

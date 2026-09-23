@@ -46,21 +46,20 @@ contains
   subroutine initialise(this, omega)
     class(eigenfunctions_t), intent(inout) :: this
     complex(dp), intent(in) :: omega(:)
-    character(len=:), allocatable :: state_vector(:)
     character(len=:), allocatable :: derived_state_vector(:)
     integer :: i, nb_efs
 
     call this%select_eigenfunctions_to_save(omega)
-    state_vector = this%settings%get_state_vector()
     nb_efs = size(this%ef_written_idxs)
 
-    allocate(this%base_efs(size(state_vector)))
+    allocate(this%base_efs(size(this%settings%state_vector%components)))
     do i = 1, size(this%base_efs)
       call this%base_efs(i)%initialise( &
-        name=state_vector(i), ef_grid_size=size(this%grid%ef_grid), nb_efs=nb_efs &
+        sv_component=this%settings%state_vector%components(i)%ptr, &
+        ef_grid_size=size(this%grid%ef_grid), &
+        nb_efs=nb_efs &
       )
     end do
-    deallocate(state_vector)
 
     if (.not. this%settings%io%write_derived_eigenfunctions) return
 

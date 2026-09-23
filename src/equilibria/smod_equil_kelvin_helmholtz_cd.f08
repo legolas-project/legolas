@@ -7,19 +7,24 @@
 !! This equilibrium is taken from
 !! _Baty, H., & Keppens, R. (2002). Interplay between Kelvin-Helmholtz and
 !!  current-driven instabilities in jets. The Astrophysical Journal, 580(2), 800_.
-!! @note Default values are given by
+!! @note
+!!     Default values are given by
+!!     
+!!     - <tt>k2</tt> = -1
+!!     - <tt>V</tt> = 1.63 : amplitude of the velocity shear
+!!     - <tt>cte_p0</tt> = 1 : used to set the pressure.
+!!     - <tt>cte_rho0</tt> = 1 : used to set the density.
+!!     - <tt>Bz0</tt> = 0.25 : used to set Bz.
+!!     - <tt>rc</tt> = 0.5 : length for radial variation.
+!!     - <tt>rj</tt> = 1 : jet radius
+!!     
+!!     and can all be changed in the parfile.
+!! @endnote
 !!
-!! - <tt>k2</tt> = -1
-!! - <tt>V</tt> = 1.63 : amplitude of the velocity shear
-!! - <tt>cte_p0</tt> = 1 : used to set the pressure.
-!! - <tt>cte_rho0</tt> = 1 : used to set the density.
-!! - <tt>Bz0</tt> = 0.25 : used to set Bz.
-!! - <tt>rc</tt> = 0.5 : length for radial variation.
-!! - <tt>rj</tt> = 1 : jet radius
-!!
-!! and can all be changed in the parfile. @endnote
-!! @note The default setup is _HEL2_ in the original paper.
-!!       For _HEL1_ you can set <tt>rc = 2</tt>. @endnote
+!! @note
+!!     The default setup is _HEL2_ in the original paper.
+!!     For _HEL1_ you can set <tt>rc = 2</tt>.
+!! @endnote
 submodule (mod_equilibrium) smod_equil_kelvin_helmholtz_cd
   use mod_equilibrium_params, only: V, cte_rho0, cte_p0, Bz0, rc, Bth0, rj
   implicit none

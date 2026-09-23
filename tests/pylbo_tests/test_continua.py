@@ -1,5 +1,5 @@
-import pytest
 import numpy as np
+import pytest
 from pylbo.visualisation.continua import calculate_continua
 
 
@@ -33,6 +33,20 @@ def test_continua_slow_zero(fake_ds, monkeypatch):
     continua = calculate_continua(fake_ds)
     assert np.allclose(continua["slow+"], 0)
     assert np.allclose(continua["slow-"], 0)
+
+
+def test_continua_coupled_multiple():
+    from pylbo.visualisation.continua import _extract_solutions_from_roots
+
+    exp_thermal = 2.5j
+    exp_ws_min = -1e-16 + 0.5j
+    exp_ws_pos = 1e-12 + 0.5j
+    ws_neg, ws_pos, thermal = _extract_solutions_from_roots(
+        np.array([exp_thermal, exp_ws_pos, exp_ws_min], dtype=complex)
+    )
+    assert np.allclose(thermal, exp_thermal)
+    assert np.allclose(ws_neg, exp_ws_min)
+    assert np.allclose(ws_pos, exp_ws_pos)
 
 
 def test_continua_handler_colors(c_handle):

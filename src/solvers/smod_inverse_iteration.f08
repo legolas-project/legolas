@@ -11,8 +11,10 @@ submodule (mod_solvers) smod_inverse_iteration
 contains
 
   !> Solves for one eigenvalue using inverse iteration.
-  !! @warning Throws an error if <tt>matrix_A</tt> or <tt>matrix_B</tt>
-  !!          is not a square matrix. @endwarning
+  !! @warning
+  !!     Throws an error if <tt>matrix_A</tt> or <tt>matrix_B</tt>
+  !!     is not a square matrix.
+  !! @endwarning
   module procedure inverse_iteration
     !> sparse representation of B
     type(hermitian_banded_matrix_t) :: B_band

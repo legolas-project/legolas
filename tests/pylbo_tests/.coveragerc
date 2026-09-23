@@ -7,7 +7,6 @@ omit =
     *testing.py
     *__init__.py*
     *debug.py*
-    pylbo/visualisation/utils.py
 
 [report]
 exclude_lines =
@@ -21,4 +20,9 @@ exclude_lines =
     pass
     def timethis
     def show
+    log_deprecation_warning
     raise NotImplementedError
+    class LegolasException
+    if TYPE_CHECKING:
+    def _mark_points_without_data_written
+    def _print_nzeroes

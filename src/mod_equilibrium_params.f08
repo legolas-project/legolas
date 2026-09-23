@@ -4,11 +4,13 @@
 !! for convenience, including the wave numbers \(k_2\) and \(k_3\).
 !! All of these values are NaN initially, such that variables that are
 !! not properly set propagate their value and are easy to spot in follow-up checks.
-!! @note  Variables that are not used remain equal to NaN throughout program execution.
-!!        We define all of these in one module so they allow for easy setting through
-!!        the parfile, and hence allow for more flexible control in the submodules.
+!! @note 
+!!     Variables that are not used remain equal to NaN throughout program execution.
+!!     We define all of these in one module so they allow for easy setting through
+!!     the parfile, and hence allow for more flexible control in the submodules.
+!! @endnote
 module mod_equilibrium_params
-  use mod_global_variables, only: dp
+  use mod_global_variables, only: dp, str_len
   implicit none
 
   public
@@ -82,6 +84,10 @@ module mod_equilibrium_params
   real(dp)  :: g
   !> general boolean for varied use, defaults to False
   logical   :: eq_bool
+  !> path to the file containing numerical equilibrium data
+  character(len=str_len) :: input_file
+  !> number of points to use for equidistant sampling of imported numerical data
+  integer  :: n_input
 
 contains
 
@@ -131,6 +137,8 @@ contains
     g = NaN
 
     eq_bool = .false.
+    input_file = ''
+    n_input = 1000
   end subroutine init_equilibrium_params
 
 end module mod_equilibrium_params

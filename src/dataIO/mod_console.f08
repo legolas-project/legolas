@@ -7,6 +7,7 @@ module mod_console
   private
 
   public :: print_logo
+  public :: print_startup_info
   public :: print_console_info
   public :: print_whitespace
 
@@ -49,6 +50,17 @@ contains
     end do
     call print_whitespace(2)
   end subroutine print_logo
+
+
+  subroutine print_startup_info(settings)
+    type(settings_t), intent(in) :: settings
+
+    call logger%info("the physics type is " // settings%get_physics_type())
+    call logger%info("the state vector is " // str(settings%get_state_vector()))
+    call logger%info( &
+      "the basis functions are " // str(settings%state_vector%get_basis_functions()) &
+    )
+  end subroutine print_startup_info
 
 
   ! LCOV_EXCL_START <we don't print info to console when testing>

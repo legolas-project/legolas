@@ -12,11 +12,17 @@ from pylbo.exceptions import (
     EigenvectorsNotPresent,
     MatricesNotPresent,
     ResidualsNotPresent,
+    IVSnapshotsNotPresent,
 )
 from pylbo.utilities.datfiles.file_reader import LegolasFileReader
 from pylbo.utilities.logger import pylboLogger
-from pylbo.utilities.toolbox import get_values, transform_to_numpy
+from pylbo.utilities.toolbox import (
+    get_maximum_eigenvalue,
+    get_values,
+    transform_to_numpy,
+)
 from pylbo.visualisation.continua import calculate_continua
+from pylbo.ivp_solution import IVPSolution
 
 
 def ensure_dataset(data: any) -> None:
@@ -29,6 +35,25 @@ def ensure_dataseries(data: any) -> None:
     """Ensures that the given data is a :class:`LegolasDataSeries`."""
     if not isinstance(data, LegolasDataSeries):
         raise TypeError(f"expected a LegolasDataSeries, got {type(data)}")
+
+
+def ensure_data_container(data: any) -> None:
+    """Ensures that the given data is a :class:`LegolasDataSet` or
+    a :class:`LegolasDataSeries`."""
+    if not isinstance(data, (LegolasDataSet, LegolasDataSeries)):
+        raise TypeError(
+            f"expected a LegolasDataSet or LegolasDataSeries, got {type(data)}"
+        )
+
+
+def transform_to_dataseries(data: any) -> LegolasDataSeries:
+    """Transforms a dataset to a :class:`LegolasDataSeries` with one dataset."""
+    ensure_data_container(data)
+
+    if isinstance(data, LegolasDataSet):
+        return LegolasDataSeries([data.datfile])
+    else:
+        return data
 
 
 class LegolasDataContainer(ABC):
@@ -295,6 +320,10 @@ class LegolasDataSet(LegolasDataContainer):
         return "mhd" in self.header.get("physics_type", None) and any(
             self.equilibria["B0"] != 0
         )
+
+    @property
+    def has_iv_snapshots(self) -> bool:
+        return self.header.get("has_iv_snapshots", False)
 
     def _ensure_compatibility(self) -> None:
         """
@@ -587,42 +616,21 @@ class LegolasDataSet(LegolasDataContainer):
         """
         if not self.has_efs:
             raise EigenfunctionsNotPresent("eigenfunctions not written to datfile")
-        return self._get_eigenfunction_like(
+        efs = self._get_eigenfunction_like(
             ev_guesses, ev_idxs, getter_func=self.filereader.read_eigenfunction
         )
-
-    def get_derived_eigenfunctions(self, ev_guesses=None, ev_idxs=None) -> np.ndarray:
-        """
-        Returns the derived eigenfunctions based on given eigenvalue guesses or their
-        indices. An array will be returned where every item is a dictionary, containing
-        both the eigenvalue and its quantities. Either eigenvalue guesses or
-        indices can be supplied, but not both.
-
-        Parameters
-        ----------
-        ev_guesses : complex, numpy.ndarray
-            Eigenvalue guesses.
-        ev_idxs : int, numpy.ndarray
-            Indices corresponding to the eigenvalues that need to be retrieved.
-
-        Returns
-        -------
-        numpy.ndarray
-            Array containing the derived eigenfunctions and eigenvalues
-            corresponding to the supplied indices. Every index in this array
-            contains a dictionary with the derived eigenfunctions and
-            corresponding eigenvalue. The keys of each dictionary are the
-            corresponding eigenfunction names.
-        """
         if not self.has_derived_efs:
-            raise EigenfunctionsNotPresent(
-                "derived eigenfunctions not written to datfile"
-            )
-        return self._get_eigenfunction_like(
+            return efs
+
+        # merge derived eigenfunctions with eigenfunctions
+        derived_efs = self._get_eigenfunction_like(
             ev_guesses,
             ev_idxs,
             getter_func=self.filereader.read_derived_eigenfunction,
         )
+        for i, ef in enumerate(efs):
+            ef.update(derived_efs[i]) if ef is not None else None
+        return efs
 
     def get_nearest_eigenvalues(self, ev_guesses) -> tuple(np.ndarray, np.ndarray):
         """
@@ -686,43 +694,64 @@ class LegolasDataSet(LegolasDataContainer):
             eigenvals[i] = self.eigenvalues[idx]
         return idxs, eigenvals
 
-    def get_omega_max(self, real=True, strip=False, range_omega=(0.0, 1e24)):
+    def get_omega_max(self, real=True, re_range=None):
         """
-        Calculates the maximum of the real or imaginary part of a spectrum.
+        Calculates the maximum eigenvalue.
+        The real or imaginary part is used, depending on the `real` argument.
+        If a range is specified, the maximum eigenvalue is calculated within
+        that range on the real axis.
 
         Parameters
         ----------
+        eigenvalues : numpy.ndarray(dtype=complex)
+            The array of eigenvalues.
         real : bool
-            Returns the largest real part if True (default option),
-            returns the largest imaginary part if False.
-        strip : bool
-            Look for maximum in a horizontal half-plane if True. Default False.
-        range_omega : tuple of floats
-            The horizontal range of the strip if strip=True.
+            If `True`, the real part of the eigenvalues is used.
+        re_range : tuple(float, float)
+            The range on the real axis to calculate the maximum eigenvalue.
+            Defaults to None, which means all eigenvalues are considered.
 
         Returns
         -------
-        omega_max : complex
-            The eigenvalue that has the largest real or imaginary part in
-            the chosen strip. Default: in the whole complex plane.
+        complex
+            The maximum eigenvalue.
         """
+        return get_maximum_eigenvalue(self.eigenvalues, real, re_range)
 
-        eigvals = np.copy(self.eigenvalues)
+    def get_iv_snapshots(self) -> IVPSolution:
+        """
+        Return a structured IVPSolution object containing the times and
+        the snapshot data for each component.
+        """
+        if not self.has_iv_snapshots:
+            raise IVSnapshotsNotPresent(self.datfile)
 
-        if strip:
-            omega_min, omega_max = range_omega
-            # all eigvals outside of strip locally get replaced by NaN
-            mask = (np.real(self.eigenvalues) - omega_min) * (
-                np.real(self.eigenvalues) - omega_max
-            ) > 0
-            eigvals[mask] = np.nan
+        # Check if we already loaded
+        if hasattr(self, "_ivp_solution") and self._ivp_solution is not None:
+            return self._ivp_solution
 
-        if real:
-            idx = np.nanargmax(np.real(eigvals))
+        # (n_snap, n_comp, n_points), (times)
+        raw_data, times = self.filereader.read_iv_snapshots(self.header)
+
+        # Build dictionary of component names; e.g. "isothermal-1d" => {0:"rho", 1:"v1"}
+        n_comp = raw_data.shape[1]
+        if len(self.header.data["state_vector"]) == n_comp:
+            component_names = dict(zip(range(n_comp), self.header.data["state_vector"]))
         else:
-            idx = np.nanargmax(np.imag(eigvals))
+            component_names = {i: f"comp_{i}" for i in range(n_comp)}
 
-        return self.eigenvalues[idx]
+        x_domain = np.linspace(
+            self.header.data["x_start"], self.header.data["x_end"], raw_data.shape[2]
+        )
+
+        self._ivp_solution = IVPSolution(
+            times=times,
+            data=raw_data,
+            component_names=component_names,
+            x_domain=x_domain,
+            units=self.units,
+        )
+        return self._ivp_solution
 
 
 class LegolasDataSeries(LegolasDataContainer):
@@ -731,6 +760,9 @@ class LegolasDataSeries(LegolasDataContainer):
         self.geometry = set([ds.geometry for ds in self.datasets])
         if len(self.geometry) == 1:
             self.geometry = self.geometry.pop()
+        self.units = {}
+        for key in self.datasets[0].units.keys():
+            self.units[key] = [ds.units[key] for ds in self.datasets]
 
     def __iter__(self):
         for ds in self.datasets:
@@ -933,7 +965,7 @@ class LegolasDataSeries(LegolasDataContainer):
         """
         return np.array([ds.get_k0_squared() for ds in self.datasets], dtype=float)
 
-    def get_omega_max(self, real=True):
+    def get_omega_max(self, real=True, re_range=None):
         """
         Calculates the maximum of the real or imaginary part of the spectrum for
         the various datasets.
@@ -943,6 +975,9 @@ class LegolasDataSeries(LegolasDataContainer):
         real : bool
             Returns the largest real part if True (default option),
             returns the largest imaginary part if False.
+        re_range : tuple(float, float)
+            The range on the real axis to calculate the maximum eigenvalue.
+            Defaults to None, which means all eigenvalues are considered.
 
         Returns
         -------
@@ -951,4 +986,6 @@ class LegolasDataSeries(LegolasDataContainer):
             of the eigenvalue that has the largest real or imaginary part.
         """
 
-        return np.array([ds.get_omega_max(real) for ds in self.datasets])
+        return np.array(
+            [ds.get_omega_max(real, re_range=re_range) for ds in self.datasets]
+        )

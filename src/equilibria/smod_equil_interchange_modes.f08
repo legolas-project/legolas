@@ -6,16 +6,18 @@
 !! This equilibrium is taken from section 12.1.3 in
 !! _Goedbloed, H., Keppens, R., & Poedts, S. (2019). Magnetohydrodynamics of Laboratory
 !!  and Astrophysical Plasmas. Cambridge University Press._ [DOI](http://doi.org/10.1017/9781316403679).
-!! @note Default values are given by
-!!
-!! - <tt>k2</tt> = \(\pi\)
-!! - <tt>k3</tt> = \(\pi\)
-!! - <tt>cte_p0</tt> = 0.25 : pressure, used to set the plasma beta.
-!! - <tt>g</tt> = 0.5 : gravitational constant.
-!! - <tt>lambda</tt> = 0 : magnetic shear value.
-!! - <tt>alpha</tt> = 20 : constant to constrain the density value.
-!!
-!! and can all be changed in the parfile. @endnote
+!! @note
+!!     Default values are given by
+!!     
+!!     - <tt>k2</tt> = \(\pi\)
+!!     - <tt>k3</tt> = \(\pi\)
+!!     - <tt>cte_p0</tt> = 0.25 : pressure, used to set the plasma beta.
+!!     - <tt>g</tt> = 0.5 : gravitational constant.
+!!     - <tt>lambda</tt> = 0 : magnetic shear value.
+!!     - <tt>alpha</tt> = 20 : constant to constrain the density value.
+!!     
+!!     and can all be changed in the parfile.
+!! @endnote
 submodule (mod_equilibrium) smod_equil_interchange_modes
   use mod_equilibrium_params, only: g, cte_rho0, cte_p0, alpha, beta, lambda
   implicit none

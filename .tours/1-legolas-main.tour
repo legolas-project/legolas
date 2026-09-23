@@ -1,0 +1,86 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "1 - Legolas main",
+  "steps": [
+    {
+      "file": "src/main.f08",
+      "selection": {
+        "start": {
+          "line": 35,
+          "character": 3
+        },
+        "end": {
+          "line": 39,
+          "character": 29
+        }
+      },
+      "description": "# Main objects\n`Legolas` is mainly governed by these five objects:\n- `settings`: contains overall code variables, including settings passed on through the parfile and/or user submodule.\n- `grid`: contains the various grids and methods to construct/fetch them.\n- `background`: contains (pointers to) the background functions the user has set to specify the background equilibrium.\n- `eigenfunctions`: contains methods to assemble/get both the base (i.e. direct from the state vector) eigenfunctions and the derived (i.e. combinations of the base) eigenfunctions.\n- `physics`: contains (pointers to) the functions defining the physical effects taken into account. These are either default pre-implemented ones, or the ones passed on by the user."
+    },
+    {
+      "file": "src/main.f08",
+      "description": "# Settings\nThe `settings` object is one of the first that needs to be created and has to be initialised _before_ reading in the parfile, so user input can be saved.",
+      "line": 51
+    },
+    {
+      "file": "src/main.f08",
+      "description": "# Grid\nConstructing the `grid` object is done by passing on the `settings` as well, so it has access to its grid information (gridpoints, start/end point, etc.)",
+      "line": 58
+    },
+    {
+      "file": "src/main.f08",
+      "description": "# Background\nThe `background`does not need anything as argument, as most (all) of its pointers will be set in the user submodule, which is one of the last routines called.",
+      "line": 59
+    },
+    {
+      "file": "src/main.f08",
+      "description": "# Physics\nThe `physics` object needs `settings` in its constructor, since switches to enable/disable physics are contained therein. The background needs to be passed too, as some physical functions are background-dependent (i.e. Spitzer resistivity, which depends on the background temperature).",
+      "line": 60
+    },
+    {
+      "file": "src/main.f08",
+      "description": "# Calling the user module\nThis calls the user-defined equilibrium and passes on the relevant objects which the user should be able to access. This also implies that settings defined in the user module will _override_ the ones from the parfile, as those are already read in during initialisation.\nWhen this routine has been called all pointers to the background functions and physics functions have been set in the `background` and `physics` objects, respectively, and are (should!) not be changed anymore.",
+      "line": 62
+    },
+    {
+      "file": "src/main.f08",
+      "description": "# Sanity checks\nFinally some sanity checks are performed: NaN or negative values in for example density, force and thermal balance, valid wave numbers (m integer in cylindrical) etc.",
+      "line": 66
+    },
+    {
+      "file": "src/main.f08",
+      "description": "# Matrix assembly\nThese steps do the actual construction of the matrices. A and B are initialised using the linked-list representation and passed on to the build subroutine.\nThis takes care of the various matrix elements, physics, and appropriate boundary conditions.\nNote that this is only assembly, nothing has been solved yet.",
+      "line": 69
+    },
+    {
+      "file": "src/main.f08",
+      "description": "# Allocating memory\nAt this point global memory allocation takes place for things needed when solving the eigenvalue problem.\nThis most importantly involves the 1D-array containing the eigenvalues, and the (optional) 2D-array containing the eigenvectors.",
+      "line": 76
+    },
+    {
+      "file": "src/main.f08",
+      "description": "# Allocating eigenvalue array\nThe number of eigenvalues to be calculated is solver-dependent, and the array is allocated as such.",
+      "line": 122
+    },
+    {
+      "file": "src/main.f08",
+      "description": "# Allocating the eigenvector array\nThe 2D eigenvector array is only allocated whenever eigenfunctions are requested, or when the user explicitly passes the option to save the eigenvectors to the datfile.\nFor the Arnoldi-solver the eigenvectors are _always_ allocated, since an orthonormal eigenvector basis is automatically calculated. This won't affect memory usage at all, since for most Arnoldi use cases only a handful of eigenvalues are requested at once.",
+      "line": 134
+    },
+    {
+      "file": "src/main.f08",
+      "description": "# Calling the eigenproblem solver\nHere the actual eigenvalue problem is solved, and resulting eigenvalues and (right) eigenvectors are passed on to the main program variables.",
+      "line": 77
+    },
+    {
+      "file": "src/main.f08",
+      "description": "# Eigenfunctions\nThe `eigenfunctions` object is initialised _after_ the eigenvalue problem has been solved.\nHandles assembly of the base and derived eigenfunctions, based on the calculated eigenvalues and right eigenvectors.",
+      "line": 82
+    },
+    {
+      "file": "src/main.f08",
+      "description": "# Datfile creation\nAs a final step we have the creation of the datfile, where all relevant settings, background prescriptions and functions are exported to a binary file, along with all calculated values.",
+      "line": 87
+    }
+  ],
+  "description": "Walkthrough the Legolas main program"
+}

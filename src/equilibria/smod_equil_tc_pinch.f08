@@ -8,17 +8,19 @@
 !! "Rotational stabilization of pinch instabilities in Taylor-Couette flow.",
 !! Physical Review E 75, 047302 (2007)_.
 !!
-!! @note Default values are given by
-!!
-!! - <tt>k2</tt> = 0
-!! - <tt>k3</tt> = 1
-!! - <tt>cte_rho0</tt> = 1 : density (constant)
-!! - <tt>alpha</tt> = 1 : rotational speed of the inner cylinder
-!! - <tt>beta</tt> = 2 : rotational speed of the outer cylinder
-!! - <tt>cte_B02</tt> = 1 : azimuthal magnetic field at inner cylinder
-!! - <tt>tau</tt> = 10 : azimuthal magnetic field at outer cylinder
-!!
-!! and can all be changed in the parfile. @endnote
+!! @note
+!!     Default values are given by
+!!     
+!!     - <tt>k2</tt> = 0
+!!     - <tt>k3</tt> = 1
+!!     - <tt>cte_rho0</tt> = 1 : density (constant)
+!!     - <tt>alpha</tt> = 1 : rotational speed of the inner cylinder
+!!     - <tt>beta</tt> = 2 : rotational speed of the outer cylinder
+!!     - <tt>cte_B02</tt> = 1 : azimuthal magnetic field at inner cylinder
+!!     - <tt>tau</tt> = 10 : azimuthal magnetic field at outer cylinder
+!!     
+!!     and can all be changed in the parfile.
+!! @endnote
 ! SUBMODULE: smod_equil_tc_pinch
 submodule (mod_equilibrium) smod_equil_tc_pinch
   use mod_equilibrium_params, only: cte_rho0, cte_B02, alpha, beta, tau

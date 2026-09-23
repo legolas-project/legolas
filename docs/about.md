@@ -4,7 +4,7 @@ layout: single
 classes: wide
 sidebar:
   nav: "leftcontents"
-last_modified_at: 2023-04-13
+last_modified_at: 2025-01-27
 ---
 
 ## Origins
@@ -21,10 +21,10 @@ These codes were not mergeable however, such that a combination of for example n
 This prompted us to start from scratch on a brand new, modern MHD spectral code which we named Legolas,
 short for "**<u>L</u>**arge **<u>E</u>**igensystem **<u>G</u>**enerator for **<u>O</u>**ne-dimensional p**<u>las</u>**mas".
 
-Development on Legolas started late 2019 by Niels Claes as part of his PhD studies. He was joined in mid 2020 by Jordi De Jonghe, and both of them are currently
-maintaining and developing the code even further in close collaboration.
+Development on Legolas started late 2019 by Niels Claes as part of his PhD studies. He was joined in mid 2020 by Jordi De Jonghe, who currently
+maintains and develops the code further.
 <img src="/assets/images/erc_logo.png" alt="ERC logo" align="right" width="100" height="100">
-This is all done under the supervision of Rony Keppens at the [Centre for
+The development took place under the supervision of Rony Keppens at the [Centre for
 mathematical Plasma-Astrophysics](https://wis.kuleuven.be/CmPA) at the KU Leuven, Belgium, as part of the [ERC PROMINENT](https://erc-prominent.github.io) project.
 
 ## Aims
@@ -33,28 +33,36 @@ theoretical (linear) MHD. This allows for detailed, high-resolution studies of t
 and parametric studies, including a myriad of physical effects.
 
 ## Core people involved with Legolas
-- **Dr. Niels Claes** ([<i class="fas fa-envelope" aria-hidden="true"></i>](mailto:niels.claes@kuleuven.be)): creator of the code and main developer.
 
-  Involved with everything & provides overall guidance. Responsible for maintenance and general development of both Legolas and Pylbo.
-
+### Active
 - **Dr. Jordi De Jonghe** ([<i class="fas fa-envelope" aria-hidden="true"></i>](mailto:jordi.dejonghe@kuleuven.be)): development team.
 
-  Mainly involved with resistive/viscous/Hall MHD, along with source code contributions to both Legolas and Pylbo.
+  Source code contributions to both Legolas and Pylbo, and maintenance. Implementation of additional physics and coupling to [MPI-AMRVAC](https://amrvac.org).
 
-- **Drs. Nicolas Brughmans** ([<i class="fas fa-envelope" aria-hidden="true"></i>](mailto:nicolas.brughmans@kuleuven.be)): development team.
+- **Dr. Nicolas Brughmans** ([<i class="fas fa-envelope" aria-hidden="true"></i>](mailto:nicolas.brughmans@kuleuven.be)): development team.
 
-  Working on Pylbo extensions in the scope of accretion disk applications.
+  Pylbo extensions in the scope of accretion disk applications.
+
+- **Drs. Adrian Kelly**  ([<i class="fas fa-envelope" aria-hidden="true"></i>](mailto:adrian.kelly@kuleuven.be)): development team.
+
+  Development of the time-dependent initial-value solver.
 
 - **Prof. Rony Keppens** ([<i class="fas fa-envelope" aria-hidden="true"></i>](mailto:rony.keppens@kuleuven.be)): guidance.
 
-- **Drs. Evert Provoost**: development team (former).
+### Resigned
+- **Dr. Niels Claes**: creator of the code and main developer.
+
+  <!-- Involved with everything & provides overall guidance. Responsible for maintenance and general development of both Legolas and Pylbo. -->
+  General development of both Legolas and Pylbo.
+
+- **Drs. Evert Provoost**: development team.
 
   Contributions to the linear algebra solvers in the scope of a Master's thesis.
 
 
 ## Features
 Legolas is written in modern Fortran and is highly modularised. This allows for easy maintenance and makes the code ready
-to be extended with additional physics and modern algorithmic requirements. At the time of writing, Legolas currently supports
+to be extended with additional physics and modern algorithmic requirements. Currently, Legolas supports
 both 3D Cartesian or cylindrical geometries with nontrivial 1D variation.
 Various physical effects are implemented:
 - background flows, allowing for non-static equilibrium conditions
@@ -65,4 +73,4 @@ Various physical effects are implemented:
 - viscosity
 - Hall MHD
 
-Note that Legolas can calculate spectra in either full MHD or in hydrodynamics (no magnetic field).
+Note that Legolas can calculate spectra in either full MHD or hydrodynamics (no magnetic field).

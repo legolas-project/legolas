@@ -7,15 +7,17 @@ module mod_settings
   use mod_grid_settings, only: grid_settings_t, new_grid_settings
   use mod_equilibrium_settings, only: equilibrium_settings_t, new_equilibrium_settings
   use mod_units, only: units_t, new_unit_system
+  use mod_state_vector, only: state_vector_t
+  use mod_iv_settings, only: iv_settings_t, new_iv_settings
   implicit none
 
   private
 
   type, public :: settings_t
+    type(state_vector_t), public :: state_vector
     ! note: weird gfortran 8 bug here when using (len=:) for state_vector.
     ! This sometimes leads to wrong array allocation where every entry equals the
     ! one at the last index? Unable to reproduce with compiler versions >8.
-    character(len=str_len_arr), private, allocatable :: state_vector(:)
     character(len=str_len_arr), private, allocatable :: derived_state_vector(:)
     character(len=:), private, allocatable :: physics_type
     logical, private :: state_vector_has_bfield
@@ -28,6 +30,7 @@ module mod_settings
     type(grid_settings_t), public :: grid
     type(equilibrium_settings_t), public :: equilibrium
     type(units_t), public :: units
+    type(iv_settings_t), public :: iv
 
   contains
 
@@ -54,7 +57,7 @@ contains
   function new_settings() result(settings)
     type(settings_t) :: settings
 
-    call settings%set_state_vector(physics_type="mhd")
+    settings%physics_type = "mhd"
     settings%dims = new_block_dims()
     settings%io = new_io_settings()
     settings%solvers = new_solver_settings()
@@ -62,40 +65,32 @@ contains
     settings%grid = new_grid_settings()
     settings%equilibrium = new_equilibrium_settings()
     settings%units = new_unit_system()
-    call settings%update_block_dimensions()
+    settings%iv = new_iv_settings()
   end function new_settings
 
 
-  pure subroutine set_state_vector(this, physics_type)
+  subroutine set_state_vector(this, physics_type)
     class(settings_t), intent(inout) :: this
     character(len=*), intent(in) :: physics_type
 
     this%physics_type = physics_type
-    select case(physics_type)
-      case("hd")
-        this%state_vector = [character(3) :: "rho", "v1", "v2", "v3", "T"]
-      case("hd-1d")
-        this%state_vector = [character(3) :: "rho", "v1", "T"]
-      case default
-        this%state_vector = [ &
-          character(3) :: "rho", "v1", "v2", "v3", "T", "a1", "a2", "a3" &
-        ]
-      end select
+    call this%state_vector%assemble(physics_type)
     call this%check_bfield()
-    call this%set_nb_eqs(size(this%state_vector))
+    call this%set_nb_eqs(size(this%state_vector%components))
+    call this%update_block_dimensions()
   end subroutine set_state_vector
 
 
   pure function get_state_vector(this) result(state_vector)
     class(settings_t), intent(in) :: this
     character(len=:), allocatable :: state_vector(:)
-    state_vector = this%state_vector
+    state_vector = this%state_vector%get_names()
   end function get_state_vector
 
 
   pure logical function state_vector_is_set(this)
     class(settings_t), intent(in) :: this
-    state_vector_is_set = allocated(this%state_vector)
+    state_vector_is_set = allocated(this%state_vector%components)
   end function state_vector_is_set
 
 
@@ -149,10 +144,14 @@ contains
 
   pure subroutine check_bfield(this)
     use mod_get_indices, only: get_index
+    use mod_state_vector_names, only: sv_a1_name, sv_a2_name, sv_a3_name
     class(settings_t), intent(inout) :: this
 
     this%state_vector_has_bfield = ( &
-      any(get_index(names=["a1", "a2", "a3"], array=this%state_vector) /= 0) &
+      any(get_index( &
+        names=[sv_a1_name, sv_a2_name, sv_a3_name], &
+        array=this%state_vector%get_names()) /= 0 &
+      ) &
     )
   end subroutine check_bfield
 
@@ -163,10 +162,10 @@ contains
   end function has_bfield
 
 
-  pure subroutine delete(this)
+  subroutine delete(this)
     class(settings_t), intent(inout) :: this
 
-    if (allocated(this%state_vector)) deallocate(this%state_vector)
+    call this%state_vector%delete()
     if (allocated(this%derived_state_vector)) deallocate(this%derived_state_vector)
     if (allocated(this%physics_type)) deallocate(this%physics_type)
     call this%io%delete()

@@ -1,8 +1,18 @@
-from setuptools import setup, find_packages
 from pathlib import Path
 
+from setuptools import find_packages, setup
+
 package_name = "pylbo"
-required_packages = ["numpy", "matplotlib", "f90nml", "tqdm", "psutil", "packaging"]
+dependencies = [
+    "numpy",
+    "matplotlib>=3.4",
+    "f90nml",
+    "tqdm",
+    "psutil",
+    "packaging",
+    "sympy",
+    "scipy",
+]
 
 version_filepath = (Path(__file__).parent / "pylbo/_version.py").resolve()
 VERSION = None
@@ -18,7 +28,7 @@ setup(
     author=["Niels Claes", "Jordi De Jonghe"],
     author_email=["niels.claes@kuleuven.be", "jordi.dejonghe@kuleuven.be"],
     keywords="interface data-analysis",
-    python_requires=">=3.6",
-    install_requires=required_packages,
+    python_requires=">=3.7",
+    install_requires=dependencies,
     packages=find_packages(),
 )

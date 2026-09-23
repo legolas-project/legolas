@@ -88,3 +88,25 @@ class TestTemporal1dCyl1Mode(TemporalTest):
 class TestTemporal1dCart3Modes(TestTemporal1DCart1Mode):
     filename = "temporal_1d_cart_3modes_rho.npy"
     omega = [1.19029 + 3.75969j, 0.65179 + 1.32900j, 0.16193 + 0.45623j]
+
+
+class TestTemporal1dCart3Modes3Factors(TestTemporal1DCart1Mode):
+    filename = "temporal_1d_cart_3modes_3factors_rho.npy"
+    omega = [1.19029 + 3.75969j, 0.65179 + 1.32900j, 0.16193 + 0.45623j]
+    factor = [1.0, 1.0j, 1.0]
+
+
+class TestTemporal1dCyl6Datasets6Modes(TemporalTest):
+    filename = "temporal_1d_cyl_6datasets_6modes_rho.npy"
+    omega = np.linspace(0.2, 0.6, 6)
+    time = np.linspace(0, 100, 100)
+
+    @pytest.fixture(scope="function")
+    def ds(self, series_v211_mri_parameter):
+        return series_v211_mri_parameter
+
+
+class TestTemporal1dCyl6Datasets8Modes(TestTemporal1dCyl6Datasets6Modes):
+    filename = "temporal_1d_cyl_6datasets_8modes_rho.npy"
+    omega = list(np.linspace(0.2, 0.6, 5))
+    omega.append([0.6, 0.5])

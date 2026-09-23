@@ -1,10 +1,22 @@
+from pylbo.deprecations import log_deprecation_warning
 from pylbo.utilities.toolbox import add_pickradius_to_item
-from pylbo.visualisation.eigenfunctions.derived_eigfunc_handler import (
-    DerivedEigenfunctionHandler,
-)
 from pylbo.visualisation.eigenfunctions.eigfunc_handler import EigenfunctionHandler
 from pylbo.visualisation.legend_handler import LegendHandler
 from pylbo.visualisation.spectra.spectrum_figure import SpectrumFigure
+
+
+def _check_deprecations(kwargs: dict) -> None:
+    if "color_dict" in kwargs:
+        log_deprecation_warning(
+            "The kwarg 'color_dict' is deprecated. Use 'color' instead.",
+            since_version="2.1",
+        )
+    if "color_parameter" in kwargs:
+        log_deprecation_warning(
+            "The kwarg 'color_parameter' is deprecated. "
+            "Use 'color' instead and pass a list or array of colors.",
+            since_version="2.1",
+        )
 
 
 class MergedSpectrumPlot(SpectrumFigure):
@@ -38,36 +50,28 @@ class MergedSpectrumPlot(SpectrumFigure):
         )
         self.data = data
         self.leg_handle = LegendHandler(interactive)
+
+        _check_deprecations(kwargs)
+
+        # don't override the color if it's already set
+        kwargs.update({"color": kwargs.pop("color", None)})
         super()._set_plot_properties(kwargs)
-        self._use_legend = legend
-        self._single_color = False
-        if isinstance(kwargs.get("color", None), str):
-            self._single_color = True
-            # if everything is 1 color no use for a legend
-            self._use_legend = False
-        # option to color spectrum based on parameter value:
-        self._color_from_parameter = False
-        if isinstance(self.color_dict, dict):
-            self._color_from_parameter = isinstance(self.color_parameter, str)
+
+        has_single_color = isinstance(self.color, str)
+        if self.color is None or has_single_color:
+            self.color = [self.color] * len(self.data)
+        self._use_legend = legend and not has_single_color
         self._interactive = interactive
 
     def add_spectrum(self):
         """Adds the spectrum to the plot, makes the points pickable."""
-        color = None
-        if self._single_color:
-            color = self.color
-        for ds in self.data:
-            # coloring based on parameter value:
-            if self._color_from_parameter:
-                color = self.color_dict.get(
-                    ds.parameters[self.color_parameter], self.color
-                )
+        for ds, c in zip(self.data, self.color):
             spectrum_point = self.ax.scatter(
                 ds.eigenvalues.real * self.x_scaling,
                 ds.eigenvalues.imag * self.y_scaling,
                 marker=self.marker,
                 s=6 * self.markersize,
-                c=color,
+                c=c,
                 alpha=self.alpha,
                 label=ds.datfile.stem,
                 **self.plot_props,
@@ -94,16 +98,6 @@ class MergedSpectrumPlot(SpectrumFigure):
         if self._ef_handler is None:
             self._ef_handler = EigenfunctionHandler(self.data, self._ef_ax, self.ax)
         super().add_eigenfunction_interface(efhandler=self._ef_handler)
-
-    def add_derived_eigenfunctions(self):
-        """Adds the derived eigenfunctions to the current figure."""
-        if self._def_ax is None:
-            self._def_ax = super().add_subplot_axes(self.ax, loc="right")
-        if self._def_handler is None:
-            self._def_handler = DerivedEigenfunctionHandler(
-                self.data, self._def_ax, self.ax
-            )
-        super().add_eigenfunction_interface(efhandler=self._def_handler)
 
     def add_continua(self, interactive=True):
         raise NotImplementedError("Continua are not supported for this type of figure.")

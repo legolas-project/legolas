@@ -8,6 +8,8 @@ module mod_derived_efs
   use mod_derived_ef_names
   use mod_logging, only: logger
   use mod_get_indices, only: get_index
+  use mod_state_vector_component, only: sv_component_t
+  use mod_state_vector, only: sv_rho1, sv_v1, sv_v2, sv_v3, sv_T1, sv_a1, sv_a2, sv_a3
   implicit none
 
   private
@@ -135,6 +137,8 @@ contains
       this%get_derived_ef => get_curl_v_para
     case(curl_v_perp_name)
       this%get_derived_ef => get_curl_v_perp
+    case(dB1_name)
+      this%get_derived_ef => get_dB1
     case default
       call logger%error( &
         "derived ef assembly -- unknown eigenfunction name: "// trim(this%name) &
@@ -152,8 +156,8 @@ contains
     complex(dp) :: entropy(size(grid%ef_grid))
     complex(dp) :: rho(size(grid%ef_grid)), T(size(grid%ef_grid))
 
-    rho = get_base_eigenfunction("rho", settings, grid, eigenvector)
-    T = get_base_eigenfunction("T", settings, grid, eigenvector)
+    rho = get_base_eigenfunction(sv_rho1, settings, grid, eigenvector)
+    T = get_base_eigenfunction(sv_T1, settings, grid, eigenvector)
     entropy = ( &
       T / rho0_on_ef_grid ** (2.0_dp / 3.0_dp) &
       - (2.0_dp / 3.0_dp) * ( &
@@ -173,9 +177,9 @@ contains
     complex(dp) :: v3(size(grid%ef_grid))
     real(dp) :: ef_eps(size(grid%ef_grid))
 
-    dv1 = get_base_eigenfunction("v1", settings, grid, eigenvector, diff_order=1)
-    v2 = get_base_eigenfunction("v2", settings, grid, eigenvector)
-    v3 = get_base_eigenfunction("v3", settings, grid, eigenvector)
+    dv1 = get_base_eigenfunction(sv_v1, settings, grid, eigenvector, diff_order=1)
+    v2 = get_base_eigenfunction(sv_v2, settings, grid, eigenvector)
+    v3 = get_base_eigenfunction(sv_v3, settings, grid, eigenvector)
     ef_eps = grid%get_eps(grid%ef_grid)
     div_v = ic * (-dv1 / ef_eps + k2 * v2 / ef_eps + k3 * v3)
   end function get_div_v
@@ -190,8 +194,8 @@ contains
     complex(dp) :: v3(size(grid%ef_grid))
     real(dp) :: ef_eps(size(grid%ef_grid))
 
-    v2 = get_base_eigenfunction("v2", settings, grid, eigenvector)
-    v3 = get_base_eigenfunction("v3", settings, grid, eigenvector)
+    v2 = get_base_eigenfunction(sv_v2, settings, grid, eigenvector)
+    v3 = get_base_eigenfunction(sv_v3, settings, grid, eigenvector)
     ef_eps = grid%get_eps(grid%ef_grid)
     curl_v_1 = ic * (k2 * v3 / ef_eps - k3 * v2)
   end function get_curl_v_1
@@ -207,9 +211,9 @@ contains
     complex(dp) :: dv3(size(grid%ef_grid))
     real(dp) :: ef_eps(size(grid%ef_grid)), ef_deps
 
-    v1 = get_base_eigenfunction("v1", settings, grid, eigenvector)
-    v3 = get_base_eigenfunction("v3", settings, grid, eigenvector)
-    dv3 = get_base_eigenfunction("v3", settings, grid, eigenvector, diff_order=1)
+    v1 = get_base_eigenfunction(sv_v1, settings, grid, eigenvector)
+    v3 = get_base_eigenfunction(sv_v3, settings, grid, eigenvector)
+    dv3 = get_base_eigenfunction(sv_v3, settings, grid, eigenvector, diff_order=1)
     ef_eps = grid%get_eps(grid%ef_grid)
     ef_deps = grid%get_deps()
     curl_v_2 = ic * k3 * v1 - dv3 / ef_eps - ef_deps * v3 / ef_eps
@@ -226,9 +230,9 @@ contains
     complex(dp) :: dv2(size(grid%ef_grid))
     real(dp) :: ef_eps(size(grid%ef_grid)), ef_deps
 
-    v1 = get_base_eigenfunction("v1", settings, grid, eigenvector)
-    v2 = get_base_eigenfunction("v2", settings, grid, eigenvector)
-    dv2 = get_base_eigenfunction("v2", settings, grid, eigenvector, diff_order=1)
+    v1 = get_base_eigenfunction(sv_v1, settings, grid, eigenvector)
+    v2 = get_base_eigenfunction(sv_v2, settings, grid, eigenvector)
+    dv2 = get_base_eigenfunction(sv_v2, settings, grid, eigenvector, diff_order=1)
     ef_eps = grid%get_eps(grid%ef_grid)
     ef_deps = grid%get_deps()
     curl_v_3 = dv2 + (ef_deps * v2 - ic * k2 * v1) / ef_eps
@@ -244,8 +248,8 @@ contains
     complex(dp) :: a3(size(grid%ef_grid))
     real(dp) :: ef_eps(size(grid%ef_grid))
 
-    a2 = get_base_eigenfunction("a2", settings, grid, eigenvector)
-    a3 = get_base_eigenfunction("a3", settings, grid, eigenvector)
+    a2 = get_base_eigenfunction(sv_a2, settings, grid, eigenvector)
+    a3 = get_base_eigenfunction(sv_a3, settings, grid, eigenvector)
     ef_eps = grid%get_eps(grid%ef_grid)
     B1 = ic * (k2 * a3 / ef_eps - k3 * a2)
   end function get_B1
@@ -259,8 +263,8 @@ contains
     complex(dp) :: a1(size(grid%ef_grid))
     complex(dp) :: da3(size(grid%ef_grid))
 
-    a1 = get_base_eigenfunction("a1", settings, grid, eigenvector)
-    da3 = get_base_eigenfunction("a3", settings, grid, eigenvector, diff_order=1)
+    a1 = get_base_eigenfunction(sv_a1, settings, grid, eigenvector)
+    da3 = get_base_eigenfunction(sv_a3, settings, grid, eigenvector, diff_order=1)
     B2 = ic * k3 * a1 - da3
   end function get_B2
 
@@ -274,8 +278,8 @@ contains
     complex(dp) :: da2(size(grid%ef_grid))
     real(dp) :: ef_eps(size(grid%ef_grid))
 
-    a1 = get_base_eigenfunction("a1", settings, grid, eigenvector)
-    da2 = get_base_eigenfunction("a2", settings, grid, eigenvector, diff_order=1)
+    a1 = get_base_eigenfunction(sv_a1, settings, grid, eigenvector)
+    da2 = get_base_eigenfunction(sv_a2, settings, grid, eigenvector, diff_order=1)
     ef_eps = grid%get_eps(grid%ef_grid)
     B3 = (da2 - ic * k2 * a1) / ef_eps
   end function get_B3
@@ -291,9 +295,9 @@ contains
     complex(dp) :: da3(size(grid%ef_grid))
     real(dp) :: ef_eps(size(grid%ef_grid))
 
-    a1 = get_base_eigenfunction("a1", settings, grid, eigenvector)
-    da2 = get_base_eigenfunction("a2", settings, grid, eigenvector, diff_order=1)
-    da3 = get_base_eigenfunction("a3", settings, grid, eigenvector, diff_order=1)
+    a1 = get_base_eigenfunction(sv_a1, settings, grid, eigenvector)
+    da2 = get_base_eigenfunction(sv_a2, settings, grid, eigenvector, diff_order=1)
+    da3 = get_base_eigenfunction(sv_a3, settings, grid, eigenvector, diff_order=1)
     ef_eps = grid%get_eps(grid%ef_grid)
     div_B = ( &
       ic * (k2 * da3 - k3 * da2) &
@@ -313,9 +317,9 @@ contains
     complex(dp) :: da3(size(grid%ef_grid))
     real(dp) :: ef_eps(size(grid%ef_grid))
 
-    a1 = get_base_eigenfunction("a1", settings, grid, eigenvector)
-    da2 = get_base_eigenfunction("a2", settings, grid, eigenvector, diff_order=1)
-    da3 = get_base_eigenfunction("a3", settings, grid, eigenvector, diff_order=1)
+    a1 = get_base_eigenfunction(sv_a1, settings, grid, eigenvector)
+    da2 = get_base_eigenfunction(sv_a2, settings, grid, eigenvector, diff_order=1)
+    da3 = get_base_eigenfunction(sv_a3, settings, grid, eigenvector, diff_order=1)
     ef_eps = grid%get_eps(grid%ef_grid)
     curl_B_1 = ( &
       ic * k2 * (da2 - ic * k2 * a1) / ef_eps**2 - ic * k3 * (ic * k3 * a1 - da3) &
@@ -334,12 +338,12 @@ contains
     complex(dp) :: a3(size(grid%ef_grid))
     real(dp) :: ef_eps(size(grid%ef_grid)), ef_deps
 
-    a1 = get_base_eigenfunction("a1", settings, grid, eigenvector)
-    da1 = get_base_eigenfunction("a1", settings, grid, eigenvector, diff_order=1)
-    a2 = get_base_eigenfunction("a2", settings, grid, eigenvector)
-    da2 = get_base_eigenfunction("a2", settings, grid, eigenvector, diff_order=1)
-    dda2 = get_base_eigenfunction("a2", settings, grid, eigenvector, diff_order=2)
-    a3 = get_base_eigenfunction("a3", settings, grid, eigenvector)
+    a1 = get_base_eigenfunction(sv_a1, settings, grid, eigenvector)
+    da1 = get_base_eigenfunction(sv_a1, settings, grid, eigenvector, diff_order=1)
+    a2 = get_base_eigenfunction(sv_a2, settings, grid, eigenvector)
+    da2 = get_base_eigenfunction(sv_a2, settings, grid, eigenvector, diff_order=1)
+    dda2 = get_base_eigenfunction(sv_a2, settings, grid, eigenvector, diff_order=2)
+    a3 = get_base_eigenfunction(sv_a3, settings, grid, eigenvector)
     ef_eps = grid%get_eps(grid%ef_grid)
     ef_deps = grid%get_deps()
     curl_B_2 = ( &
@@ -360,12 +364,12 @@ contains
     complex(dp) :: da3(size(grid%ef_grid)), dda3(size(grid%ef_grid))
     real(dp) :: ef_eps(size(grid%ef_grid)), ef_deps
 
-    a1 = get_base_eigenfunction("a1", settings, grid, eigenvector)
-    da1 = get_base_eigenfunction("a1", settings, grid, eigenvector, diff_order=1)
-    a2 = get_base_eigenfunction("a2", settings, grid, eigenvector)
-    a3 = get_base_eigenfunction("a3", settings, grid, eigenvector)
-    da3 = get_base_eigenfunction("a3", settings, grid, eigenvector, diff_order=1)
-    dda3 = get_base_eigenfunction("a3", settings, grid, eigenvector, diff_order=2)
+    a1 = get_base_eigenfunction(sv_a1, settings, grid, eigenvector)
+    da1 = get_base_eigenfunction(sv_a1, settings, grid, eigenvector, diff_order=1)
+    a2 = get_base_eigenfunction(sv_a2, settings, grid, eigenvector)
+    a3 = get_base_eigenfunction(sv_a3, settings, grid, eigenvector)
+    da3 = get_base_eigenfunction(sv_a3, settings, grid, eigenvector, diff_order=1)
+    dda3 = get_base_eigenfunction(sv_a3, settings, grid, eigenvector, diff_order=2)
     ef_eps = grid%get_eps(grid%ef_grid)
     ef_deps = grid%get_deps()
     curl_B_3 = ( &
@@ -448,8 +452,8 @@ contains
     complex(dp) :: v_para(size(grid%ef_grid))
     complex(dp) :: v2(size(grid%ef_grid)), v3(size(grid%ef_grid))
 
-    v2 = get_base_eigenfunction("v2", settings, grid, eigenvector)
-    v3 = get_base_eigenfunction("v3", settings, grid, eigenvector)
+    v2 = get_base_eigenfunction(sv_v2, settings, grid, eigenvector)
+    v3 = get_base_eigenfunction(sv_v3, settings, grid, eigenvector)
     v_para = ( &
       (B02_on_ef_grid * v2 + B03_on_ef_grid * v3) &
       / sqrt(B02_on_ef_grid**2 + B03_on_ef_grid**2) &
@@ -464,8 +468,8 @@ contains
     complex(dp) :: v_perp(size(grid%ef_grid))
     complex(dp) :: v2(size(grid%ef_grid)), v3(size(grid%ef_grid))
 
-    v2 = get_base_eigenfunction("v2", settings, grid, eigenvector)
-    v3 = get_base_eigenfunction("v3", settings, grid, eigenvector)
+    v2 = get_base_eigenfunction(sv_v2, settings, grid, eigenvector)
+    v3 = get_base_eigenfunction(sv_v3, settings, grid, eigenvector)
     v_perp = ( &
       (B02_on_ef_grid * v3 - B03_on_ef_grid * v2) &
       / sqrt(B02_on_ef_grid**2 + B03_on_ef_grid**2) &
@@ -506,25 +510,50 @@ contains
   end function get_curl_v_perp
 
 
-  function get_base_eigenfunction(name, settings, grid, eigenvector, diff_order) &
-    result(base_ef)
-    character(len=*), intent(in) :: name
+  function get_dB1(settings, grid, eigenvector) result(dB1)
+    type(settings_t), intent(in) :: settings
+    type(grid_t), intent(in) :: grid
+    complex(dp), intent(in) :: eigenvector(:)
+    complex(dp) :: dB1(size(grid%ef_grid))
+    complex(dp) :: a2(size(grid%ef_grid))
+    complex(dp) :: da2(size(grid%ef_grid))
+    complex(dp) :: a3(size(grid%ef_grid))
+    complex(dp) :: da3(size(grid%ef_grid))
+    real(dp) :: ef_eps(size(grid%ef_grid)), ef_deps
+
+    a2 = get_base_eigenfunction(sv_a2, settings, grid, eigenvector)
+    da2 = get_base_eigenfunction(sv_a2, settings, grid, eigenvector, diff_order=1)
+    a3 = get_base_eigenfunction(sv_a3, settings, grid, eigenvector)
+    da3 = get_base_eigenfunction(sv_a3, settings, grid, eigenvector, diff_order=1)
+    ef_eps = grid%get_eps(grid%ef_grid)
+    ef_deps = grid%get_deps()
+
+    dB1 = ic * (k2 * da3 / ef_eps - k3 * da2 / ef_eps + k3 * &
+     ef_deps * a2 / ef_eps) - ic * k2 * ef_deps * a3 / ef_eps**2
+  end function get_dB1
+
+
+  function get_base_eigenfunction( &
+    sv_component, settings, grid, eigenvector, diff_order &
+  ) result(base_ef)
+    type(sv_component_t), intent(in) :: sv_component
     type(settings_t), intent(in) :: settings
     type(grid_t), intent(in) :: grid
     complex(dp), intent(in) :: eigenvector(:)
     integer, intent(in), optional :: diff_order
 
     complex(dp) :: base_ef(size(grid%ef_grid))
-    integer :: derivative_order
+    integer :: derivative_order, sv_idx
 
     derivative_order = 0
     if (present(diff_order)) derivative_order = diff_order
 
+    sv_idx = get_index(sv_component%get_name(), settings%state_vector%get_names())
     base_ef = assemble_eigenfunction( &
       settings=settings, &
-      ef_name=name, &
+      sv_component=sv_component, &
       grid=grid, &
-      state_vector_index=get_index(name, settings%get_state_vector()), &
+      state_vector_index=sv_idx, &
       eigenvector=eigenvector, &
       derivative_order=derivative_order &
     )
@@ -532,7 +561,9 @@ contains
     if (derivative_order /= 0) return
     ! only retransform for "true" base eigenfunctions, not their derivatives
     base_ef = retransform_eigenfunction( &
-      ef_name=name, ef_eps=grid%get_eps(grid%ef_grid), eigenfunction=base_ef &
+      ef_name=sv_component%get_name(), &
+      ef_eps=grid%get_eps(grid%ef_grid), &
+      eigenfunction=base_ef &
     )
   end function get_base_eigenfunction
 

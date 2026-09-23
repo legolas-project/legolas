@@ -4,11 +4,13 @@ module mod_base_efs
   use mod_grid, only: grid_t
   use mod_get_indices, only: get_index
   use mod_ef_assembly, only: assemble_eigenfunction, retransform_eigenfunction
+  use mod_state_vector_component, only: sv_component_t
   implicit none
 
   private
 
   type, public :: base_ef_t
+    type(sv_component_t), pointer :: sv_component
     character(str_len_arr) :: name
     complex(dp), allocatable :: quantities(:, :)
 
@@ -21,13 +23,14 @@ module mod_base_efs
 
 contains
 
-  subroutine initialise(this, name, ef_grid_size, nb_efs)
+  subroutine initialise(this, sv_component, ef_grid_size, nb_efs)
     class(base_ef_t), intent(inout) :: this
-    character(str_len_arr), intent(in) :: name
+    type(sv_component_t), intent(in), target :: sv_component
     integer, intent(in) :: ef_grid_size
     integer, intent(in) :: nb_efs
 
-    this%name = name
+    this%name = sv_component%get_name()
+    this%sv_component => sv_component
     allocate(this%quantities(ef_grid_size, nb_efs))
   end subroutine initialise
 
@@ -47,7 +50,7 @@ contains
       idx = idxs_to_assemble(i)
       assembled_ef = assemble_eigenfunction( &
         settings=settings, &
-        ef_name=this%name, &
+        sv_component=this%sv_component, &
         grid=grid, &
         state_vector_index=state_vector_idx, &
         eigenvector=right_eigenvectors(:, idx) &
@@ -63,6 +66,7 @@ contains
 
   pure subroutine delete(this)
     class(base_ef_t), intent(inout) :: this
+    nullify(this%sv_component)
     if(allocated(this%quantities)) deallocate(this%quantities)
   end subroutine delete
 

@@ -1,5 +1,6 @@
-from .regression import RegressionTest
 import pytest
+
+from .regression import RegressionTest
 
 
 class KelvinHelmholtzCurrentDriven(RegressionTest):
@@ -42,6 +43,7 @@ class TestKelvinHelmholtzCurrentDrivenSI(KelvinHelmholtzCurrentDriven):
         "number_of_eigenvalues": 6,
         "which_eigenvalues": "LM",
         "sigma": 2.5 + 0.5j,
+        "maxiter": 500,
     }
 
     spectrum_limits = [

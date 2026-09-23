@@ -14,8 +14,10 @@ contains
 
   !> Solves the eigenvalue problem by rewriting it to a standard form
   !! through inversion of the B-matrix.
-  !! @warning Throws an error if <tt>matrix_A</tt> or <tt>matrix_B</tt>
-  !!          is not a square matrix. @endwarning
+  !! @warning
+  !!     Throws an error if <tt>matrix_A</tt> or <tt>matrix_B</tt>
+  !!     is not a square matrix.
+  !! @endwarning
   module procedure qr_invert
     !> full array containing the \(B^{-1}A\)-matrix
     complex(dp), allocatable :: array_B_invA(:, :)

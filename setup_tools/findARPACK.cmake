@@ -17,15 +17,6 @@ function(check_if_arpack_links)
     )
 
     include(CheckFortranSourceCompiles)
-    check_fortran_source_compiles("
-        program test_arpack_include
-            implicit none
-            include 'arpackicb.h'
-        end program"
-        ARPACK_includes
-        SRC_EXT
-        f90
-    )
     # we don't have to supply arguments to dnaupd, this will error
     # out but link just fine
     check_fortran_source_compiles("
@@ -37,7 +28,7 @@ function(check_if_arpack_links)
         SRC_EXT
         f90
     )
-    if(NOT ARPACK_includes OR NOT ARPACK_calls)
+    if(NOT ARPACK_calls)
         set(ARPACK_links False PARENT_SCOPE)
     endif()
 endfunction()

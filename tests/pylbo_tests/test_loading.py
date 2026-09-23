@@ -2,6 +2,17 @@ import numpy as np
 import pylbo
 import pytest
 
+DEFAULT_MHD_BASIS = {
+    "rho": "quadratic",
+    "v1": "cubic",
+    "v2": "quadratic",
+    "v3": "quadratic",
+    "T": "quadratic",
+    "a1": "quadratic",
+    "a2": "cubic",
+    "a3": "cubic",
+}
+
 
 def test_invalid_file():
     with pytest.raises(FileNotFoundError):
@@ -84,3 +95,33 @@ def test_load_v200_efs_get_residuals(ds_v200_mri_efs):
     result = ds_v200_mri_efs.get_residuals()
     assert result is not None
     assert isinstance(result, np.ndarray)
+
+
+def test_load_v210_default_basis(ds_v210_rotcyl_efs_default_basis):
+    ds = ds_v210_rotcyl_efs_default_basis
+    assert ds.legolas_version >= "2.1"
+    assert ds.header.get("basis_functions") == DEFAULT_MHD_BASIS
+
+
+def test_load_v210_custom_basis(ds_v210_rotcyl_efs_custom_basis):
+    ds = ds_v210_rotcyl_efs_custom_basis
+    assert ds.legolas_version >= "2.1"
+    expected = {
+        "rho": "quadratic",
+        "v1": "cubic",
+        "v2": "cubic",
+        "v3": "quadratic",
+        "T": "cubic",
+        "a1": "quadratic",
+        "a2": "cubic",
+        "a3": "quadratic",
+    }
+    assert ds.header.get("basis_functions") == expected
+
+
+def test_load_v211_parameter(series_v211_mri_parameter):
+    ds = series_v211_mri_parameter
+    assert np.allclose(
+        ds.parameters["k3"],
+        np.array(sorted([50.0, 80.0] * 3)),
+    )

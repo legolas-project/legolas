@@ -45,11 +45,6 @@ def _main():
     p.add_continua()
     if ds.has_efs:
         p.add_eigenfunctions()
-    if ds.has_derived_efs:
-        p2 = pylbo.plot_spectrum(ds)
-        p2.add_continua()
-        p2.add_derived_eigenfunctions()
-        p2.draw()
     p.show()
 
 

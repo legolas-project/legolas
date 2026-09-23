@@ -6,7 +6,7 @@ sidebar:
   nav: "leftcontents"
 toc: true
 toc_icon: "chevron-circle-down"
-last_modified_at: 2023-04-13
+last_modified_at: 2026-01-28
 ---
 
 Legolas has interfaces implemented to various BLAS, LAPACK and ARPACK routines.
@@ -30,22 +30,39 @@ near the interesting regions. Comparing the eigenvalues between both solution st
 {: .notice--success}
 
 
+## No solver
+The eigenvalue solve can be bypassed entirely by selecting the `"none"` solver:
+```fortran
+&solvelist
+  solver = "none"
+/
+```
+The matrices are still assembled, but no eigenvalue solver is called and the eigenvalue array in
+the datfile is left empty. Eigenfunction, eigenvector and residual output is switched off
+automatically, since these are meaningless without eigenvalues.
+
+This is useful for a dry run (for example to assemble and write the matrices with
+`write_matrices = .true.`), and for [initial-value runs](../../general/initial_value), which reuse
+the assembled `A` and `B` matrices but do not need the eigenvalues. Initial-value snapshot output
+is unaffected by this setting.
+
+
 ## QR-invert
 This is the default solver that Legolas uses, which transforms the general eigenvalue problem into a standard one:
 
 $$ B^{-1}A\mathbf{x} = \omega\mathbf{x}, $$
 
-where we do not explicitly calculate the inverse of B. Matrix sparsity is exploited instead, where a banded storage form of B is used to solve the system
+where we do not explicitly calculate the inverse of $B$. Matrix sparsity is exploited instead, where a banded storage form of $B$ is used to solve the system
 
 $$ B\mathbf{x} = A $$
 
 for $\mathbf{x}$, yielding $B^{-1}A$.
 
-The LAPACK routine [`zgbsv`](https://netlib.org/lapack/explore-html/d9/dbb/group__complex16_g_bsolve_ga908abc0aad64131b9a32edb08510eb00.html)
-is used to solve the system of linear equations. This is followed by a call to  LAPACK's [`zgeev`](https://netlib.org/lapack/explore-html/db/d55/group__complex16_g_eeigen_ga0eb4e3d75621a1ce1685064db1ac58f0.html)
+The LAPACK routine [`zgbsv`](https://www.netlib.org/lapack/explore-html/db/df8/group__gbsv_gae5d2fd844bacac0f2456eca12b4fed61.html)
+is used to solve the system of linear equations. This is followed by a call to  LAPACK's [`zgeev`](https://www.netlib.org/lapack/explore-html/d4/d68/group__geev_ga8656466cd9da86a0b3b6966e49a7ce40.html)
 which returns all eigenvalues and optionally the right eigenvectors.
 
-Note that while this routine stores B in banded form, the product $B^{-1}A$ passed to `zgeev` has to be in a dense format (which unfortunately looses sparsity). For very high-resolution runs this routine should not be used, unless enough RAM is available to store such a dense matrix in memory. Note that in full MHD matrix dimensions are $16N \times 16N$, in HD this reduces to $10N \times 10N$ with $N$ the number of gridpoints in the base grid.
+Note that while this routine stores $B$ in banded form, the product $B^{-1}A$ passed to `zgeev` has to be in a dense format (which unfortunately loses sparsity). For very high-resolution runs this routine should not be used, unless enough RAM is available to store such a dense matrix in memory. Note that in full MHD matrix dimensions are $16N \times 16N$, in HD this reduces to $10N \times 10N$ with $N$ the number of gridpoints in the base grid.
 
 This solver can be explicitly specified in the `solvelist` through
 ```fortran
@@ -76,16 +93,16 @@ and is called by default if no `solvelist` is supplied.
 
 
 ## QR-cholesky
-In most cases the B-matrix is Hermitian, such that a Cholesky decomposition can be exploited. This has numerous advantages with respect to a LU-decomposition (such as used by QR-invert), mainly in terms of efficiency and accuracy.
-The eigenvalue problem is rewritten into standard form, but instead of solving for $B^{-1}A$ the B-matrix is written as a product of a lower triangular matrix and its conjugate transpose.
+In most cases the $B$-matrix is Hermitian, such that a Cholesky decomposition can be exploited. This has numerous advantages with respect to a LU-decomposition (such as used by QR-invert), mainly in terms of efficiency and accuracy.
+The eigenvalue problem is rewritten into standard form, but instead of solving for $B^{-1}A$ the $B$-matrix is written as a product of a lower triangular matrix and its conjugate transpose.
 
-First the B-matrix is converted into an upper triangular banded form storage, then the Cholesky decomposition is calculated using LAPACK's [`zpbtrf`](https://netlib.org/lapack/explore-html/d0/da6/group__complex16_o_t_h_e_rcomputational_ga96ac766f25abe97ba7cb791398e325d7.html).
-Next various calls are made to BLAS's [`ztbsv`](https://netlib.org/lapack/explore-html/dc/dc1/group__complex16__blas__level2_ga20d3fa0fe7cc708608dc658c743bfcab.html), eventually constructing the matrix $U^{-H}AU^{-1}$. Finally this is passed to LAPACK's [`zgeev`](https://netlib.org/lapack/explore-html/db/d55/group__complex16_g_eeigen_ga0eb4e3d75621a1ce1685064db1ac58f0.html)
+First the $B$-matrix is converted into an upper triangular banded form storage, then the Cholesky decomposition is calculated using LAPACK's [`zpbtrf`](https://www.netlib.org/lapack/explore-html/dc/d58/group__pbtrf_ga1fb0b071f1f8c4ea31e5561d491e6670.html).
+Next various calls are made to BLAS's [`ztbsv`](https://www.netlib.org/lapack/explore-html/d4/dcd/group__tbsv_ga0f56e4311a965b79cb37fcf86881f925.html), eventually constructing the matrix $U^{-H}AU^{-1}$. Finally this is passed to LAPACK's [`zgeev`](https://www.netlib.org/lapack/explore-html/d4/d68/group__geev_ga8656466cd9da86a0b3b6966e49a7ce40.html)
 which returns all eigenvalues and optionally the right eigenvectors.
 
 Note that while this routine does its calculations with matrices in banded storage, the final product passed to `zgeev` has to be in a dense format. As such, the same memory remarks and constraints as QR-invert are relevant.
 
-Also note that this can only be used if the B-matrix is Hermitian. This depends on the physics taken into consideration, for example the electron inertia term in the Hall effect breaks the Hermitianness of the B-matrix. Legolas will throw an error if this is the case.
+Also note that this can only be used if the $B$-matrix is Hermitian. This depends on the physics taken into consideration, for example the electron inertia term in the Hall effect breaks the Hermitianness of the $B$-matrix. Legolas will throw an error if this is the case.
 
 This solver can be explicitly specified in the `solvelist` through
 ```fortran
@@ -107,7 +124,7 @@ This solver can be explicitly specified in the `solvelist` through
 **Cons:**
 - Needs to store one dense matrix in memory
 - Datfiles become very large at high resolution if eigenfunctions are included, this can be mitigated by saving a subset.
-- Only works if the B-matrix is Hermitian, which is not always the case.
+- Only works if the $B$-matrix is Hermitian, which is not always the case.
 {% endcapture %}
 <div class="notice--danger">
   {{ cons | markdownify }}
@@ -115,9 +132,9 @@ This solver can be explicitly specified in the `solvelist` through
 
 ## QZ-direct
 This is a variant of the QR-invert solver, with as main difference that the eigenvalue problem is kept in its general form.
-The LAPACK routine [`zggev`](https://netlib.org/lapack/explore-html/db/d55/group__complex16_g_eeigen_ga79fcce20c617429ccf985e6f123a6171.html)
+The LAPACK routine [`zggev`](https://www.netlib.org/lapack/explore-html/da/da1/group__ggev_ga4cb59b337869a6570619392409887992.html)
 is used to solve the general eigenvalue problem, returning all eigenvalues.
-Note that this routine only works with dense matrices, so contrary to QR-invert this stores **two** dense matrices in memory (A and B).
+Note that this routine only works with dense matrices, so contrary to QR-invert this stores **two** dense matrices in memory ($A$ and $B$).
 
 This solver can be specified in the `solvelist` through
 ```fortran
@@ -128,7 +145,7 @@ This solver can be specified in the `solvelist` through
 
 {% capture pros %}
 **Pros:**
-- No inversion of the B-matrix needed, may increase accuracy in some cases.
+- No inversion of the $B$-matrix needed, may increase accuracy in some cases.
 - Calculates complete spectrum
 {% endcapture %}
 <div class="notice--success">
@@ -152,7 +169,7 @@ solve large-scale, sparse matrix eigenvalue problems, and is hence perfectly sui
 ARPACK can run in various modes, most notably a shift-invert method to probe
 various parts of the spectrum, only returning eigenvalues of regions you are interested in.
 
-As these routines iterate towards their solution we can fully exploit matrix sparsity. As such there is a major advantage here with respect to the QR-variants: due to the iterative nature we only need matrix-vector products. Both matrices A and B are **never** fully stored in memory. A linked-list representation is used for matrix data-storage, which only stores non-zero elements. All calculations are done using LAPACK's banded matrices, and conversions from linked-lists to banded structures are done when necessary. This means that (much) higher resolutions are possible here, as we are no longer bound by memory limitations for storing the dense matrices. The spectrum can then be constructed through various shift-invert runs.
+As these routines iterate towards their solution we can fully exploit matrix sparsity. As such there is a major advantage here with respect to the QR-variants: due to the iterative nature we only need matrix-vector products. Both matrices $A$ and $B$ are **never** fully stored in memory. A linked-list representation is used for matrix data-storage, which only stores non-zero elements. All calculations are done using LAPACK's banded matrices, and conversions from linked-lists to banded structures are done when necessary. This means that (much) higher resolutions are possible here, as we are no longer bound by memory limitations for storing the dense matrices. The spectrum can then be constructed through various shift-invert runs.
 
 The main difference with the LAPACK solvers is that one can query for only a number of eigenvalues
 instead of the full spectrum. This is essentially the Fortran analog of SciPy's
@@ -181,9 +198,9 @@ When using Arnoldi-based solvers the solvelist can be set as follows:
    - `"LI"`: eigenvalues with largest imaginary part
    - `"SI"`: eigenvalues with smallest imaginary part
 - `maxiter`: integer which limits the maximum iterations the Arnoldi solver may take when
-   doing the reverse communication. This defaults to $max(100, 10N)$, where $N$ is the
+   doing the reverse communication. This defaults to $\max(100, 10N)$, where $N$ is the
    number of gridpoints in the base grid, and is usually more than sufficient.
-- `ncv`: the number of basis vectors to use during the iteration, by default set to max$(k + 1, $min$(2k, 10N))$.
+- `ncv`: the number of basis vectors to use during the iteration, by default set to $\max(k + 1, \min(2k, 10N))$.
     Tweaking this value can have a large impact on convergence and/or performance, see the points of note below.
 
 If the iterative solver reaches `maxiter`, only a number $j < k$ eigenvalues will be converged.
@@ -262,7 +279,7 @@ and should be a complex tuple (standard Fortran notation for complex numbers).
 
 The eigenvalue problem is tackled as follows.
 
-First the matrices A and B are transformed to banded form, followed by a calculation of $A - \sigma B$. Then, at every step in the iteration:
+First the matrices $A$ and $B$ are transformed to banded form, followed by a calculation of $A - \sigma B$. Then, at every step in the iteration:
 1. The matrix-vector product $u = BX$  is calculated, in which the $B$-matrix is kept in its linked-list representation. This makes the matrix-vector product efficient and fast.
 2. The linear system $\left(A - \sigma B\right)R = u$ is solved for $R$ using LAPACK's banded matrix routines and passed back to the solver.
 
@@ -295,7 +312,7 @@ $$
 
 
 ## Inverse vector iteration
-A recent addition to the code is the ability to do inverse vector iteration. This allows one to specify a shift $\sigma$ in the complex plane, and the code will iterate towards the closest eigenvalue to that shift. This method is perfect if one (or more) particular eigenvalues are desired and their approximate location in the spectral plane is known (through QR-variants or shift-invert). In most cases this iteration will be faster than running Arnoldi shift-invert for one eigenvalue.
+The latest solver addition to the code is the ability to do inverse vector iteration. This allows one to specify a shift $\sigma$ in the complex plane, and the code will iterate towards the closest eigenvalue to that shift. This method is perfect if one (or more) particular eigenvalues are desired and their approximate location in the spectral plane is known (through QR-variants or shift-invert). In most cases this iteration will be faster than running Arnoldi shift-invert for one eigenvalue.
 
 This solver can be specified in the parfile by setting
 ```fortran
@@ -306,7 +323,7 @@ This solver can be specified in the parfile by setting
   tolerance = 1.0d-7
 /
 ```
-The quantity `maxiter` (default 100 if not given) specifies the maximum number of iterations, the inverse iteration process will continue until the eigenvalue is either converged or `maxiter` is reached. Note that is no tolerance is given the solver defaults to a tolerance near machine precision (`5e-15`). In some cases this may be too strict such that Legolas will have difficulties converging, typically warnings will be raised that `maxiter` is reached.
+The quantity `maxiter` (default 100 if not given) specifies the maximum number of iterations, the inverse iteration process will continue until the eigenvalue is either converged or `maxiter` is reached. Note that if no tolerance is given the solver defaults to a tolerance near machine precision (`5e-15`). In some cases this may be too strict such that Legolas will have difficulties converging, typically warnings will be raised that `maxiter` is reached.
 The eigenvalue obtained after one iteration is considered converged if the following criterion is satisfied
 
 $$

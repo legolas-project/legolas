@@ -201,6 +201,16 @@ class LegolasLegacyHeader(LegolasHeader):
         self.data["nb_eqs"] = 8
         self.data["physics_type"] = "mhd"
         self.data["state_vector"] = ["rho", "v1", "v2", "v3", "T", "a1", "a2", "a3"]
+        self.data["basis_functions"] = {
+            "rho": "quadratic",
+            "v1": "cubic",
+            "v2": "quadratic",
+            "v3": "quadratic",
+            "T": "quadratic",
+            "a1": "quadratic",
+            "a2": "cubic",
+            "a3": "cubic",
+        }
         self.data["dims"] = {
             "dim_integralblock": 2,
             "dim_subblock": 8 * 2,

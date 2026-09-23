@@ -6,16 +6,18 @@
 !! This equilibrium is taken from section 14.3, p. 551 in
 !! _Goedbloed, H., Keppens, R., & Poedts, S. (2019). Magnetohydrodynamics of Laboratory
 !!  and Astrophysical Plasmas. Cambridge University Press._ [DOI](http://doi.org/10.1017/9781316403679).
-!! @note Default values are given by
-!!
-!! - <tt>k2</tt> = 0.49
-!! - <tt>k3</tt> = 0
-!! - <tt>cte_rho0</tt> = 1 : used to set the density value.
-!! - <tt>alpha</tt> = 4.73884 : parameter in the magnetic field prescription.
-!! - <tt>beta</tt> = 0.25 : used to constrain the temperature value.
-!! - fixed resistivity value of 0.0001
-!!
-!! and can all be changed in the parfile. @endnote
+!! @note
+!!     Default values are given by
+!!     
+!!     - <tt>k2</tt> = 0.49
+!!     - <tt>k3</tt> = 0
+!!     - <tt>cte_rho0</tt> = 1 : used to set the density value.
+!!     - <tt>alpha</tt> = 4.73884 : parameter in the magnetic field prescription.
+!!     - <tt>beta</tt> = 0.25 : used to constrain the temperature value.
+!!     - fixed resistivity value of 0.0001
+!!     
+!!     and can all be changed in the parfile.
+!! @endnote
 submodule (mod_equilibrium) smod_equil_resistive_tearing
   use mod_equilibrium_params, only: alpha, beta, cte_rho0
   implicit none
@@ -50,7 +52,7 @@ contains
 
   real(dp) function T0(x)
     real(dp), intent(in) :: x
-    T0 = beta * B0(x) / 2.0_dp
+    T0 = beta * (B0(x))**2 / (2.0_dp * cte_rho0)
   end function T0
 
   real(dp) function B02(x)

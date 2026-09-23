@@ -50,7 +50,9 @@ contains
   !! the optional argument <tt>load_from</tt>. The integration is done over the entire
   !! table, the curve is sampled on the Gaussian grid, meaning that grid variations
   !! can all use the same result.
-  !! @warning   Throws an error if the geometry is not Cartesian. @endwarning
+  !! @warning
+  !!     Throws an error if the geometry is not Cartesian.
+  !! @endwarning
   subroutine set_solar_atmosphere(settings, background, physics, n_interp)
     use mod_integration, only: integrate_ode_rk45
 
