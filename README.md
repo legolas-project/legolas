@@ -30,6 +30,5 @@ Note that while everything on the `develop` branch _should_ be stable, it is pos
 ## Using Legolas
 :warning: **Please note**
 
-Legolas has taken (and still takes up) a lot of effort and time to test, develop and maintain.
-Since the code is relatively new we would like to know how it is used and provide guidance if possible.
-To that end, we kindly ask that the _**the first published peer-reviewed paper from applying Legolas is done in co-authorship with at least one of the original authors**_. The BibTex citation to our ApJS method paper can be found [here](https://ui.adsabs.harvard.edu/abs/2020arXiv201014148C/exportcitation).
+Legolas is open-source and free to use as covered in the license. However, the code has taken (and still takes up) a lot of effort and time to test, develop and maintain. As such, **we would appreciate proper attribution when you choose to use Legolas**. The BibTex citation to our ApJS method paper can be found [here](https://ui.adsabs.harvard.edu/abs/2020arXiv201014148C/exportcitation).
+Further, we are always interested to hear how you are planning to apply Legolas and provide guidance if possible.
