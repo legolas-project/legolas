@@ -58,7 +58,9 @@ contains
     call self%state_vec%initialise_components(self%settings%get_physics_type(), initial_conditions)
 
     ! Assemble the initial value array in block format
-    call self%state_vec%assemble_iv_array(self%settings%grid%get_gridpts(), self%grid%base_grid)
+    call self%state_vec%assemble_iv_array( &
+      self%settings%grid%get_gridpts(), self%grid%base_grid, self%grid%get_deps() &
+    )
 
     ! Setup snapshots array
     allocate(self%snapshots(self%state_vec%stride * self%settings%grid%get_gridpts(), &

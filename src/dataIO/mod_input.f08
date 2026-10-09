@@ -4,7 +4,7 @@
 !! and to read the parfile, setting the global variables.
 module mod_input
   use mod_global_variables, only: dp, str_len, str_len_arr, NaN
-  use mod_logging, only: logger
+  use mod_logging, only: logger, str
   use mod_settings, only: settings_t
   implicit none
 
@@ -395,6 +395,9 @@ contains
   end subroutine read_unitlist
 
 
+  !> Reads the initial-value namelist. The time step is given by either dt or n_steps,
+  !! the snapshot spacing by either snapshot_stride or snapshot_dt. With dt the step is
+  !! exact and the run ends at the first whole step at or past t_end.
   subroutine read_ivplist(unit, settings)
     integer, intent(in)            :: unit
     type(settings_t), intent(inout):: settings
@@ -403,31 +406,80 @@ contains
     character(str_len)             :: iomsg
 
     logical    :: enabled
-    real(dp)   :: alpha, t_end
-    integer    :: n_steps, n_snapshots, snapshot_stride
+    real(dp)   :: alpha, t_end, dt, snapshot_dt
+    integer    :: n_steps, snapshot_stride
+    real(dp), parameter :: unset = -1.0_dp
+    real(dp), parameter :: tol = 1.0e-9_dp
 
     namelist /ivplist/ &
-      enabled, alpha, t_end, n_steps, n_snapshots, snapshot_stride
-  
-    ! Defaults:
+      enabled, alpha, t_end, dt, n_steps, snapshot_stride, snapshot_dt
+
+    ! Defaults; the time step and snapshot options start unset
     enabled         = settings%iv%enabled
     alpha           = settings%iv%alpha
     t_end           = settings%iv%t_end
-    n_steps         = settings%iv%n_steps
-    snapshot_stride = settings%iv%snapshot_stride
-    n_snapshots     = settings%iv%get_n_snapshots()
-  
+    dt              = unset
+    n_steps         = -1
+    snapshot_stride = -1
+    snapshot_dt     = unset
+
     read(unit, nml=ivplist, iostat=iostat, iomsg=iomsg)
     call parse_io_info(iostat, iomsg)
-  
-    ! Update the settings
-    settings%iv%enabled          = enabled
-    settings%iv%alpha           = alpha
-    settings%iv%t_end           = t_end
-    settings%iv%n_steps         = n_steps
-    settings%iv%snapshot_stride = snapshot_stride
-    call settings%iv%set_n_snapshots(n_snapshots)
-  
+
+    settings%iv%enabled = enabled
+    settings%iv%alpha   = alpha
+    settings%iv%t_end   = t_end
+    if (.not. enabled) return
+
+    if (t_end <= 0.0_dp) call logger%error("ivplist: t_end must be positive")
+    if (alpha < 0.0_dp .or. alpha > 1.0_dp) then
+      call logger%error("ivplist: alpha must lie in [0, 1]")
+    end if
+    if (alpha < 0.5_dp) then
+      call logger%warning( &
+        "ivplist: alpha < 0.5 is only conditionally stable; use a small dt or alpha >= 0.5" &
+      )
+    end if
+
+    ! time step
+    if (dt /= unset .and. n_steps /= -1) then
+      call logger%error("ivplist: set either dt or n_steps, not both")
+    end if
+    if (dt /= unset) then
+      if (dt <= 0.0_dp) call logger%error("ivplist: dt must be positive")
+      settings%iv%dt = dt
+      settings%iv%n_steps = max(1, ceiling(t_end / dt - tol))
+      if (settings%iv%get_end_time() > t_end * (1.0_dp + tol)) then
+        call logger%info( &
+          "ivplist: t_end is not a whole number of steps, the run ends at t = " &
+          // str(settings%iv%get_end_time()) &
+        )
+      end if
+    else
+      if (n_steps /= -1) then
+        if (n_steps < 1) call logger%error("ivplist: n_steps must be at least 1")
+        settings%iv%n_steps = n_steps
+      end if
+      settings%iv%dt = 0.0_dp
+    end if
+
+    ! snapshot spacing
+    if (snapshot_dt /= unset .and. snapshot_stride /= -1) then
+      call logger%error("ivplist: set either snapshot_stride or snapshot_dt, not both")
+    end if
+    if (snapshot_dt /= unset) then
+      if (snapshot_dt <= 0.0_dp) call logger%error("ivplist: snapshot_dt must be positive")
+      settings%iv%snapshot_stride = max(1, nint(snapshot_dt / settings%iv%get_step_size()))
+      if (abs(settings%iv%get_snapshot_interval() - snapshot_dt) > tol * snapshot_dt) then
+        call logger%info( &
+          "ivplist: snapshot_dt is not a whole number of steps, snapshots every t = " &
+          // str(settings%iv%get_snapshot_interval()) &
+        )
+      end if
+    else if (snapshot_stride /= -1) then
+      if (snapshot_stride < 1) call logger%error("ivplist: snapshot_stride must be at least 1")
+      settings%iv%snapshot_stride = snapshot_stride
+    end if
   end subroutine read_ivplist
 
 

@@ -212,22 +212,40 @@ class LegolasFileReader:
             return None
         return ef_index
 
-    def read_iv_snapshots(self, header: LegolasHeader) -> np.ndarray | None:
+    def read_iv_snapshots_grid(self, header: LegolasHeader) -> np.ndarray:
+        """Reads the grid on which the initial-value snapshot profiles are evaluated."""
+        with open(self.datfile, "rb") as istream:
+            grid = read_float_from_istream(
+                istream,
+                amount=header["iv_snapshots_npoints"],
+                offset=header["offsets"]["iv_snapshots_grid"],
+            )
+        return np.asarray(grid, dtype=float)
+
+    def read_iv_snapshots(self, header: LegolasHeader) -> tuple[np.ndarray, tuple]:
+        """
+        Reads the initial-value snapshots. Returns the data as a complex array of shape
+        ``(n_snap, n_comp, n_points)`` together with the snapshot times.
+        """
         offset = header["offsets"]["iv_snapshots"]
         nsnap = header["iv_snapshots_count"]
         npts = header["iv_snapshots_npoints"]
         ncomp = header["iv_snapshots_ncomp"]
-
-        total_values = nsnap * ncomp * npts
+        nfields = header["iv_snapshots_nfields"]
 
         with open(self.datfile, "rb") as istream:
             istream.seek(offset)
-            # Read as double precision
             time_data = read_float_from_istream(istream, amount=nsnap)
-            snapshot_data = read_float_from_istream(istream, amount=total_values)
+            snapshot_data = read_float_from_istream(
+                istream, amount=nsnap * nfields * ncomp * npts
+            )
 
-        # Convert to a NumPy array, shape = (nsnap, ncomp, npts)
-        data = np.array(snapshot_data, dtype=float)
-        data = data.reshape((nsnap, ncomp, npts), order="C")
-
+        # per snapshot: the real parts of all components, then the imaginary parts
+        data = np.array(snapshot_data, dtype=float).reshape(
+            (nsnap, nfields, ncomp, npts), order="C"
+        )
+        if nfields == 2:
+            data = data[:, 0] + 1j * data[:, 1]
+        else:
+            data = data[:, 0].astype(complex)
         return data, time_data

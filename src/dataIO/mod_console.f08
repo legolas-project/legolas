@@ -78,6 +78,7 @@ contains
     call log_equilibrium_info(settings)
     call log_physics_info(settings)
     call log_solver_info(settings)
+    if (settings%iv%enabled) call log_ivp_info(settings)
     call log_io_info(settings)
 
     call logger%info("---------------------------------------------")
@@ -275,6 +276,21 @@ contains
       call logger%info("tolerance : " // str(settings%solvers%tolerance, exp_fmt))
     end select
   end subroutine log_solver_info
+
+
+  subroutine log_ivp_info(settings)
+    type(settings_t), intent(in) :: settings
+
+    call logger%info("        << Initial value settings >>")
+    call logger%info("alpha             : " // str(settings%iv%alpha))
+    call logger%info("dt                : " // str(settings%iv%get_step_size(), exp_fmt))
+    call logger%info("steps             : " // str(settings%iv%n_steps))
+    call logger%info("t_end requested   : " // str(settings%iv%t_end))
+    call logger%info("t_end of the run  : " // str(settings%iv%get_end_time()))
+    call logger%info("snapshot stride   : " // str(settings%iv%snapshot_stride))
+    call logger%info("snapshot interval : " // str(settings%iv%get_snapshot_interval(), exp_fmt))
+    call logger%info("snapshots         : " // str(settings%iv%get_n_snapshots()))
+  end subroutine log_ivp_info
 
 
   subroutine log_io_info(settings)

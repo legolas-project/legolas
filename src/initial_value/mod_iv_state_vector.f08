@@ -189,19 +189,21 @@ module mod_iv_state_vector
   ! -----------------------------------------------------------------
   ! Assemble IV array from profiles
   ! -----------------------------------------------------------------
-  subroutine assemble_iv_array(self, N, nodes)
+  subroutine assemble_iv_array(self, N, nodes, deps)
     !>
     class(iv_state_vector_t), intent(inout) :: self
     !> Number of grid points
     integer, intent(in) :: N
     !> Array of grid points
     real(dp), intent(in) :: nodes(N)
+    !> Derivative of the scale factor (0 in Cartesian, 1 in cylindrical geometry)
+    real(dp), intent(in) :: deps
 
     integer :: i, j, idx
 
     ! Compute coefficients for each component
     do i = 1, self%num_components
-      call self%components(i)%ptr%compute_coeffs(N, nodes)
+      call self%components(i)%ptr%compute_coeffs(N, nodes, deps)
     end do
 
     allocate(self%x0(self%stride * N))
@@ -215,18 +217,18 @@ module mod_iv_state_vector
           ! Multiply by i if needed
           if (self%components(i)%ptr%cplx_trans) then
             self%x0(idx : self%stride*N : self%stride) = &
-              cmplx(self%components(i)%ptr%c1, 0.0_dp, kind=dp) * ic
+              self%components(i)%ptr%c1 * ic
           else
             self%x0(idx : self%stride*N : self%stride) = &
-              cmplx(self%components(i)%ptr%c1, 0.0_dp, kind=dp)
+              self%components(i)%ptr%c1
           end if          
         case(2)
           if (self%components(i)%ptr%cplx_trans) then
             self%x0(idx : self%stride*N : self%stride) = &
-              cmplx(self%components(i)%ptr%c2, 0.0_dp, kind=dp) * ic
+              self%components(i)%ptr%c2 * ic
           else
             self%x0(idx : self%stride*N : self%stride) = &
-              cmplx(self%components(i)%ptr%c2, 0.0_dp, kind=dp)
+              self%components(i)%ptr%c2
           end if
         end select
       end do
@@ -271,15 +273,15 @@ module mod_iv_state_vector
         select case (j)
           case(1)  ! c1
             if (self%components(i)%ptr%cplx_trans) then
-              self%components(i)%ptr%c1 = real(self%x0(idx : self%stride*N : self%stride) / ic)
+              self%components(i)%ptr%c1 = self%x0(idx : self%stride*N : self%stride) / ic
             else
-              self%components(i)%ptr%c1 = real(self%x0(idx : self%stride*N : self%stride))
+              self%components(i)%ptr%c1 = self%x0(idx : self%stride*N : self%stride)
             end if
           case(2)  ! c2
             if (self%components(i)%ptr%cplx_trans) then
-              self%components(i)%ptr%c2 = real(self%x0(idx : self%stride*N : self%stride) / ic)
+              self%components(i)%ptr%c2 = self%x0(idx : self%stride*N : self%stride) / ic
             else
-              self%components(i)%ptr%c2 = real(self%x0(idx : self%stride*N : self%stride))
+              self%components(i)%ptr%c2 = self%x0(idx : self%stride*N : self%stride)
             end if
         end select
       end do

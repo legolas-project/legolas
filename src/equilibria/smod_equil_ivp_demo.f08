@@ -20,8 +20,8 @@
 !!     &ivplist
 !!       enabled     = .true.
 !!       t_end       = 5.0
-!!       n_steps     = 500
-!!       n_snapshots = 50
+!!       dt          = 0.01
+!!       snapshot_dt = 0.1
 !!     /
 !!     @endcode
 !! @endnote

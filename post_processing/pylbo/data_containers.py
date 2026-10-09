@@ -730,26 +730,21 @@ class LegolasDataSet(LegolasDataContainer):
         if hasattr(self, "_ivp_solution") and self._ivp_solution is not None:
             return self._ivp_solution
 
-        # (n_snap, n_comp, n_points), (times)
+        # complex (n_snap, n_comp, n_points), (times)
         raw_data, times = self.filereader.read_iv_snapshots(self.header)
+        component_names = dict(enumerate(self.header.data["iv_snapshots_names"]))
 
-        # Build dictionary of component names; e.g. "isothermal-1d" => {0:"rho", 1:"v1"}
-        n_comp = raw_data.shape[1]
-        if len(self.header.data["state_vector"]) == n_comp:
-            component_names = dict(zip(range(n_comp), self.header.data["state_vector"]))
-        else:
-            component_names = {i: f"comp_{i}" for i in range(n_comp)}
-
-        x_domain = np.linspace(
-            self.header.data["x_start"], self.header.data["x_end"], raw_data.shape[2]
-        )
+        x_domain = self.filereader.read_iv_snapshots_grid(self.header)
 
         self._ivp_solution = IVPSolution(
-            times=times,
+            times=np.asarray(times, dtype=float),
             data=raw_data,
             component_names=component_names,
             x_domain=x_domain,
             units=self.units,
+            k2=self.parameters.get("k2", 0.0),
+            k3=self.parameters.get("k3", 0.0),
+            geometry=self.geometry,
         )
         return self._ivp_solution
 

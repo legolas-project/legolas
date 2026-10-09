@@ -43,13 +43,17 @@ IVP mode is configured through the `ivplist` namelist in the parfile:
 ```fortran
 &ivplist
   enabled         = .true.
-  alpha           = 0.5    ! implicitness (0 = forward Euler, 1 = backward Euler, 0.5 = implicit midpoint)
+  alpha           = 0.5    ! implicitness (0 = forward Euler, 1 = backward Euler, 0.5 = trapezoidal)
   t_end           = 10.0   ! end time
-  n_steps         = 1000   ! number of time steps
-  n_snapshots     = 100    ! number of snapshots to save
-  snapshot_stride = 10     ! save every n-th step (overrides n_snapshots if set)
+  dt              = 0.01   ! time step, kept exact: the run ends at the first whole step at or past t_end
+  snapshot_dt     = 0.1    ! time between snapshots, rounded to a whole number of steps
 /
 ```
+
+Set either `dt` or `n_steps` (number of steps, with `dt = t_end / n_steps`), not both;
+the default is 500 steps. Set either `snapshot_dt` or `snapshot_stride` (save every n-th
+step), not both; the default is a stride of 10. The initial condition and the last step are
+always saved. The resolved values are printed in the start-up summary.
 
 Snapshots are written to the datfile automatically when `enabled = .true.`.
 

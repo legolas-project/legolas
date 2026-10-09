@@ -84,8 +84,9 @@ legolas_namelist_items = {
         ("alpha", (int, np.integer, float)),
         ("t_end", (int, np.integer, float)),
         ("n_steps", (int, np.integer)),
-        ("n_snapshots", (int, np.integer)),
+        ("dt", (int, np.integer, float)),
         ("snapshot_stride", (int, np.integer)),
+        ("snapshot_dt", (int, np.integer, float)),
     ],
 }
 

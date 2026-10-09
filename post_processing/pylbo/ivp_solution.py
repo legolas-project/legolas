@@ -13,26 +13,90 @@ class IVPSolution:
     """
     Container for IVP snapshot data returned by Legolas.
 
+    Legolas evolves the complex profiles :math:`F(x, t)` of the perturbation
+    :math:`\\mathrm{Re}[F(x, t)\\,e^{i(k_2 u + k_3 v)}]`, where :math:`(u, v)` are the
+    two ignorable coordinates: :math:`(y, z)` in Cartesian and :math:`(\\theta, z)` in
+    cylindrical geometry. :meth:`get_component` returns :math:`F`; :meth:`reconstruct`
+    evaluates the physical perturbation on a grid in the ignorable directions.
+
     Parameters
     ----------
     times : np.ndarray
-        Physical times at each snapshot, shape ``(n_snap,)``.
+        Times at each snapshot (code units), shape ``(n_snap,)``.
     data : np.ndarray
-        Snapshot data, shape ``(n_snap, n_comp, n_points)``.
+        Complex snapshot data, shape ``(n_snap, n_comp, n_points)``.
     component_names : dict, optional
         Map from integer index to component name, e.g. ``{0: "rho", 1: "v1"}``.
     x_domain : np.ndarray, optional
         Spatial coordinates, shape ``(n_points,)``.
     units : dict, optional
         Unit normalisations from the Legolas datfile header.
+    k2, k3 : float, optional
+        Wavenumbers in the two ignorable directions, from the datfile parameters.
+    geometry : str, optional
+        ``"Cartesian"`` or ``"cylindrical"``.
     """
 
-    def __init__(self, times, data, component_names=None, x_domain=None, units=None):
-        self.times = times
-        self.data = data
+    def __init__(
+        self,
+        times,
+        data,
+        component_names=None,
+        x_domain=None,
+        units=None,
+        k2=0.0,
+        k3=0.0,
+        geometry=None,
+    ):
+        self.times = np.asarray(times, dtype=float)
+        self.data = np.asarray(data)
         self.component_names = component_names or {}
         self.x_domain = x_domain
         self.units = units
+        self.k2 = k2
+        self.k3 = k3
+        self.geometry = geometry
+
+    def get_snapshot_index(self, time):
+        """Returns the index of the snapshot closest to ``time`` (code units)."""
+        return int(np.argmin(np.abs(self.times - time)))
+
+    def reconstruct(self, component, snapshot, coord2=0.0, coord3=0.0, squeeze=True):
+        """
+        Evaluates the perturbation :math:`\\mathrm{Re}[F(x, t)\\,e^{i(k_2 u + k_3 v)}]`
+        of a component on the grid spanned by ``x_domain`` and the ignorable
+        coordinates.
+
+        Parameters
+        ----------
+        component : int or str
+            Component index or name (e.g. ``"rho"``).
+        snapshot : int or float
+            Snapshot index, or a time (float) at which the nearest snapshot is taken.
+        coord2, coord3 : float or array_like
+            Values of the ignorable coordinates :math:`u` (``y`` or :math:`\\theta`)
+            and :math:`v` (``z``).
+        squeeze : bool
+            Drop the axes of scalar ``coord2`` / ``coord3`` from the result.
+
+        Returns
+        -------
+        np.ndarray
+            Real array of shape ``(n_points, len(coord2), len(coord3))``, squeezed
+            if requested.
+        """
+        if isinstance(snapshot, (float, np.floating)):
+            snapshot = self.get_snapshot_index(snapshot)
+        profile = self.get_component(component)[snapshot]
+        u = np.atleast_1d(np.asarray(coord2, dtype=float))
+        v = np.atleast_1d(np.asarray(coord3, dtype=float))
+        phase = np.exp(1j * (self.k2 * u[:, None] + self.k3 * v[None, :]))
+        field = np.real(profile[:, None, None] * phase[None, :, :])
+        return (
+            np.squeeze(field, axis=tuple(i for i in (1, 2) if field.shape[i] == 1))
+            if squeeze
+            else field
+        )
 
     def _scale_component_array(self, component, comp_array):
         """Returns ``comp_array`` scaled to physical (cgs) units."""
@@ -82,7 +146,8 @@ class IVPSolution:
 
     def get_component(self, component):
         """
-        Returns the ``(n_snap, n_points)`` array for the requested component.
+        Returns the complex ``(n_snap, n_points)`` array :math:`F(x, t)` for the
+        requested component.
 
         Parameters
         ----------
@@ -108,7 +173,7 @@ class IVPSolution:
         time_range : tuple, optional
             ``(t_min, t_max)`` to restrict the plotted time window.
         """
-        comp_array = self.get_component(component)
+        comp_array = np.real(self.get_component(component))
         times_phys = self._scale_time_array(np.array(self.times))
 
         if time_range is not None:
@@ -159,7 +224,7 @@ class IVPSolution:
         ax : ~matplotlib.axes.Axes, optional
             Axes to plot on; created if not provided.
         """
-        comp_array = self.get_component(component)
+        comp_array = np.real(self.get_component(component))
         comp_array_phys, label = self._scale_component_array(component, comp_array)
         times_phys = self._scale_time_array(np.array(self.times))
         n_snap, n_points = comp_array_phys.shape
@@ -238,11 +303,11 @@ class IVPSolution:
         if mode == "centre":
             if centre_idx is None:
                 centre_idx = comp_arr.shape[1] // 2
-            amp = comp_arr[:, centre_idx]
+            amp = np.real(comp_arr[:, centre_idx])
         elif mode == "max":
             amp = np.max(np.abs(comp_arr[:, sl]), axis=1)
         elif mode == "integral":
-            amp = np.sqrt(np.sum(comp_arr[:, sl] ** 2, axis=1))
+            amp = np.sqrt(np.sum(np.abs(comp_arr[:, sl]) ** 2, axis=1))
         else:
             raise ValueError("mode must be 'centre', 'max' or 'integral'.")
 

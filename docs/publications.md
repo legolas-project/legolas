@@ -2,13 +2,14 @@
 title: Publications using Legolas
 layout: single
 classes: wide
-last_modified_at: 2025-01-27
+last_modified_at: 2026-10-09
 ---
 
 Below is an overview of publications using Legolas. If you have used the code in your research and would like to be listed here, please contact us.
 
 | Reference | Links |
 |:--------- |:----- |
+| _Thermal instability in coronal loops: Linking eigenvalue spectra to time-dependent evolution_, A. Kelly, R. Keppens & J. De Jonghe, 2026, Astronomy & Astrophysics **710**, A19 (15pp). | [PDF](https://www.aanda.org/10.1051/0004-6361/202659934/pdf) <br> [arXiv](https://arxiv.org/pdf/2604.24315) |
 | _A visual approach to global accretion disc instabilities_, N. Brughmans & R. Keppens, 2025, Monthly Notices of the Royal Astronomical Society **542(2)**, 1347 (17pp). | [PDF](https://watermark02.silverchair.com/staf1265.pdf?token=AQECAHi208BE49Ooan9kkhW_Ercy7Dm3ZL_9Cf3qfKAc485ysgAAA1cwggNTBgkqhkiG9w0BBwagggNEMIIDQAIBADCCAzkGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMoeB4HW0BHlmLP7caAgEQgIIDCvXBUj9d6aHEqIVn2RV4lxZnQHwJyj6S3TBqvzyI1OKAYFIKOZ6iVgOWifn6Z-3YVwSGHyxhKUSr9QDMoKg98z4I9fDtI6qVVrKaNGxDY0BZ2GxQS9QVI2oaD09gqTCTvMJn5Ccxt0vFKAIJFXvykbrJQ_v1x9hiVpiks_VTG6h2ZoaWo3z0XZs0FvET2x95TQ5Q_oA9YZyJMxEvKDCYOQGI7uTVUUMP2hKF0YWEOvIOR8Gt_lECiP4zOOalcRcDv2LZFOZFwLp-VtlwAXUgee_lUtR6SNUUlbF1RWTVi8U9mu7WkY91O0hOPUDnCVq6Hc9OqdIpbYBgrVTX4Q720rt4OOC-UenNvH_e1GLnPg3QPYPR1xZcv8J6jOgInP6UK4QIlCJPS5CDuP-ED_OzS8r8K5iCteFnxnKE_lhKD8_yLdkbg3VUXjXRhsZRzIB6u0DmDrvcyi77eVxmFKldAg6H0JU_wi_76CcRMU5k-sUsSeB_9KmliN4TwozMOeJfEGtq9l18EUhsfVqMoSOh6feLtMYqemAV-q8bgAYQ_-A9FiAxkcM2y7uTEOYIHrVjMKteKkf6--4hP74bgqZ4PHRN1qnUGERvTiYC-3A2IehkEnmWLM0vy84aIZpQSdKHHeU4NsNCs9Fuk13ILjfJqiPOomsUVhCk46dU4PPKmDAS1zHgSToI_z_VYoE-lrVQykWUiivepsdPzAsFBnM8dr8Sy_jl2gl5FhAMb6ZQRfdfgujopUuY9FOC-Fh_3DZPpIWvbYd8umJP5pZTRP1lSGqopzXCA47PLfOuZ9zA2X811_iLcTfDzzEGl6K11LlhQX7_R-I6l3wVXqEfYLBZ5tKT894V_TADQheSMMvWZ-fIsC_pA1RLCEvwlx5s73gV9lVKu_Jmw9wvZjFmKcgiTuyj39sWEB2ZSewTH8bIZpmjyDRPaw4u5VV7JSLi2oREWg5FyrZpIzvxpFKdhjZ1QIbgLq8fn75KsYkhS2XZRnQnDlHWJPfUeqrsIcKNWKuxmeFWz2HC7hQC6-k) <br> [arXiv](https://arxiv.org/pdf/2507.22672) |
 | _Non-axisymmetric generalisation of an instability criterion for disks with suprathermal toroidal fields_, N. Brughmans & R. Keppens, 2025, Proceedings of the 51st EPS Plasma Physics conference (4pp). | [PDF](https://lac913.epfl.ch/epsppd3/2025/html/PDF/O_144.pdf) |
 | _The Hydrodynamic Thermal Continuum, with Applications to Stratified Atmospheres and 1D Coronal Loop Models_, R. Keppens, J. De Jonghe, A. Kelly, N. Brughmans & H. Goedbloed, 2025, The Astrophysical Journal **989**, 51 (13pp). | [PDF](https://iopscience.iop.org/article/10.3847/1538-4357/adea43/pdf) <br> [arXiv](https://arxiv.org/pdf/2506.23591) |

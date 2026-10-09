@@ -68,8 +68,8 @@ contains
     call get_numerical_derivative(x=curve_T, y=curve_lambda, dy=curve_dlambdadT)
     ! rescale to T (already normalised)
     curve_T = 10.0_dp**curve_T
-    ! finally, dL(T)/dT = dL(T)/dlogT * (1 / T)
-    curve_dlambdadT = curve_dlambdadT / curve_T
+    ! finally, dL(T)/dT = dL(T)/dlog10(T) / (T ln(10))
+    curve_dlambdadT = curve_dlambdadT / (curve_T * log(10.0_dp))
 
     ! set min/max temperature
     minT = minval(curve_T)

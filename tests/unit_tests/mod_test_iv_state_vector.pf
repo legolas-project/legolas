@@ -7,6 +7,7 @@ module mod_test_iv_state_vector
   use mod_state_vector, only: state_vector_t
   use mod_iv_state_vector_component, only: iv_sv_component_t
   use mod_iv_state_vector, only: iv_state_vector_t
+  use mod_iv_globals, only: profile_fcn
   implicit none
 
   ! Need to extend the component to mock it
@@ -58,10 +59,11 @@ contains
   end subroutine mock_component_values
   
   ! Mock compute_coeffs to stop it modifying our data
-  subroutine mock_compute_coeffs(self, N, nodes)
+  subroutine mock_compute_coeffs(self, N, nodes, deps)
     class(iv_mock_component_t), intent(inout) :: self
     integer, intent(in) :: N
     real(dp), intent(in) :: nodes(N)
+    real(dp), intent(in) :: deps
     ! Do nothing.
   end subroutine mock_compute_coeffs
 
@@ -109,15 +111,15 @@ contains
     allocate(comp%c2(N))
 
     ! Compute the coefficients
-    call comp%compute_quad_coeffs(N, nodes)
+    call comp%compute_quad_coeffs(N, nodes, 0.0_dp)
 
     ! Expected results:
     !   midpoints = [0.5, 1.5, 2.5]
     !   c1 = [0.0, 0.25, 2.25, 6.25]
     !   c2 = [0.0, 1.0, 4.0, 9.0]
 
-    @assertEqual(comp%c1, [0.0_dp, 0.25_dp, 2.25_dp, 6.25_dp], tolerance=tol)
-    @assertEqual(comp%c2, [0.0_dp, 1.0_dp, 4.0_dp, 9.0_dp],   tolerance=tol)
+    @assertEqual(real(comp%c1), [0.0_dp, 0.25_dp, 2.25_dp, 6.25_dp], tolerance=tol)
+    @assertEqual(real(comp%c2), [0.0_dp, 1.0_dp, 4.0_dp, 9.0_dp],   tolerance=tol)
 
     deallocate(comp%c1)
     deallocate(comp%c2)
@@ -145,13 +147,13 @@ contains
     allocate(comp%c1(N))
     allocate(comp%c2(N))
 
-    call comp%compute_cubic_coeffs(N, nodes)
+    call comp%compute_cubic_coeffs(N, nodes, 0.0_dp)
 
     ! Expected results:
     !   c1 = [1.0, 0.0, 1.0, 4.0]
     !   c2 = [-2.0, 0.0, 2.0, 4.0]
-    @assertEqual(comp%c1, [1.0_dp, 0.0_dp, 1.0_dp, 4.0_dp],  tolerance=tol)
-    @assertEqual(comp%c2, [-2.0_dp, 0.0_dp, 2.0_dp, 4.0_dp], tolerance=tol)
+    @assertEqual(real(comp%c1), [1.0_dp, 0.0_dp, 1.0_dp, 4.0_dp],  tolerance=tol)
+    @assertEqual(real(comp%c2), [-2.0_dp, 0.0_dp, 2.0_dp, 4.0_dp], tolerance=tol)
 
     deallocate(comp%c1)
     deallocate(comp%c2)
@@ -195,7 +197,7 @@ contains
     state_vec%components(2)%ptr => comp2
 
     ! Call the subroutine to be tested
-    call state_vec%assemble_iv_array(N, nodes)
+    call state_vec%assemble_iv_array(N, nodes, 0.0_dp)
 
     ! The expected result
     expected = [ &
@@ -263,11 +265,105 @@ contains
 
     ! Check against hardcoded values. Equality should be exact
     do i = 1, num_components
-      @assertEqual(state_vec%components(i)%ptr%c1, c1_expected(i,:))
-      @assertEqual(state_vec%components(i)%ptr%c2, c2_expected(i,:))
+      @assertEqual(real(state_vec%components(i)%ptr%c1), c1_expected(i,:))
+      @assertEqual(real(state_vec%components(i)%ptr%c2), c2_expected(i,:))
     end do
 
   end subroutine test_disassemble_iv_array
+
+
+  !> In cylindrical geometry the state vector holds r * var for rho, v1, v3, T and a2:
+  !! the quadratic coefficients are r * f at the midpoints and nodes.
+  @test
+  subroutine test_compute_quad_coeffs_cylindrical()
+    type(iv_sv_component_t) :: comp
+    real(dp) :: nodes(4)
+    integer, parameter :: N = 4
+
+    call set_name("IV state vector: quadratic coefficients scaled by r in cylindrical geometry")
+    nodes = [0.0_dp, 1.0_dp, 2.0_dp, 3.0_dp]
+    comp%p_fcn => test_fcn
+    comp%eps_trans = .true.
+    allocate(comp%c1(N), comp%c2(N))
+
+    call comp%compute_quad_coeffs(N, nodes, 1.0_dp)
+
+    ! midpoints 0.5, 1.5, 2.5: c1 = [0, x^3 at midpoints]; c2 = x^3 at the nodes
+    @assertEqual(real(comp%c1), [0.0_dp, 0.125_dp, 3.375_dp, 15.625_dp], tolerance=TOL)
+    @assertEqual(real(comp%c2), [0.0_dp, 1.0_dp, 8.0_dp, 27.0_dp], tolerance=TOL)
+  end subroutine test_compute_quad_coeffs_cylindrical
+
+
+  !> The cubic coefficients are r * f and (r * f)' = f + r * f'.
+  @test
+  subroutine test_compute_cubic_coeffs_cylindrical()
+    type(iv_sv_component_t) :: comp
+    real(dp) :: nodes(4)
+    integer, parameter :: N = 4
+
+    call set_name("IV state vector: cubic coefficients scaled by r in cylindrical geometry")
+    nodes = [0.5_dp, 1.0_dp, 1.5_dp, 2.0_dp]
+    comp%p_fcn => test_fcn
+    comp%p_dfcn => test_dfcn
+    comp%eps_trans = .true.
+    allocate(comp%c1(N), comp%c2(N))
+
+    call comp%compute_cubic_coeffs(N, nodes, 1.0_dp)
+
+    ! r * x^2 = x^3 and its derivative 3 x^2
+    @assertEqual(real(comp%c1), [0.125_dp, 1.0_dp, 3.375_dp, 8.0_dp], tolerance=TOL)
+    @assertEqual(real(comp%c2), [0.75_dp, 3.0_dp, 6.75_dp, 12.0_dp], tolerance=TOL)
+  end subroutine test_compute_cubic_coeffs_cylindrical
+
+
+  !> v2 and a3 are not scaled by r, so their coefficients do not depend on the geometry.
+  @test
+  subroutine test_compute_coeffs_unscaled_component()
+    type(iv_sv_component_t) :: comp
+    real(dp) :: nodes(4)
+    integer, parameter :: N = 4
+
+    call set_name("IV state vector: unscaled component ignores the cylindrical scale factor")
+    nodes = [0.0_dp, 1.0_dp, 2.0_dp, 3.0_dp]
+    comp%p_fcn => test_fcn
+    allocate(comp%c1(N), comp%c2(N))
+
+    call comp%compute_quad_coeffs(N, nodes, 1.0_dp)
+
+    @assertEqual(real(comp%c1), [0.0_dp, 0.25_dp, 2.25_dp, 6.25_dp], tolerance=TOL)
+    @assertEqual(real(comp%c2), [0.0_dp, 1.0_dp, 4.0_dp, 9.0_dp], tolerance=TOL)
+  end subroutine test_compute_coeffs_unscaled_component
+
+
+  !> Round trip on a cylindrical grid: the profile reconstructed from the coefficients
+  !! of a physical profile f is f again, for a quadratic (rho) and a cubic (v1) component.
+  @test
+  subroutine test_cylindrical_round_trip()
+    use mod_settings, only: settings_t
+    use mod_grid, only: grid_t
+
+    type(settings_t) :: settings
+    type(grid_t) :: grid
+    type(iv_sv_component_t) :: comp
+    procedure(profile_fcn), pointer :: fcn, dfcn
+    integer :: i_sv
+
+    call set_name("IV state vector: cylindrical profile round trip through the coefficients")
+    settings = get_settings()
+    grid = create_test_grid(settings, pts=11, geometry="cylindrical", grid_start=0.5_dp, grid_end=2.0_dp)
+    fcn => test_fcn
+    dfcn => test_dfcn
+
+    do i_sv = 1, 2  ! rho (quadratic elements), v1 (cubic elements)
+      comp = iv_sv_component_t()
+      call comp%bind_iv_component(settings%state_vector%components(i_sv)%ptr, fcn, dfcn)
+      @assertTrue(comp%eps_trans)
+      call comp%compute_coeffs(size(grid%base_grid), grid%base_grid, grid%get_deps())
+      call comp%reconstruct_profile(settings, grid)
+      @assertEqual(real(comp%profile), grid%ef_grid ** 2, tolerance=1.0e-10_dp)
+      @assertEqual(aimag(comp%profile), 0.0_dp * grid%ef_grid, tolerance=1.0e-10_dp)
+    end do
+  end subroutine test_cylindrical_round_trip
 
 
 end module mod_test_iv_state_vector

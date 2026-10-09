@@ -14,8 +14,9 @@ module mod_iv_state_vector_component
 
     logical :: is_bound = .false.
     logical :: cplx_trans = .false.
+    logical :: eps_trans = .false.  ! state vector holds eps * var (eps = r in cylindrical geometry)
 
-    real(dp), allocatable :: c1(:), c2(:)   ! coefficients
+    complex(dp), allocatable :: c1(:), c2(:)   ! coefficients
     complex(dp), allocatable :: profile(:)  ! profile on grid
 
     ! Callback procedure pointers for profile function & derivative
@@ -62,6 +63,10 @@ contains
       if (self%base%get_name() == 'v1' .or. self%base%get_name() == 'a1') then
         self%cplx_trans = .true.
       end if
+      select case(self%base%get_name())
+      case('rho', 'v1', 'v3', 'T', 'a2')
+        self%eps_trans = .true.
+      end select
 
       self%is_bound = .true.
     else
@@ -73,10 +78,13 @@ contains
   ! -----------------------------------------------------------------
   ! Compute coefficients
   ! -----------------------------------------------------------------
-  subroutine compute_coeffs(self, N, nodes)
+  !> Computes the finite-element coefficients of the profile. deps is the derivative of the
+  !! scale factor eps(x) = deps * x + 1 - deps (0 in Cartesian, 1 in cylindrical geometry).
+  subroutine compute_coeffs(self, N, nodes, deps)
     class(iv_sv_component_t), intent(inout) :: self
     integer, intent(in)                     :: N
     real(dp), intent(in)                    :: nodes(N)
+    real(dp), intent(in)                    :: deps
 
     if (allocated(self%c1) .or. allocated(self%c2)) then
       call logger%warning("IV component coefficients already allocated")
@@ -90,9 +98,9 @@ contains
     ! Compute the coefficients associated to each basis fcn.
     select case(self%base%get_basis_function_name())
     case('quadratic')
-      call self%compute_quad_coeffs(N, nodes)
+      call self%compute_quad_coeffs(N, nodes, deps)
     case('cubic')
-      call self%compute_cubic_coeffs(N, nodes)
+      call self%compute_cubic_coeffs(N, nodes, deps)
     case default
       call logger%error("Basis function type is unknown to IV state vector component.")
     end select
@@ -102,10 +110,11 @@ contains
   ! -----------------------------------------------------------------
   ! Compute expansion coefficients for each type
   ! -----------------------------------------------------------------
-  subroutine compute_quad_coeffs(self, N, nodes)
+  subroutine compute_quad_coeffs(self, N, nodes, deps)
     class(iv_sv_component_t), intent(inout) :: self
     integer, intent(in)    :: N
     real(dp), intent(in)   :: nodes(N)
+    real(dp), intent(in)   :: deps
 
     real(dp), allocatable :: midpoints(:)
     allocate(midpoints(N - 1))
@@ -118,20 +127,32 @@ contains
     ! c2 = fcn(nodes)
     self%c2 = self%p_fcn(nodes)
 
+    if (self%eps_trans) then
+      self%c1(2:) = self%c1(2:) * scale_factor(midpoints, deps)
+      self%c2 = self%c2 * scale_factor(nodes, deps)
+    end if
+
     deallocate(midpoints)
   end subroutine compute_quad_coeffs
 
 
-  subroutine compute_cubic_coeffs(self, N, nodes)
+  subroutine compute_cubic_coeffs(self, N, nodes, deps)
     class(iv_sv_component_t), intent(inout) :: self
     integer, intent(in)    :: N
     real(dp), intent(in)   :: nodes(N)
+    real(dp), intent(in)   :: deps
 
     ! u1 = fcn(nodes)
     self%c1 = self%p_fcn(nodes)
 
     ! u2 = dfcn(nodes)
     self%c2 = self%p_dfcn(nodes)
+
+    ! (eps f)' = eps' f + eps f'
+    if (self%eps_trans) then
+      self%c2 = deps * self%c1 + scale_factor(nodes, deps) * self%c2
+      self%c1 = scale_factor(nodes, deps) * self%c1
+    end if
   end subroutine compute_cubic_coeffs
 
 
@@ -172,7 +193,30 @@ contains
       end do
     end do
     nullify(f)
-   
+
+    if (self%eps_trans) call divide_scale_factor(self%profile, grid%ef_grid, grid%get_eps(grid%ef_grid))
+
   end subroutine reconstruct_profile
+
+
+  pure function scale_factor(x, deps) result(eps)
+    real(dp), intent(in) :: x(:)
+    real(dp), intent(in) :: deps
+    real(dp) :: eps(size(x))
+    eps = deps * x + 1.0_dp - deps
+  end function scale_factor
+
+
+  !> Converts eps * var back to var; on the axis (eps = 0) the value is extrapolated linearly.
+  pure subroutine divide_scale_factor(profile, x, eps)
+    complex(dp), intent(inout) :: profile(:)
+    real(dp), intent(in) :: x(:)
+    real(dp), intent(in) :: eps(:)
+
+    where (eps > 0.0_dp) profile = profile / eps
+    if (eps(1) <= 0.0_dp) then
+      profile(1) = profile(2) + (profile(2) - profile(3)) * (x(1) - x(2)) / (x(2) - x(3))
+    end if
+  end subroutine divide_scale_factor
 
 end module mod_iv_state_vector_component

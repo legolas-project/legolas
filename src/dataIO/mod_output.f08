@@ -104,7 +104,7 @@ contains
     end if
     if (settings%io%write_matrices) call write_matrix_data(matrix_A, matrix_B)
     if (settings%io%write_iv_snapshots .and. settings%iv%enabled) then
-      call write_iv_snapshots(settings, iv_module)
+      call write_iv_snapshots(settings, grid, iv_module)
     end if
 
     close(dat_fh)
@@ -560,30 +560,45 @@ contains
   end function get_residual
 
 
-  subroutine write_iv_snapshots(settings, iv_module)
+  subroutine write_iv_snapshots(settings, grid, iv_module)
     type(settings_t), intent(in) :: settings
+    type(grid_t), intent(in) :: grid
     type(iv_module_t), intent(inout) :: iv_module
     integer :: i_snap, i_comp
-    integer :: n_snap, n_points
-    
+    integer :: n_snap, n_points, n_comp
+    character(len=str_len_arr), allocatable :: names(:)
+
     call logger%info("writing IV snapshots")
     n_snap   = settings%iv%get_n_snapshots()
     n_points = settings%grid%get_ef_gridpts()
+    n_comp   = iv_module%state_vec%num_components
 
-    ! Metadata
+    ! Metadata: counts, the number of fields written per component (real part, imaginary part),
+    ! the component names, and the grid the profiles are evaluated on
     write(dat_fh) n_snap
     write(dat_fh) n_points
-    write(dat_fh) iv_module%state_vec%num_components
-  
+    write(dat_fh) n_comp
+    write(dat_fh) 2
+    allocate(names(n_comp))
+    do i_comp = 1, n_comp
+      names(i_comp) = iv_module%state_vec%components(i_comp)%ptr%base%get_name()
+    end do
+    write(dat_fh) len(names(1)), names
+    deallocate(names)
+    write(dat_fh) grid%ef_grid
+
     ! Write snapshot times
     write(dat_fh) iv_module%snap_times
 
-    ! Reassemble on the fly
+    ! Reassemble on the fly: for every snapshot the real parts of all components, then the imaginary parts
     do i_snap = 1, n_snap
       call iv_module%postprocess_snapshot(i_snap)
 
-      do i_comp = 1, iv_module%state_vec%num_components
+      do i_comp = 1, n_comp
         write(dat_fh) real(iv_module%state_vec%components(i_comp)%ptr%profile, kind = dp)
+      end do
+      do i_comp = 1, n_comp
+        write(dat_fh) aimag(iv_module%state_vec%components(i_comp)%ptr%profile)
       end do
     end do
 
