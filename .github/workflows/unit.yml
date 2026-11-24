@@ -108,7 +108,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        if [[ "${{ matrix.coverage }}" ]]; then
+        if [[ "${{ matrix.coverage }}" == "true" ]]; then
           cmake -DCoverage=ON ..
         else
           cmake -DDebug=ON ..
