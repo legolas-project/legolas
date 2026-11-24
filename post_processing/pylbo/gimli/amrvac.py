@@ -480,21 +480,21 @@ class Amrvac:
             )
 
         if "ef_factor" in self.config.keys():
-            if len(self.config["ev_guess"]) > 1 and not isinstance(
-                self.config["ef_factor"], (list, np.ndarray)
-            ):
+            ef_factor = self.config["ef_factor"]
+            if isinstance(ef_factor, (int, float, complex, np.number)):
+                ef_factor = [ef_factor]
+            elif not isinstance(ef_factor, (list, tuple, np.ndarray)):
                 raise TypeError(
-                    '"ef_factor" must be a list with length equal to the number of'
-                    " eigenvalues."
+                    '"ef_factor" must be a number or a list/NumPy array of numbers.'
                 )
-            elif not isinstance(self.config["ef_factor"], (float, int, complex)):
-                raise TypeError(
-                    '"ef_factor" must be an integer, a float, or a complex number.'
+            ef_factor = np.asarray(ef_factor, dtype=np.complex128).ravel()
+            if len(ef_factor) != len(self.config["ev_guess"]):
+                raise AssertionError(
+                    'Length of "ef_factor" must be equal to the number of eigenvalues.'
                 )
-            elif abs(self.config["ef_factor"] - 1) > 1e-12:
-                raise AssertionError('"ef_factor" must have modulus 1.')
-            else:
-                self.config["ef_factor"] = [self.config["ef_factor"]]
+            if np.any(np.abs(np.abs(ef_factor) - 1) > 1e-12):
+                raise AssertionError('Elements of "ef_factor" must have modulus 1.')
+            self.config["ef_factor"] = ef_factor
         else:
             pylboLogger.warning(
                 'No "ef_factor" specified, defaulting to 1 for all eigenvalues.'
@@ -888,7 +888,7 @@ class Amrvac:
                         f"Perturbation of {ef} is almost purely real."
                         " Taking real part to avoid numerical issues."
                     )
-            raw = raw * np.exp(1j * phase)  # reapply the phase
+                raw = raw * np.exp(1j * phase)  # reapply the phase
             perturbation += w * fac * (raw / np.nanmax(np.abs(scaling)))
         return perturbation
 
@@ -909,8 +909,8 @@ class Amrvac:
             The total perturbation.
         """
         if ef_type == "p":
-            rho1 = self._get_combined_perturbation("rho")
-            T1 = self._get_combined_perturbation("T")
+            rho1 = self._get_combined_perturbation("rho", clean=clean)
+            T1 = self._get_combined_perturbation("T", clean=clean)
             rho0 = np.interp(
                 self.ds.ef_grid, self.ds.grid_gauss, self.ds.equilibria["rho0"]
             )
@@ -1016,7 +1016,7 @@ class Amrvac:
         u1_gauss = self.ds.grid_gauss
         gamma_1 = self.ds.gamma - 1
 
-        eq_list = self.eq_list
+        eq_list = copy.deepcopy(self.eq_list)
         idx = eq_list.index("p0")
         eq_list[idx] = "T0"
         ef_list = copy.deepcopy(self.ef_list)
@@ -1094,11 +1094,15 @@ class Amrvac:
             bg = bg * np.interp(
                 self.ds.ef_grid, self.ds.grid_gauss, self.ds.equilibria["T0"]
             )
-        x2_test = np.linspace(
-            self.config["u2_bounds"][0], self.config["u2_bounds"][1], 50
-        )
-        x3_test = np.linspace(
-            self.config["u3_bounds"][0], self.config["u3_bounds"][1], 50
+        # bounds in the second/third direction are optional (e.g. in 2D), in which
+        # case we only test the phase at the origin in that direction
+        x2_test, x3_test = (
+            (
+                np.linspace(self.config[key][0], self.config[key][1], 50)
+                if key in self.config
+                else np.zeros(1)
+            )
+            for key in ("u2_bounds", "u3_bounds")
         )
 
         for i in range(len(pert)):
