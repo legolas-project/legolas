@@ -61,6 +61,7 @@ contains
 
     if (.not. (matrix_A%matrix_dim == size(x))) then
       call logger%error("Initial condition x0 size is not compatible with A, B matrices")
+      return
     end if
 
     alpha = settings%iv%alpha
@@ -85,14 +86,19 @@ contains
 
     ! Figure out how many snapshots to store
     if (present(snapshots)) then
-      num_save = floor(real((num_steps - 1))/real(save_stride)) + 2
+      num_save = settings%iv%get_n_snapshots()
       if (size(snapshots, dim=1) /= n .or. size(snapshots, dim=2) < num_save) then
         call logger%error("hist array not allocated or too small to store snapshots.")
         return
       end if
   
+      if (.not. present(snap_times)) then
+        call logger%error("snap_times must be provided together with snapshots.")
+        return
+      end if
       if (size(snap_times) /= num_save) then
         call logger%error("snap_times is the wrong shape.")
+        return
       end if
 
       ! Save the initial condition as the first snapshot

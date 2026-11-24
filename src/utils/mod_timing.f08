@@ -70,6 +70,13 @@ contains
     type(timer_t) :: timer
     timer%start_time = -1000
     call system_clock(timer%program_start_time)
+    ! stages that are skipped (e.g. IVP disabled, solver = 'none') report 0
+    timer%init_time = 0.0_dp
+    timer%matrix_time = 0.0_dp
+    timer%ivp_time = 0.0_dp
+    timer%evp_time = 0.0_dp
+    timer%eigenfunction_time = 0.0_dp
+    timer%datfile_time = 0.0_dp
   end function new_timer
 
 
