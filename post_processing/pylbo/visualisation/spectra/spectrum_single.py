@@ -67,6 +67,9 @@ class SingleSpectrumPlot(SpectrumFigure):
         )
         # set dataset associated with this line of points
         setattr(spectrum_points, "dataset", self.dataset)
+        # map artist point indices to indices in the dataset's eigenvalue array,
+        # since (near-)zero eigenvalues are not plotted
+        setattr(spectrum_points, "ev_indices", self._nonzero_w_idxs)
         add_pickradius_to_item(item=spectrum_points, pickradius=10)
         if self._use_residuals:
             self.cbar = self.fig.colorbar(spectrum_points, ax=self.ax, label="Residual")
