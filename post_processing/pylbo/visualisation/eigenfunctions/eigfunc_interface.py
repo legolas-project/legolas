@@ -428,11 +428,13 @@ class EigenfunctionInterface:
             distances = (mouse_x - xdata[idxs]) ** 2 + (mouse_y - ydata[idxs]) ** 2
             idx = idxs[distances.argmin()]
 
-        # turn the artist index into the real dataset index
-        associated_ds = event.artist.dataset
-        sigma_clicked = xdata[idx] + 1j * ydata[idx]
-        ev_idx = np.nanargmin(np.abs(associated_ds.eigenvalues - sigma_clicked))
-        return ev_idx, np.real(sigma_clicked), np.imag(sigma_clicked)
+        # turn the artist index into the real dataset index. Artists that do not
+        # plot every eigenvalue carry an explicit index mapping. We do not look up
+        # the eigenvalue nearest to the clicked coordinates, since plot coordinates
+        # can be scaled or represent something else entirely (e.g. multi spectra).
+        ev_indices = getattr(artist, "ev_indices", None)
+        ev_idx = int(ev_indices[idx]) if ev_indices is not None else int(idx)
+        return ev_idx, xdata[idx], ydata[idx]
 
     def _selected_point_has_eigenfunctions(self, ds, idx):
         """

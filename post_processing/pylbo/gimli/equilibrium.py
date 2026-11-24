@@ -272,11 +272,12 @@ class Equilibrium:
         """
         scale_factor = 1 if geometry == "Cartesian" else self.variables.x
 
-        B02 = self.B02 if self.B02 is not None else 0
-        B03 = self.B03 if self.B03 is not None else 0
+        B02 = self.B02 if self.B02 is not None else sp.Integer(0)
+        B03 = self.B03 if self.B03 is not None else sp.Integer(0)
 
-        J02 = -B03.diff(self.variables.x)
-        J03 = B02 * sp.diff(scale_factor * B02, self.variables.x) / scale_factor
+        # J = curl(B) for B = (0, B02(x), B03(x))
+        J02 = -sp.diff(B03, self.variables.x)
+        J03 = sp.diff(scale_factor * B02, self.variables.x) / scale_factor
 
         if dim == 2:
             return 0, sp.simplify(J02), 0
@@ -309,10 +310,11 @@ class Equilibrium:
         """
         _, J02, J03 = self.get_current(geometry, dim=dim)
 
-        B02 = self.B02 if self.B02 is not None else 0
-        B03 = self.B03 if self.B03 is not None else 0
+        B02 = self.B02 if self.B02 is not None else sp.Integer(0)
+        B03 = self.B03 if self.B03 is not None else sp.Integer(0)
 
-        JxB1 = J03 * B03 - J02 * B02
+        # (J x B)_1 = J02 * B03 - J03 * B02, the other components vanish
+        JxB1 = J02 * B03 - J03 * B02
         return sp.simplify(JxB1) == 0
 
 
