@@ -1,6 +1,11 @@
 #!/bin/bash
+set -euo pipefail
 
-cd $LEGOLASDIR
+if [[ -z "${LEGOLASDIR:-}" || ! -d "$LEGOLASDIR" ]]; then
+    echo "error: LEGOLASDIR is not set or is not a directory" >&2
+    exit 1
+fi
+cd "$LEGOLASDIR"
 
 # Pull and compile pFUnit if not yet available
 if [[ ! -d tests/pFUnit ]]; then
