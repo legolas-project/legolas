@@ -98,7 +98,9 @@ jobs:
         cd coverage
         lcov --capture --directory $LEGOLASDIR/build \
             --output-file ${{ matrix.name }}.info \
-            --gcov-tool /usr/bin/gcov-14
+            --gcov-tool /usr/bin/gcov-14 \
+            --rc geninfo_unexecuted_blocks=1 \
+            --ignore-errors inconsistent,inconsistent
         # filter out coverage files
         find $LEGOLASDIR/build -name '*.gc*' -delete
 
