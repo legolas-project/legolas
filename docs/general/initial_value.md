@@ -14,7 +14,8 @@ Given a set of initial perturbation profiles, it evolves the system
 
 $$B \frac{d\mathbf{x}}{dt} = -iA\mathbf{x}$$
 
-using the implicit theta-method (implicit midpoint at the default `alpha = 0.5`), and saves snapshots of the solution at regular intervals alongside the standard eigenvalue output.
+using the implicit theta-method (`alpha = 0.5` is the implicit midpoint rule; the default
+`alpha = 0.52` is slightly more implicit, which adds a little numerical damping), and saves snapshots of the solution at regular intervals alongside the standard eigenvalue output.
 
 This page assumes familiarity with how to set up and run Legolas. If not, see [running your first problem](../../getting-started/running) and [implementing a custom setup](../../general/own_setup).
 
@@ -46,10 +47,17 @@ IVP mode is configured through the `ivplist` namelist in the parfile:
   alpha           = 0.5    ! implicitness (0 = forward Euler, 1 = backward Euler, 0.5 = implicit midpoint)
   t_end           = 10.0   ! end time
   n_steps         = 1000   ! number of time steps
-  n_snapshots     = 100    ! number of snapshots to save
-  snapshot_stride = 10     ! save every n-th step (overrides n_snapshots if set)
+  n_snapshots     = 100    ! (maximum) number of snapshots to save
+  ! snapshot_stride = 10   ! alternatively: save every n-th step (overrides n_snapshots)
 /
 ```
+
+Snapshots always include the initial condition and the final step. Set either
+`snapshot_stride` (default `10`) or `n_snapshots`; if only `n_snapshots` is given, the
+stride is chosen such that at most `n_snapshots` snapshots are stored. If both are given,
+`snapshot_stride` is used and `n_snapshots` is ignored with a warning. The parfile values
+are validated when `enabled = .true.`: `n_steps`, `snapshot_stride` and `t_end` must be
+positive and `alpha` must lie in `[0, 1]` (values below `0.5` trigger a stability warning).
 
 Snapshots are written to the datfile automatically when `enabled = .true.`.
 

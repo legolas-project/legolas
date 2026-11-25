@@ -405,29 +405,41 @@ contains
     logical    :: enabled
     real(dp)   :: alpha, t_end
     integer    :: n_steps, n_snapshots, snapshot_stride
+    integer, parameter :: not_set = -huge(0)
 
     namelist /ivplist/ &
       enabled, alpha, t_end, n_steps, n_snapshots, snapshot_stride
-  
+
     ! Defaults:
     enabled         = settings%iv%enabled
     alpha           = settings%iv%alpha
     t_end           = settings%iv%t_end
     n_steps         = settings%iv%n_steps
-    snapshot_stride = settings%iv%snapshot_stride
-    n_snapshots     = settings%iv%get_n_snapshots()
-  
+    ! sentinels, so we can tell whether the user set these
+    snapshot_stride = not_set
+    n_snapshots     = not_set
+
     read(unit, nml=ivplist, iostat=iostat, iomsg=iomsg)
     call parse_io_info(iostat, iomsg)
-  
+
     ! Update the settings
-    settings%iv%enabled          = enabled
-    settings%iv%alpha           = alpha
-    settings%iv%t_end           = t_end
-    settings%iv%n_steps         = n_steps
-    settings%iv%snapshot_stride = snapshot_stride
-    call settings%iv%set_n_snapshots(n_snapshots)
-  
+    settings%iv%enabled = enabled
+    settings%iv%alpha   = alpha
+    settings%iv%t_end   = t_end
+    settings%iv%n_steps = n_steps
+    ! snapshot_stride takes precedence over n_snapshots if both are given
+    if (snapshot_stride /= not_set) then
+      settings%iv%snapshot_stride = snapshot_stride
+      if (n_snapshots /= not_set) then
+        call logger%warning( &
+          "ivplist: both snapshot_stride and n_snapshots given, ignoring n_snapshots" &
+        )
+      end if
+    else if (n_snapshots /= not_set) then
+      call settings%iv%set_stride_from_n_snapshots(n_snapshots)
+    end if
+
+    if (settings%iv%enabled) call settings%iv%validate()
   end subroutine read_ivplist
 
 
