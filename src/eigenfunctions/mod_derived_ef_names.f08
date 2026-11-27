@@ -31,6 +31,7 @@ module mod_derived_ef_names
 
   character(len=:), allocatable :: state_vector(:)
   logical :: can_get_pp
+  logical :: is_incompressible
 
   public :: create_and_set_derived_state_vector
 
@@ -45,6 +46,7 @@ contains
 
     state_vector = settings%get_state_vector()
     can_get_pp = can_calculate_pp_quantities(background)
+    is_incompressible = settings%physics%is_incompressible
     derived_state_vector = [ &
       S_name, &
       div_v_name, &
@@ -107,7 +109,12 @@ contains
 
 
   pure logical function can_get_entropy()
-    can_get_entropy = is_in_state_vector("rho") .and. is_in_state_vector("T")
+    ! incompressible sets gamma -> 1e12, entropy perturbation is ill-defined there
+    can_get_entropy = ( &
+      .not. is_incompressible &
+      .and. is_in_state_vector("rho") &
+      .and. is_in_state_vector("T") &
+    )
   end function can_get_entropy
 
 

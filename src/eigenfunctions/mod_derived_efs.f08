@@ -155,14 +155,15 @@ contains
     complex(dp), intent(in) :: eigenvector(:)
     complex(dp) :: entropy(size(grid%ef_grid))
     complex(dp) :: rho(size(grid%ef_grid)), T(size(grid%ef_grid))
+    real(dp) :: gamma
 
+    ! linearised S = T * rho**(1 - gamma)
+    gamma = settings%physics%get_gamma()
     rho = get_base_eigenfunction(sv_rho1, settings, grid, eigenvector)
     T = get_base_eigenfunction(sv_T1, settings, grid, eigenvector)
     entropy = ( &
-      T / rho0_on_ef_grid ** (2.0_dp / 3.0_dp) &
-      - (2.0_dp / 3.0_dp) * ( &
-        rho * T0_on_ef_grid / rho0_on_ef_grid ** (5.0_dp / 3.0_dp) &
-      ) &
+      T * rho0_on_ef_grid ** (1.0_dp - gamma) &
+      + (1.0_dp - gamma) * rho * T0_on_ef_grid * rho0_on_ef_grid ** (-gamma) &
     )
   end function get_entropy
 
@@ -216,7 +217,7 @@ contains
     dv3 = get_base_eigenfunction(sv_v3, settings, grid, eigenvector, diff_order=1)
     ef_eps = grid%get_eps(grid%ef_grid)
     ef_deps = grid%get_deps()
-    curl_v_2 = ic * k3 * v1 - dv3 / ef_eps - ef_deps * v3 / ef_eps
+    curl_v_2 = ic * k3 * v1 - dv3 / ef_eps + ef_deps * v3 / ef_eps
   end function get_curl_v_2
 
 
